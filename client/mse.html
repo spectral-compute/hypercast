@@ -15,6 +15,10 @@
             /* Twiddles. */
             const segmentPreavailability = 2000; // How long before a segment is due out to send its request.
 
+            /* Things computed upon the above. */
+            const manifestUrlPrefix = manifestUrl.replace(/[^/]*$/, '');
+
+            /* Manifest parsing. */
             class XmlParser {
                 constructor(text) {
                     /* Parse the XML. */
@@ -72,20 +76,35 @@
             };
 
             class Representation {
-                constructor(id, init, media, bandwidth) {
-                    this.init = init.replace('$RepresentationID$', '' + id);
-                    this.media = media.replace('$RepresentationID$', '' + id);
+                constructor(id, duration, availabilityTimeOffset, init, media, bandwidth, mimeType, codec) {
+                    const initUrl = manifestUrlPrefix + init.replace('$RepresentationID$', '' + id);
+                    this.mediaUrlPattern = manifestUrlPrefix + media.replace('$RepresentationID$', '' + id);
+                    this.duration = duration;
+                    this.startDelay = duration - availabilityTimeOffset; // We count from the start, not the end.
                     this.bandwidth = bandwidth;
+                    this.mimeType = mimeType + '; codecs="' + codec + '"';
 
                     console.log('Representation:\n' +
-                                '  Initialization: ' + this.init + '\n' +
-                                '  Segment pattern: ' + this.media + '\n' +
-                                '  Bandwidth: ' + this.bandwidth + ' bit/s');
+                                '  Segment duration: ' + this.duration + '\n' +
+                                '  Segment start delay: ' + this.startDelay + '\n' +
+                                '  Initialization: ' + initUrl + '\n' +
+                                '  Segment pattern: ' + this.mediaUrlPattern + '\n' +
+                                '  Bandwidth: ' + this.bandwidth + ' bit/s\n' +
+                                '  Bandwidth: ' + this.mimeType);
+
+                    // Prevetch the initialization segments for fast switching. This is actually only a few kilobytes.
+                    this._initData = fetch(initUrl).then((response) => {
+                        return response.arrayBuffer();
+                    });
                 }
 
-                getSegment(index) {
+                async getInitData() {
+                    return await this._initData;
+                }
+
+                getSegmentUrl(index) {
                     // Rather crude, but works in our use case.
-                    let result = this.media;
+                    let result = this.mediaUrlPattern;
                     for (let n = 1; n < 10; n++) {
                         let indexString = '' + index;
                         if (indexString.length < n) {
@@ -112,31 +131,204 @@
 
                     /* Extract information about the whole MPD. */
                     this.startTime = new Date(xml.getString('/MPD/@availabilityStartTime')).valueOf();
-                    this.segmentDuration = parseDuration(xml.getString('/MPD/@maxSegmentDuration'));
                     this.timeSyncUrl = xml.getString('/MPD/UTCTiming/@value');
 
                     // And print it :)
                     console.log('Start time: ' + this.startTime + '\n' +
-                                'Segment duration: ' + this.segmentDuration + ' ms\n' +
                                 'Time sync URL: ' + this.timeSyncUrl + '\n');
 
-                    /* Extract information about each viddeo presentation. */
-                    // We really only expect one video adaptation set.
-                    const videoIds = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/@id');
-                    const videoBandwidths = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/@bandwidth');
-                    const videoInits = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/SegmentTemplate/@initialization');
-                    const videoMedias = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/SegmentTemplate/@media');
+                    /* Extract information about each presentation. */
+                    const getAdaptationSetRepresentations = (type) => {
+                        // We really only expect one adaptation set of each type.
+                        const ids = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/@id');
+                        const bandwidths = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/@bandwidth');
+                        const mimeTypes = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/@mimeType');
+                        const codecs = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/@codecs');
+                        const inits = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/SegmentTemplate/@initialization');
+                        const medias = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/SegmentTemplate/@media');
+                        const durations = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/SegmentTemplate/@duration');
+                        const availabilityTimeOffsets = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="' + type + '"]/Representation/SegmentTemplate/@availabilityTimeOffset');
 
-                    this.videoRepresentations = new Array();
-                    for (let i = 0; i < videoIds.length; i++) {
-                        this.videoRepresentations.push(new Representation(videoIds[i], videoInits[i], videoMedias[i], videoBandwidths[i]));
+                        const representations = new Array();
+                        for (let i = 0; i < ids.length; i++) {
+                            representations.push(new Representation(ids[i], durations[i], availabilityTimeOffsets[i],
+                                                                    inits[i], medias[i], bandwidths[i], mimeTypes[i], codecs[i]));
+                        }
+                        return representations;
+                    };
+
+                    this.videoRepresentations = getAdaptationSetRepresentations('video');
+                    this.audioRepresentations = getAdaptationSetRepresentations('audio');
+                }
+            };
+
+            /* Gives us a clock that's synchronized to the given URL. This gets us to within a second. */
+            class SynchronizedClock {
+                constructor(referenceTime) {
+                    this._offset = Date.now().valueOf() - new Date(referenceTime).valueOf();
+                    console.log('Clock offset: ' + this._offset + ' ms');
+                }
+
+                now() {
+                    return Date.now().valueOf() - this._offset;
+                }
+            };
+
+            /* A class that wraps a ReadableStream to provide an event interface, data holding, and timing
+               information. */
+            class ReadableStreamWrapper {
+                // Constructs in the paused state. No events will happen until unpaused. The onData callback is called
+                // when there's new data, and receives an ArrayBuffer. The onDone callback is called when the stream
+                // ends, and receives an estimate of its download rate in bytes/s.
+                constructor(stream, onData, onDone) {
+                    this._onData = onData;
+                    this._onDone = onDone;
+
+                    this._buffers = new Array();
+                    this._paused = true;
+                    this._done = false;
+                    this._timingStart = 0;
+                    this._timingEnd = 0;
+                    this._timingByteCount = 0;
+
+                    this._read(stream);
+                }
+
+                unpause() {
+                    if (!this._paused) {
+                        return;
+                    }
+
+                    this._paused = false;
+                    for (let i = 0; i < this._buffers.length; i++) {
+                        this._onData(this._buffers[i]);
+                    }
+                    this._buffers = new Array();
+                    if (this._done) {
+                        this._finish();
+                    }
+                }
+
+                _read(stream) {
+                    stream.read().then(({done, data}) => {
+                        // Handle the case where this is the notification that there's no more data.
+                        if (done) {
+                            this._done = true;
+                            if (!this._paused) {
+                                // If we're not paused, then we need to call the handler ourselves.
+                                this._finish();
+                            }
+                            return;
+                        }
+
+                        // Update timing information. Don't include the first chunk, because this stream might have been
+                        // created significantly before the first byte was available.
+                        if (this._timingStart == 0) {
+                            this._timingStart = Date.now();
+                            this._endStart = this._timingStart;
+                        }
+                        else {
+                            this._endStart = Date.now();
+                            this._timingByteCount += data.length;
+                        }
+
+                        // If we're paused, then just stash the data for later. Otherwise, call the event handler now.
+                        if (this._paused) {
+                            this._buffers.push(data);
+                        }
+                        else {
+                            this._onData(data);
+                        }
+
+                        // Read more.
+                        this._read(stream);
+                    });
+                }
+
+                _finish() {
+                    this._onDone(this._timingByteCount / (this._timingEnd - this._timingStart));
+                }
+            };
+
+            /* A class that accepts input from multiple ReadableStreams and outputs them in sequence. */
+            class MultiStreamReader {
+                constructor(callback) {
+                    this._callback = callback;
+                    this._streams = new Array();
+                    this._onDone = null;
+                }
+
+                setOnDone(callback) {
+                    this._onDone = callback;
+                }
+
+                addStream(stream, onDone) {
+                    const streamWrapper = new ReadableStreamWrapper(stream.getReader(), (data) => {
+                        this._callback(data);
+                    }, (speed) => {
+                        // Call the callback for this stream being done.
+                        onDone(speed);
+
+                        // Remove the head stream. That *must* be the stream that generated this callback because only
+                        // the first stream is ever unpaused, and only unpaused streams are allowed to call their
+                        // callbacks.
+                        this._streams = this._streams.slice(1);
+
+                        // Figure out what to do next.
+                        if (this._streams.length > 0) {
+                            this._streams[0].unpause();
+                        }
+                        else if (this._onDone !== null) {
+                            this._onDone();
+                        }
+                    });
+                    this._streams.push(streamWrapper);
+                    if (this._streams.length == 1) {
+                        streamWrapper.unpause();
                     }
                 }
             };
 
+            /* Class that adapts the media element for us. This does things like create source buffers, and monitor
+               buffer sizes. */
+            class MediaElement {
+                constructor () {
+                    this.mediaSource = new MediaSource();
+                    this.mediaElement = document.getElementById('video');
+                    this.mediaElement.src = URL.createObjectURL(mediaSource);
+
+                    this.videoRepresentation = null;
+                    this.videoSource = null;
+                    this.videoStreams = null;
+                }
+
+                async addVideoSource(representation) {
+                    if (this.videoSource) {
+                        // TODO
+                    }
+
+                    this.videoRepresentation = representation;
+                    this.videoSource = this.mediaSource.addSourceBuffer(representation.mimeType);
+                    this.videoSource.appendBuffer(await representation.getInitData());
+                    this.videoStreams = new MultiStreamReader((data) => {
+                        this.videoSource.appendBuffer(data);
+                    });
+                }
+
+                addVideoData(stream) {
+                    this.videoStreams.addStream(stream);
+                }
+            };
+
+            /* Initialization. */
             async function init() {
                 /* Load the manifest. */
                 const manifest = new Manifest(await fetch(manifestUrl).then((response) => {
+                    return response.text();
+                }));
+
+                /* Create the clock. */
+                clock = new SynchronizedClock(await fetch(manifest.timeSyncUrl).then((response) => {
                     return response.text();
                 }));
             }
