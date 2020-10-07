@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+    <body>
+        <div>
+            <video id="video" controls></video>
+        </div>
+        <script>
+            /* Manifest URL. */
+            //const manifestUrl = 'http://kittens.entertainmenttycoon.com/live/angle-0/manifest.mpd';
+            //const manifestUrl = 'http://210.3.146.42:8075/live/angle-0/manifest.mpd';
+            //const manifestUrl = 'http://kittens.ipv6.design/live/angle-0/manifest.mpd';
+            //const manifestUrl = 'http://cats.entertainmenttycoon.com/live/angle-0/manifest.mpd';
+            const manifestUrl = 'http://210.3.146.42/live/angle-0/manifest.mpd';
+
+            /* Twiddles. */
+            const segmentPreavailability = 2000; // How long before a segment is due out to send its request.
+
+            class XmlParser {
+                constructor(text) {
+                    /* Parse the XML. */
+                    // There must be a better way to handle the namespace than just... removing it. The createNSResolver
+                    // below should work.
+                    const filteredText = text.replace(/(xmlns[^=]*|xsi:[^=]*)="[^"]*"/g, '');
+                    this._xml = new DOMParser().parseFromString(filteredText, 'text/xml');
+
+                    /* A namespace resolver. */
+                    // XML is special sometimes. This is needed even with the namespace stripping regex.
+                    this._ns = this._xml.createNSResolver(this._xml.documentElement);
+                }
+
+                getString(path, context = null) {
+                    return this._xml.evaluate(path, (context === null) ? this._xml : context, this._ns,
+                                             XPathResult.STRING_TYPE).stringValue;
+                }
+
+                getNumber(path, context = null) {
+                    return parseFloat(this.getString(path, context));
+                }
+
+                getElement(path, context = null) {
+                    return this._xml.evaluate(path, (context === null) ? this._xml : context, this._ns,
+                                             XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
+                }
+
+                getElements(path, context = null) {
+                    let result = new Array();
+                    let snapshot = this._xml.evaluate(path, (context === null) ? this._xml : context, this._ns,
+                                                     XPathResult.ORDERED_NODE_SNAPSHOT_TYPE);
+                    for (let i = 0; i < snapshot.snapshotLength; i++) {
+                        result.push(snapshot.snapshotItem(i));
+                    }
+                    return result;
+                }
+
+                getStrings(path, context = null) {
+                    let result = new Array();
+                    const elements = this.getElements(path, context);
+                    for (let i = 0; i < elements.length; i++) {
+                        result.push(elements[i].value);
+                    }
+                    return result;
+                }
+
+                getNumbers(path, context = null) {
+                    let result = new Array();
+                    const strings = this.getStrings(path, context);
+                    for (let i = 0; i < strings.length; i++) {
+                        result.push(parseFloat(strings[i]));
+                    }
+                    return result;
+                }
+            };
+
+            class Representation {
+                constructor(id, init, media, bandwidth) {
+                    this.init = init.replace('$RepresentationID$', '' + id);
+                    this.media = media.replace('$RepresentationID$', '' + id);
+                    this.bandwidth = bandwidth;
+
+                    console.log('Representation:\n' +
+                                '  Initialization: ' + this.init + '\n' +
+                                '  Segment pattern: ' + this.media + '\n' +
+                                '  Bandwidth: ' + this.bandwidth + ' bit/s');
+                }
+
+                getSegment(index) {
+                    // Rather crude, but works in our use case.
+                    let result = this.media;
+                    for (let n = 1; n < 10; n++) {
+                        let indexString = '' + index;
+                        if (indexString.length < n) {
+                            indexString = indexString.padStart(n, '0');
+                        }
+                        else {
+                            indexString = indexString.substr(0, n);
+                        }
+                        result.replace('$Number%0' + n + 'd$', indexString);
+                    }
+                    return result;
+                }
+            };
+
+            class Manifest {
+                constructor(text) {
+                    const parseDuration = function (s) {
+                        // We never use anything that would go beyond seconds.
+                        return parseFloat(s.match(/^PT([0-9.]+)S$/)[1]) * 1000;
+                    };
+
+                    /* Turn the XML text into something vaguely useable. */
+                    const xml = new XmlParser(text);
+
+                    /* Extract information about the whole MPD. */
+                    this.startTime = new Date(xml.getString('/MPD/@availabilityStartTime')).valueOf();
+                    this.segmentDuration = parseDuration(xml.getString('/MPD/@maxSegmentDuration'));
+                    this.timeSyncUrl = xml.getString('/MPD/UTCTiming/@value');
+
+                    // And print it :)
+                    console.log('Start time: ' + this.startTime + '\n' +
+                                'Segment duration: ' + this.segmentDuration + ' ms\n' +
+                                'Time sync URL: ' + this.timeSyncUrl + '\n');
+
+                    /* Extract information about each viddeo presentation. */
+                    // We really only expect one video adaptation set.
+                    const videoIds = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/@id');
+                    const videoBandwidths = xml.getNumbers('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/@bandwidth');
+                    const videoInits = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/SegmentTemplate/@initialization');
+                    const videoMedias = xml.getStrings('/MPD/Period/AdaptationSet[@contentType="video"]/Representation/SegmentTemplate/@media');
+
+                    this.videoRepresentations = new Array();
+                    for (let i = 0; i < videoIds.length; i++) {
+                        this.videoRepresentations.push(new Representation(videoIds[i], videoInits[i], videoMedias[i], videoBandwidths[i]));
+                    }
+                }
+            };
+
+            async function init() {
+                /* Load the manifest. */
+                const manifest = new Manifest(await fetch(manifestUrl).then((response) => {
+                    return response.text();
+                }));
+            }
+
+            init();
+        </script>
+    </body>
+</html>
