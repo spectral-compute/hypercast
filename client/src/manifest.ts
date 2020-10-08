@@ -108,7 +108,7 @@ export class Representation {
             else {
                 indexString = indexString.substr(0, n);
             }
-            result.replace('$Number%0' + n + 'd$', indexString);
+            result = result.replace('$Number%0' + n + 'd$', indexString);
         }
         return result;
     }
