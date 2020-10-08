@@ -184,17 +184,30 @@ export async function init(): Promise<void> {
         const maxFastPlayTime = 10;
         const maxFastPlayRate = 4;
 
+
+        const x = (delay - targetDelay) / (maxFastPlayTime - targetDelay); // Scales [0, 1]
+        const y = x * x; // Also scales [0, 1], but a bit more aggressively at longer delays.
+        const fastCachupRate = (maxFastPlayRate - 1) * x + 1;
+
         if (delay <= targetDelay) {
             if (playrate != 1) {
                 playrate = 1;
                 me.playbackRate = 1;
             }
         }
-        else if (delay <= maxFastPlayTime || (delay <= hysteresisDelay && me.playbackRate > 1)) {
-            const x = (delay - targetDelay) / (maxFastPlayTime - targetDelay); // Scales [0, 1]
-            const y = x * x; // Also scales [0, 1], but a bit more aggressively at longer delays.
-            playrate = (maxFastPlayRate - 1) * y + 1;
-            me.playbackRate = playrate;
+        else if (delay <= hysteresisDelay) {
+            if (playrate > 1) {
+                playrate = fastCachupRate;
+                me.playbackRate = fastCachupRate;
+            }
+            else if (playrate != 1) {
+                playrate = 1;
+                me.playbackRate = 1;
+            }
+        }
+        else if (delay <= maxFastPlayTime) {
+            playrate = fastCachupRate;
+            me.playbackRate = fastCachupRate;
         }
         else {
             playrate = 1;
