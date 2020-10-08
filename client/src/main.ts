@@ -6,15 +6,11 @@ declare const manifestUrl: string;
 
 /* Class that adapts the media element for us. This does things like create source buffers, and monitor
    buffer sizes. */
-class MediaElement {
+class MediaInterface {
     constructor() {
         this.mediaSource = new MediaSource();
         this.mediaElement = document.getElementById('video') as HTMLMediaElement;
         this.mediaElement.src = URL.createObjectURL(this.mediaSource);
-
-        this.videoRepresentation = null;
-        this.videoSource = null;
-        this.videoStreams = null;
     }
 
     async addVideoSource(representation: manifest.Representation): Promise<void> {
@@ -22,7 +18,6 @@ class MediaElement {
             // TODO
         }
 
-        this.videoRepresentation = representation;
         this.videoSource = this.mediaSource.addSourceBuffer(representation.mimeType);
         this.videoSource.appendBuffer(await representation.initData);
         this.videoStreams = new stream.MultiStreamReader((data) => {
@@ -35,10 +30,8 @@ class MediaElement {
     }
 
     mediaSource: MediaSource = new MediaSource();
-    videoSource: SourceBuffer;
+    videoSource: SourceBuffer = null;
     mediaElement: HTMLMediaElement;
-
-    videoRepresentation: manifest.Representation;
     videoStreams: stream.MultiStreamReader;
 };
 
@@ -49,4 +42,11 @@ export async function init(): Promise<void> {
 
     /* Create the clock. */
     let clock = new util.SynchronizedClock(await util.fetchString(manifestInfo.timeSyncUrl));
+
+    /* Shuffle video into the media interface. */
+    const mediaInterface = new MediaInterface();
+    mediaInterface.addVideoSource(manifestInfo.videoRepresentations[0]);
+
+    const [segmentIndex, offsetInSegment] = manifestInfo.videoRepresentations[0].getSegmentIndexAndOffsetForNow(clock);
+    console.log('Segment index: ' + segmentIndex + ', offset: ' + offsetInSegment + ' ms');
 }

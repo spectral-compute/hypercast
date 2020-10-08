@@ -1,3 +1,5 @@
+import * as util from './util.js';
+
 declare const manifestUrl: string;
 
 /* Things computed upon the above. */
@@ -64,14 +66,15 @@ class XmlParser {
 };
 
 export class Representation {
-    constructor(id: number, duration: number, availabilityTimeOffset: number, init: string, media: string,
-                bandwidth: number, mimeType: string, codec: string) {
+    constructor(manifest: Manifest, id: number, duration: number, availabilityTimeOffset: number, init: string,
+                media: string, bandwidth: number, mimeType: string, codec: string) {
         const initUrl = manifestUrlPrefix + init.replace('$RepresentationID$', '' + id);
         this.mediaUrlPattern = manifestUrlPrefix + media.replace('$RepresentationID$', '' + id);
         this.duration = duration;
         this.startDelay = duration - availabilityTimeOffset; // We count from the start, not the end.
         this.bandwidth = bandwidth;
         this.mimeType = mimeType + '; codecs="' + codec + '"';
+        this.manifest = manifest;
 
         console.log('Representation:\n' +
                     '  Segment duration: ' + this.duration + '\n' +
@@ -85,6 +88,15 @@ export class Representation {
         this.initData = fetch(initUrl).then((response: Response) => {
             return response.arrayBuffer();
         });
+    }
+
+    getSegmentIndexAndOffsetForNow(clock: util.SynchronizedClock): [number, number] {
+        const timeSinceFirstSegmentByte = clock.now() - this.manifest.startTime - this.startDelay;
+        const segmentIndex = Math.ceil(timeSinceFirstSegmentByte / this.duration);
+        const offsetInSegment = timeSinceFirstSegmentByte - (segmentIndex - 1) * this.duration;
+
+        console.log('' + segmentIndex + ', ' + offsetInSegment + '; ' + timeSinceFirstSegmentByte + ', ' + (timeSinceFirstSegmentByte / this.duration));
+        return [segmentIndex, offsetInSegment];
     }
 
     getSegmentUrl(index: number): string {
@@ -109,6 +121,8 @@ export class Representation {
     bandwidth: number;
     mimeType: string;
     initData: Promise<ArrayBuffer>;
+
+    private manifest: Manifest;
 };
 
 export class Manifest {
@@ -143,8 +157,9 @@ export class Manifest {
 
             const representations = new Array<Representation>();
             for (let i = 0; i < ids.length; i++) {
-                representations.push(new Representation(ids[i], durations[i], availabilityTimeOffsets[i],
-                                                        inits[i], medias[i], bandwidths[i], mimeTypes[i], codecs[i]));
+                representations.push(new Representation(this, ids[i], durations[i] / 1000,
+                                                        availabilityTimeOffsets[i] * 1000, inits[i], medias[i],
+                                                        bandwidths[i], mimeTypes[i], codecs[i]));
             }
             return representations;
         };
