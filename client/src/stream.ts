@@ -82,11 +82,19 @@ export class MultiStreamReader {
         this.callback = callback;
     }
 
-    setOnDone(callback: () => void): void {
+    finish(callback: () => void): void {
         this.onDone = callback;
     }
 
-    addStream(stream: ReadableStream, onDone: (rate: number) => void = () => {}): void {
+    addStream(stream: ReadableStream, onDone: (rate: number) => void): void {
+        /* If we're waiting for completion, then reject anything else from being added. */
+        if (this.onDone != null) {
+            stream.cancel();
+            return;
+        }
+
+        /* Otherwise, add the new stream :) */
+        // Create a wrapper around it that knows how to integreate the stream's events with the rest of the structure.
         const streamWrapper = new ReadableStreamWrapper(stream.getReader(), (data: ArrayBuffer) => {
             this.callback(data);
         }, (rate: number) => {
@@ -106,7 +114,11 @@ export class MultiStreamReader {
                 this.onDone();
             }
         });
+
+        // Store the stream.
         this.streams.push(streamWrapper);
+
+        // If it's the only stream, then it's the first one, and therefore can and should be unpaused now.
         if (this.streams.length == 1) {
             streamWrapper.unpause();
         }

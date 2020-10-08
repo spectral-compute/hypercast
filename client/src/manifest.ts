@@ -94,8 +94,6 @@ export class Representation {
         const timeSinceFirstSegmentByte = clock.now() - this.manifest.startTime - this.startDelay;
         const segmentIndex = Math.ceil(timeSinceFirstSegmentByte / this.duration);
         const offsetInSegment = timeSinceFirstSegmentByte - (segmentIndex - 1) * this.duration;
-
-        console.log('' + segmentIndex + ', ' + offsetInSegment + '; ' + timeSinceFirstSegmentByte + ', ' + (timeSinceFirstSegmentByte / this.duration));
         return [segmentIndex, offsetInSegment];
     }
 
