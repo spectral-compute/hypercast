@@ -4,6 +4,7 @@ import * as stream from 'stream';
 import {Logger} from "winston";
 import {getLogger} from "../common/LoggerConfig";
 import {AudioConfig, CodecOptions, Config, VideoConfig} from "./Config";
+import {ChildProcess} from "child_process";
 
 export const log: Logger = getLogger("Ffmpeg");
 
@@ -268,48 +269,117 @@ function getDashOutputArgs(segmentDuration: number, targetLatency: number, hasAu
 }
 
 export namespace ffmpeg {
+    import Timeout = NodeJS.Timeout;
+
     export class Subprocess {
         inputStreams: stream.Writable[] = [];
         outputStreams: stream.Readable[] = [];
 
-        constructor(verbose: boolean, ffmpegOpType: string, args: string[]) {
-            // construct the stdio argument.
-            let stdio = new Array<any>();
+        private process!: ChildProcess;
 
-            // We never want to connect stdin.
-            stdio.push('ignore');
+        // Are we currently in the process of trying to quit?
+        private stopping: boolean = false;
 
-            // Stdout and stderr should be redirected to null if we're not going to collect the data.
-            stdio = stdio.concat(verbose ? ['pipe', 'pipe'] : ['ignore', 'ignore']);
+        public async start(): Promise<void> {
+            return new Promise((resolve, reject) => {
+                // Launch the process.
+                this.process = child_process.spawn('ffmpeg', this.args, {stdio: [
+                    // Ignore stdin, capture stout and stderr.
+                    'ignore', 'pipe', 'pipe'
+                ]});
 
-            /* Launch the process. */
-            const subprocess = child_process.spawn('ffmpeg', args, {stdio: stdio});
-            subprocess.on('exit', (): void => {
-                console.log(ffmpegOpType + ' FFmpeg process terminated');
-                process.exit(1); // FFmpeg terminating is an error condition.
+                this.process.on('exit', (code: number | undefined, signal: string | undefined): void => {
+                    if (code !== undefined) {
+                        log.info(`[${this.name}] Exited with status code ${code}`);
+                    } else {
+                        log.info(`[${this.name}] Terminated due to signal ${signal}`);
+                    }
+
+                    if (!this.stopping) {
+                        process.exit(1); // FFmpeg terminating unexpectedly is an error condition.
+                    }
+                });
+
+                this.process.once('error', (e: Error): void => {
+                    reject(e);
+                });
+
+                // Print the FFmpeg command
+                let argsString = '  ffmpeg';
+                this.args.forEach((arg: string): void => {
+                    argsString += ' ' + ((arg.includes(' ') || this.args.includes('"')) ?
+                        ('"' + arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') : arg);
+                });
+
+                log.debug(`[%s] Spawning FFmpeg Command:\n%s`, this.name, argsString);
+
+                this.process.stdout!.once('data', () => {
+                    // This presumably means it's alive...
+                    resolve();
+                });
+
+                // Hand ffmpeg's output to the logging system, if it wants it.
+                this.process.stdout!.on('data', (data: string) => {
+                    log.silly(`[%s][STDOUT]: %s`, this.name, data);
+                });
+                this.process.stderr!.on('data', (data: string) => {
+                    log.silly(`[%s][STDERR]: %s`, this.name, data);
+                });
             });
+        }
 
-            // Print the FFmpeg command
-            let argsString = '  ffmpeg';
-            args.forEach((arg: string): void => {
-                argsString += ' ' + ((arg.includes(' ') || args.includes('"')) ?
-                    ('"' + arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') : arg);
-            });
-            log.debug(`Started FFmpeg Command:\n${argsString}`);
+        /**
+         * Send SIGTERM and wait for ffmpeg to finish its finishing-off-stuff. This should lead to nicely-formatted
+         * media files after we're stopped.
+         *
+         * @param timeoutMs After this many milliseconds, give up and send SIGKILL.
+         */
+        public async stop(timeoutMs: number | undefined): Promise<void> {
+            this.stopping = true;
 
-            /* Be verbose. */
-            if (!verbose) {
+            // If we never started, or already stopped, then stopping is a no-op.
+            if (!this.process || this.process.exitCode !== null) {
                 return;
             }
 
-            // Redirect FFmpeg's console output.
-            subprocess.stdout.pipe(process.stdout);
-            subprocess.stderr.pipe(process.stderr);
+            return new Promise((resolve, _reject) => {
+                let murderiseCountdown: Timeout | undefined = undefined;
+                if (timeoutMs !== undefined) {
+                    murderiseCountdown = setTimeout(() => {
+                        this.process.kill('SIGKILL');
+                    }, timeoutMs);
+                }
+
+                let exitHandler: (...args: any[]) => void;
+                let errorHandler: (...args: any[]) => void;
+                exitHandler = () => {
+                    if (murderiseCountdown) {
+                        clearTimeout(murderiseCountdown);
+                    }
+
+                    this.process.off('error', errorHandler);
+
+                    resolve();
+                };
+
+                errorHandler = (e: Error) => {
+                    log.error(`[${this.name}] Error during shutdown: %O`, e);
+                    this.process.off('exit', exitHandler);
+                };
+
+                this.process.once('exit', exitHandler);
+                this.process.on('error', errorHandler);
+
+                this.process.kill('SIGTERM');
+            });
         }
+
+        constructor(private readonly name: string,
+                    private readonly args: string[]) {}
     }
 
     /* Run ffmpeg to transcode from external input to DASH in one go. */
-    export function launchTranscoder(verbose: boolean, config: Config, source: string): Subprocess {
+    export function launchTranscoder(config: Config, source: string): Subprocess {
         const videoConfigs = config.video.configs;
         const audioConfigs = config.audio.configs;
 
@@ -356,6 +426,6 @@ export namespace ffmpeg {
         ];
 
         // Launch the subprocess.
-        return new Subprocess(verbose, 'Transcode', args);
+        return new Subprocess('Transcode', args);
     }
 }

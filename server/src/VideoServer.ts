@@ -94,6 +94,8 @@ export class VideoServer extends WebServerNode {
     private livePaths!: RegExp;
     private ephemeralPaths!: RegExp;
 
+    private ffmpegProcesses: ffmpeg.Subprocess[] = [];
+
     constructor() {
         super("VideoServer", ZmqEndpoint.VIDEO_SERVER, ZmqEndpoint.NONE, ZmqTarget.NONE);
     }
@@ -141,8 +143,11 @@ export class VideoServer extends WebServerNode {
         this.writeServerInfo();
 
         await super.start();
+        await this.startStreaming();
 
-        this.startStreaming();
+        this.registerShutdownJob("Stop ffmpeg processes", async() => {
+            await this.stopStreaming();
+        }, {before: "Stop HTTP server"});
     }
 
     /**
@@ -424,14 +429,20 @@ export class VideoServer extends WebServerNode {
         response.end();
     }
 
-    public startStreaming() {
+    public async startStreaming() {
+        log.info("Building ffmpeg processes...");
+        this.ffmpegProcesses = this.config.video.sources.map((source: string) => {
+            return ffmpeg.launchTranscoder(this.config, source);
+        });
+
         log.info("Launching ffmpeg processes...");
-        this.config.video.sources.map((source: string) =>
-            ffmpeg.launchTranscoder(true, this.config, source)
-        );
+        await Promise.all(this.ffmpegProcesses.map(async(p) => p.start()));
+        log.info("All ffmpeg processes started.");
     }
 
-    public stopStreaming() {
-        // TODO
+    public async stopStreaming() {
+        log.info("Shutting down ffmpeg processes...");
+        await Promise.all(this.ffmpegProcesses.map(async(p) => p.stop(10000)));
+        log.info("All ffmepg processes have stopped.");
     }
 }
