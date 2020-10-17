@@ -379,7 +379,7 @@ export namespace ffmpeg {
     }
 
     /* Run ffmpeg to transcode from external input to DASH in one go. */
-    export function launchTranscoder(config: Config, source: string): Subprocess {
+    export function launchTranscoder(name: string, config: Config, source: string): Subprocess {
         const videoConfigs = config.video.configs;
         const audioConfigs = config.audio.configs;
 
@@ -426,6 +426,6 @@ export namespace ffmpeg {
         ];
 
         // Launch the subprocess.
-        return new Subprocess('Transcode', args);
+        return new Subprocess(name, args);
     }
 }

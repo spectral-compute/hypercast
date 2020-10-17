@@ -431,8 +431,8 @@ export class VideoServer extends WebServerNode {
 
     public async startStreaming() {
         log.info("Building ffmpeg processes...");
-        this.ffmpegProcesses = this.config.video.sources.map((source: string) => {
-            return ffmpeg.launchTranscoder(this.config, source);
+        this.ffmpegProcesses = this.config.video.sources.map((source: string, i: number) => {
+            return ffmpeg.launchTranscoder(`Cam ${i + 1}`, this.config, source);
         });
 
         log.info("Launching ffmpeg processes...");
