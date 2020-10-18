@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
 import {Logger} from "winston";
 import {getLogger} from "../common/LoggerConfig";
-import {ZmqEndpoint, ZmqTarget} from "../common/network/ZmqLayer";
-import {WebServerNode} from "../common/WebServerNode";
+import {WebServerProcess} from "../common/WebServerNode";
 import http from "http";
 import {loadConfig} from "../common/Config";
 import {assertType} from "@ckitching/typescript-is";
@@ -65,7 +64,7 @@ function substituteManifestPattern(pattern: string, index?: number): string {
     return result;
 }
 
-export class VideoServer extends WebServerNode {
+export class VideoServer extends WebServerProcess {
     private config!: Config;
 
     // The set of files this server will respond to GET requests for. This is an in-memory cache.
@@ -97,7 +96,7 @@ export class VideoServer extends WebServerNode {
     private ffmpegProcesses: ffmpeg.Subprocess[] = [];
 
     constructor() {
-        super("VideoServer", ZmqEndpoint.VIDEO_SERVER, ZmqEndpoint.NONE, ZmqTarget.NONE);
+        super("VideoServer");
     }
 
     async start(config?: Config): Promise<void> {
