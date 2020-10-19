@@ -320,10 +320,10 @@ export namespace ffmpeg {
 
                 // Hand ffmpeg's output to the logging system, if it wants it.
                 this.process.stdout!.on('data', (data: string) => {
-                    log.silly(`[%s][STDOUT]: %s`, this.name, data);
+                    log.debug(`[%s][STDOUT]: %s`, this.name, data);
                 });
                 this.process.stderr!.on('data', (data: string) => {
-                    log.silly(`[%s][STDERR]: %s`, this.name, data);
+                    log.debug(`[%s][STDERR]: %s`, this.name, data);
                 });
             });
         }
