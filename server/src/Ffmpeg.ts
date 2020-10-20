@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-regexp-exec */
 import * as child_process from 'child_process';
 import * as process from 'process';
 import * as stream from 'stream';
