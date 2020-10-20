@@ -1,3 +1,5 @@
+import {assertNonNull} from "../common/util/Assertion";
+
 export type AudioCodec = 'aac' | 'opus';
 export type VideoCodec = 'h264' | 'h265' | 'vp8' | 'vp9' | 'av1';
 
@@ -96,4 +98,29 @@ export interface Config {
         // List of video angle sources (as RTSP streams).
         sources: string[]
     }
+}
+
+export function substituteManifestPattern(pattern: string, index?: number): string {
+    let result = pattern;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
+        const match = result.match('[{]([0-9]+)[}]');
+        if (match == null) {
+            break;
+        }
+
+        assertNonNull(match);
+        assertNonNull(match.index);
+
+        const startIdx = match.index;
+        const endIdx = match.index + match[0].length;
+        const numDigits = parseInt(match[1]);
+
+        const replacement = (index === undefined) ?
+            ('[0-9]{' + numDigits + ',}') : index.toString().padStart(numDigits, '0');
+        result = result.substr(0, startIdx) + replacement + result.substr(endIdx);
+    }
+    return result;
 }

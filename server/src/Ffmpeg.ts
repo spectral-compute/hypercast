@@ -4,7 +4,7 @@ import * as process from 'process';
 import * as stream from 'stream';
 import {Logger} from "winston";
 import {getLogger} from "../common/LoggerConfig";
-import {AudioConfig, CodecOptions, Config, VideoConfig} from "./Config";
+import {AudioConfig, CodecOptions, Config, substituteManifestPattern, VideoConfig} from "./Config";
 import {ChildProcess} from "child_process";
 
 export const log: Logger = getLogger("Ffmpeg");
@@ -501,7 +501,8 @@ export namespace ffmpeg {
     }
 
     /* Run ffmpeg to transcode from external input to DASH in one go. */
-    export function launchTranscoder(name: string, config: Config, source: string): Subprocess {
+    export function launchTranscoder(angle: number, config: Config, source: string): Subprocess {
+        const name = `Cam ${angle + 1}`;  // Human friendly camera label.
         const videoConfigs = config.video.configs;
         const audioConfigs = config.audio.configs;
 
@@ -543,7 +544,7 @@ export namespace ffmpeg {
                 config.dash.targetLatency,
                 audioConfigs.length != 0,
                 config.network.port,
-                config.dash.manifest
+                substituteManifestPattern(config.dash.manifest, angle)
             )
         ];
 

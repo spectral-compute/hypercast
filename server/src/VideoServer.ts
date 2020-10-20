@@ -5,7 +5,7 @@ import {WebServerProcess} from "../common/WebServerNode";
 import http from "http";
 import {loadConfig} from "../common/Config";
 import {assertType} from "@ckitching/typescript-is";
-import {Config} from "./Config";
+import {Config, substituteManifestPattern} from "./Config";
 import {ServerFileStore} from "./ServerFileStore";
 import {StatusCodes as HttpStatus} from "http-status-codes";
 import {assertNonNull} from "../common/util/Assertion";
@@ -38,30 +38,6 @@ class EdgeInfo {
 
     nearEdgePath: string;
     nearEdgeTime: number;
-}
-
-function substituteManifestPattern(pattern: string, index?: number): string {
-    let result = pattern;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const match = result.match('[{]([0-9]+)[}]');
-        if (match == null) {
-            break;
-        }
-
-        assertNonNull(match);
-        assertNonNull(match.index);
-
-        const startIdx = match.index;
-        const endIdx = match.index + match[0].length;
-        const numDigits = parseInt(match[1]);
-
-        const replacement = (index === undefined) ?
-            ('[0-9]{' + numDigits + ',}') : index.toString().padStart(numDigits, '0');
-        result = result.substr(0, startIdx) + replacement + result.substr(endIdx);
-    }
-    return result;
 }
 
 export class VideoServer extends WebServerProcess {
@@ -431,7 +407,7 @@ export class VideoServer extends WebServerProcess {
     public async startStreaming() {
         log.info("Building ffmpeg processes...");
         this.ffmpegProcesses = this.config.video.sources.map((source: string, i: number) => {
-            return ffmpeg.launchTranscoder(`Cam ${i + 1}`, this.config, source);
+            return ffmpeg.launchTranscoder(i, this.config, source);
         });
 
         log.info("Launching ffmpeg processes...");
