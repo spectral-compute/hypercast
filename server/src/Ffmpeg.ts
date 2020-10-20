@@ -164,7 +164,7 @@ function getFilteringArgs(videoConfigs: VideoConfig[]): string[] {
 
 /* Get encoder arguments for a given set of codec configurations.. */
 function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[], codecOptions: CodecOptions,
-                       fragmentDuration: number): string[] {
+                       gopDuration: number): string[] {
     let args: string[] = [];
 
     /* Add common arguments. */
@@ -195,7 +195,7 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
             '-b:v:' + index, config.bitrate + 'k',
 
             // GOP size.
-            '-g:v:' + index, '' + Math.round((fragmentDuration * config.framerateNumerator) /
+            '-g:v:' + index, '' + Math.round((gopDuration * config.framerateNumerator) /
                 (config.framerateDenominator * 1000))
         ]);
 
@@ -506,9 +506,6 @@ export namespace ffmpeg {
         const videoConfigs = config.video.configs;
         const audioConfigs = config.audio.configs;
 
-        // TODO: Suspect?
-        const fragmentDuration = config.dash.gop;
-
         let args = [
             // Inputs
             ...getExternalSourceArgs(source),
@@ -536,7 +533,7 @@ export namespace ffmpeg {
             ...args,
 
             // Encoder arguments.
-            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig, fragmentDuration),
+            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig, config.dash.gop),
 
             // Output arguments.
             ...getDashOutputArgs(
