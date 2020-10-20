@@ -20,8 +20,8 @@ const inputArgs = [
     '-thread_queue_size', '0'
 ];
 
-const pipeInputArgs = inputArgs.concat(['-blocksize', '' + pipeSize]);
-const rtspInputArgs = inputArgs.concat(['-rtsp_transport', 'tcp']);
+const pipeInputArgs = [...inputArgs, '-blocksize', '' + pipeSize];
+const rtspInputArgs = [...inputArgs, '-rtsp_transport', 'tcp'];
 
 const outputArgs = [
     // Low latency options.
