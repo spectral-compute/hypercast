@@ -12,7 +12,19 @@ export const log: Logger = getLogger("Ffmpeg");
 const pipeSize = 1024; // Buffer size for pipes that ffmpeg uses to communicate.
 const minimalDuration = 10000; // A minimal duration for muxing parameters in microseconds.
 
-// Common arguments/
+// Global arguments to put before everything else. These are process-global, and are for things like loglevel config.
+const globalArgs = [
+    // Don't print "Last message repeated n times", just print the message n times. Makes the results in graylog more
+    // helpful. (`repeat`).
+    // Prefix every message with its loglevel, so we know how to shut it up (`level`).
+    // Set the loglevel to `info`.
+    '-loglevel', 'repeat+level+info',
+
+    // Stop ffmpeg from listening to stdin (which it does by default even if stdin isn't actually connected...).
+    '-nostdin'
+];
+
+// Arguments that apply to input streams.
 const inputArgs = [
     '-avioflags', 'direct',
     '-fflags', 'nobuffer',
@@ -115,17 +127,17 @@ const audioCodecArgs: any = {};
 
 /* Add external audio and video reading. */
 function getExternalSourceArgs(src: string): string[] {
-    let args: string[];
+    let args: string[] = globalArgs;
 
     if (src.startsWith('pipe:')) {
-        args = pipeInputArgs;
+        args = [...args, ...pipeInputArgs];
     } else if (src.startsWith('rtsp://')) {
-        args = rtspInputArgs;
+        args = [...args, ...rtspInputArgs];
     } else {
-        args = inputArgs;
+        args = [...args, ...inputArgs];
     }
 
-    args = args.concat(['-i', src]);
+    args = [...args, '-i', src];
 
     return args;
 }
