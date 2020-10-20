@@ -280,6 +280,17 @@ function getDashOutputArgs(segmentDuration: number, targetLatency: number, hasAu
     return args;
 }
 
+// A parsed Ffmpeg stats line.
+// interface FfmpegStats {
+//     frame: number;
+//     fps: number;
+//     q: number;
+//     time: string;
+//     dup: number;
+//     drop: number;
+//     speed: number;
+// }
+
 export namespace ffmpeg {
     import Timeout = NodeJS.Timeout;
 
@@ -292,6 +303,8 @@ export namespace ffmpeg {
         // Are we currently in the process of trying to quit?
         private stopping: boolean = false;
 
+        private readonly log: Logger;
+
         public async start(): Promise<void> {
             return new Promise((resolve, reject) => {
                 // Launch the process.
@@ -302,9 +315,9 @@ export namespace ffmpeg {
 
                 this.process.on('exit', (code: number | undefined, signal: string | undefined): void => {
                     if (code !== undefined) {
-                        log.info(`[${this.name}] Exited with status code ${code}`);
+                        this.log.info(`[${this.name}] Exited with status code ${code}`);
                     } else {
-                        log.info(`[${this.name}] Terminated due to signal ${signal}`);
+                        this.log.info(`[${this.name}] Terminated due to signal ${signal}`);
                     }
 
                     if (!this.stopping) {
@@ -323,7 +336,7 @@ export namespace ffmpeg {
                         ('"' + arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') : arg);
                 });
 
-                log.debug(`[%s] Spawning FFmpeg Command:\n%s`, this.name, argsString);
+                this.log.debug(`Spawning FFmpeg Command:\n%s`, argsString);
 
                 this.process.stdout!.once('data', () => {
                     // This presumably means it's alive...
@@ -331,13 +344,107 @@ export namespace ffmpeg {
                 });
 
                 // Hand ffmpeg's output to the logging system, if it wants it.
-                this.process.stdout!.on('data', (data: string) => {
-                    log.debug(`[%s][STDOUT]: %s`, this.name, data);
+                this.process.stdout!.on('data', (data: string | Buffer) => {
+                    this.printFfmpegLog(data.toString());
                 });
-                this.process.stderr!.on('data', (data: string) => {
-                    log.debug(`[%s][STDERR]: %s`, this.name, data);
+                this.process.stderr!.on('data', (data: string | Buffer) => {
+                    this.handleStderr(data.toString());
                 });
             });
+        }
+
+        // Map ffmpeg log-lines to the right log-level in our infrastructure.
+        private printFfmpegLog(line: string) {
+            // Parse the loglevel from the start of the line. If it's not there, assume something weird is going on and
+            // just emit it at level `warn`.
+            if (!line.startsWith('[')) {
+                this.log.warn(line);
+                return;
+            }
+
+            const lines = line.split('\n');
+            let currentLevel = "";
+            let currentDocument = "";
+
+            const emitDocument = () => {
+                currentDocument = currentDocument.replace(/\s+$/, '');
+                if (!currentDocument) {
+                    return;
+                }
+
+                switch (currentLevel) {
+                    case 'panic':
+                    case 'fatal':
+                    case 'error':
+                        this.log.error(currentDocument);
+                        break;
+                    case 'warning':
+                        this.log.warn(currentDocument);
+                        break;
+                    case 'info':
+                        this.log.info(currentDocument);
+                        break;
+                    case 'verbose':
+                    case 'debug':
+                    case 'trace':
+                        this.log.debug(currentDocument);
+                        break;
+                    default:
+                        this.log.warn(currentDocument);
+                }
+            };
+
+            for (const line of lines) {
+                // Fully-blank lines just get appended.
+                if (line.match(/^\s*$/)) {
+                    currentDocument += '\n';
+                    continue;
+                }
+
+                const match = line.match(/^\s*\[([^\]]+)\](?:\s\[([^\]]+)\])?/);
+
+                // Sometimes there's another thing in brackets first.
+                const loglevel = !match ? 'warning' : (match[2] ?? match[1] ?? 'warning');
+                if (loglevel != currentLevel) {
+                    emitDocument();
+
+                    currentLevel = loglevel;
+                    currentDocument = "";
+                }
+
+                // console.log("line: " + line);
+                // console.log("loglevel: " + loglevel);
+                const payload = line.replace(`[${loglevel}] `, "");
+                currentDocument += payload + "\n";
+            }
+
+            emitDocument();
+        }
+
+        private handleStderr(line: string) {
+            // If it's one of the stats lines that come out every second, digest it. Otherwise, print it.
+            if (line.slice(0, 25).includes(' frame=')) {
+                // Do something with this, if you want. :D
+                // const stats = Object.fromEntries(
+                //     line.replaceAll(/=\s+/g, '=')
+                //         .split(' ')
+                //         .filter((p) => p.length > 0 && !p.endsWith('N/A'))
+                //         .slice(1, -1)
+                //         .map((s) => s.split('='))
+                // );
+                //
+                // // Sort out the numeric fields.
+                // stats.frame = Number(stats.frame);
+                // stats.fps = Number(stats.fps);
+                // stats.q = Number(stats.q);
+                // stats.drop = Number(stats.drop);
+                // stats.dup = Number(stats.dup);
+                // stats.speed = Number(stats.speed.slice(0, -1));
+                // const parsedStats = stats as FfmpegStats;
+                // console.log(parsedStats);
+            } else {
+                this.printFfmpegLog(line);
+            }
         }
 
         /**
@@ -387,7 +494,9 @@ export namespace ffmpeg {
         }
 
         constructor(private readonly name: string,
-                    private readonly args: string[]) {}
+                    private readonly args: string[]) {
+            this.log =  getLogger("Ffmpeg_" + name);
+        }
     }
 
     /* Run ffmpeg to transcode from external input to DASH in one go. */
