@@ -186,7 +186,8 @@ export class VideoServer extends WebServerProcess {
                 // pre-available yet.
                 liveness = Liveness.farEdge;
                 const timeSinceNearEdgeAdded = now - this.farEdgePaths.get(path)!.nearEdgeTime;
-                const preAvailabilityDelay = this.config.dash.segmentDuration - this.config.network.preAvailabilityTime;
+                const preAvailabilityDelay =
+                    (this.config.dash.segmentDuration * 1000) - this.config.network.preAvailabilityTime;
                 timeToFarEdgePreavailability = preAvailabilityDelay - timeSinceNearEdgeAdded;
             } else if (this.ephemeralPaths.test(path)) {
                 liveness = Liveness.ephemeral;
