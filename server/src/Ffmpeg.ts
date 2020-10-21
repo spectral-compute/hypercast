@@ -164,7 +164,7 @@ function getFilteringArgs(videoConfigs: VideoConfig[]): string[] {
 
 /* Get encoder arguments for a given set of codec configurations.. */
 function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[], codecOptions: CodecOptions,
-                       gopDuration: number): string[] {
+                       gopDuration: number, rateControlBufferLength: number): string[] {
     let args: string[] = [];
 
     /* Add common arguments. */
@@ -191,8 +191,14 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
             // Codec.
             '-c:v:' + index, config.codec,
 
-            // Bitrate.
-            '-b:v:' + index, config.bitrate + 'k',
+            // Constant rate factor.
+            '-crf:v:' + index, '' + config.crf,
+
+            // Maximum bitrate.
+            ((config.codec == 'h264' || config.codec == 'h265') ? '-maxrate' : '-b') + ':v:' + index, config.bitrate + 'k',
+
+            // Rate control buffer size. Used to impose the maximum bitrate.
+            '-bufsize:v:' + index, (config.bitrate * rateControlBufferLength / 1000) + 'k',
 
             // GOP size.
             '-g:v:' + index, '' + Math.round((gopDuration * config.framerateNumerator) /
@@ -533,7 +539,8 @@ export namespace ffmpeg {
             ...args,
 
             // Encoder arguments.
-            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig, config.dash.gop),
+            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig, config.dash.gop,
+                             config.dash.rateControlBufferLength),
 
             // Output arguments.
             ...getDashOutputArgs(

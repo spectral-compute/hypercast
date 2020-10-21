@@ -12,8 +12,12 @@ export interface AudioConfig {
 }
 
 export interface VideoConfig {
-    // The bitrate in kBit/s for this video stream.
+    // The bitrate limit in kBit/s for this video stream.
     bitrate: number,
+
+    // Constant rate factor. For h264, see this guide: https://trac.ffmpeg.org/wiki/Encode/H.264#crf. Other codecs have
+    // different CRF characteristics.
+    crf: number,
 
     // The codec for this video stream.
     codec: VideoCodec
@@ -52,6 +56,9 @@ export interface Config {
     dash: {
         // Group of pictures duration in milliseconds (distance between keyframes).
         gop: number,
+
+        // Rate control buffer length in milliseconds.
+        rateControlBufferLength: number,
 
         // Manifest path pattern. {N} is replaced by the angle number, with N digits.
         manifest: string,
