@@ -189,7 +189,7 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
     videoConfigs.forEach((config: VideoConfig, index: number): void => {
         args = args.concat([
             // Codec.
-            '-c:v:' + index, config.codec,
+            '-c:v:' + index, (config.codec == 'h265') ? 'hevc' : config.codec,
 
             // Constant rate factor.
             '-crf:v:' + index, '' + config.crf,
