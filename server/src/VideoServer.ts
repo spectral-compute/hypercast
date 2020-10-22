@@ -96,7 +96,7 @@ export class VideoServer extends WebServerProcess {
         this.notFoundCacheTimes.set(Liveness.live, Math.max(Math.round((segmentDurationInSeconds - this.config.network.preAvailabilityTime) / 1000), 1));
 
         if (this.notFoundCacheTimes.get(Liveness.live) == 0) {
-            log.warning('Warning: Caching of 404s for paths that may become live is disabled. Consider increasing pre-availability time.');
+            log.warn('Warning: Caching of 404s for paths that may become live is disabled. Consider increasing pre-availability time.');
         }
 
         log.debug("Cache times:");
