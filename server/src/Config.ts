@@ -39,7 +39,7 @@ export interface CodecOptions {
     vp8Speed: number,
 
     // The speed ([0-15]) for vp9.
-    vp9Speed: number
+    vp9Speed: number,
 
     // The preset for h264.
     h264Preset: string,
