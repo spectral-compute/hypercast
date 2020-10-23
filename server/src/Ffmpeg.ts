@@ -202,7 +202,8 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
             '-bufsize:v:' + index, (config.bitrate * rateControlBufferLength / 1000) + 'k',
 
             // GOP size.
-            '-g:v:' + index, '' + config.gop
+            '-g:v:' + index, '' + config.gop,
+            '-force_key_frames:v:' + index, `expr:eq(mod(n, ${config.gop}), 0)`
         ]);
 
         // Special codec-specific options.
