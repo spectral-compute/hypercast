@@ -60,6 +60,7 @@ const dashArgs = [
     // DASH segment configuration.
     '-dash_segment_type', 'mp4',
     '-single_file', '0',
+    '-media_seg_name', 'chunk-stream$RepresentationID$-$Number%09d$.$ext$',
     '-format_options', 'movflags=cmaf',
     '-frag_type', 'duration',
     '-frag_duration', '' + (minimalDuration / 1000000),
