@@ -202,10 +202,7 @@ export class VideoServer extends WebServerProcess {
             } else if (liveness == Liveness.farEdge) {
                 requestInfoString += ` (pre-available in ${timeToFarEdgePreavailability} ms)`;
             }
-
-            if (request.method == 'HEAD' || request.method == 'GET') {
-                log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
-            }
+            log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
 
             request.on('error', (e): void => {
                 log.error('Error in request `$s`: %O', requestInfoString, e);
