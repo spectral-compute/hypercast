@@ -107,13 +107,13 @@ export class VideoServer extends WebServerProcess {
             log.debug(`  404 ${Liveness[key]}: ${value}`);
         });
 
-        const manifestPattern = '^' + substituteManifestPattern(this.config.dash.manifest) + '$';
+        const manifestPattern = substituteManifestPattern(this.config.dash.manifest);
         const livePattern = manifestPattern.replace(/[^/]*$/, ''); // Manifest path up to and including the last '/'.
         const edgePattern = '(?<=' + livePattern + '.*-)[0-9]+(?=[.][^.]+$)'; // The end matches '-012345.xyz'.
 
         this.livePaths = new RegExp(livePattern);
         this.edgePaths = new RegExp(edgePattern);
-        this.ephemeralPaths = new RegExp(manifestPattern);
+        this.ephemeralPaths = new RegExp('^(?:(?:' + manifestPattern + ')|(?:' + this.config.serverInfo.live + '))$');
 
         this.writeServerInfo();
 
