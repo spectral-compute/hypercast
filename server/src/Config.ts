@@ -120,7 +120,7 @@ export interface Config {
 }
 
 export function substituteManifestPattern(pattern: string, index?: number): string {
-    let result = pattern.replaceAll('{unix}', '' + Math.round(Date.now() / 1000));
+    let result = pattern.replace(/{unix}/g, '' + Math.round(Date.now() / 1000));
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
