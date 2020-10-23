@@ -26,6 +26,15 @@ export interface VideoConfig {
     framerateNumerator: number,
     framerateDenominator: number,
 
+    // Group of pictures size in frames. The segment duration is computed so that it is a minimal integer multiple of
+    // GOPs for each stream, multiplied by the dash.segmentLengthMultiplier configuration option. Because of this lowest
+    // common multiple behaviour, care must be taken to set the GOPs so that the segment duration is reasonable. It is
+    // recommended that the GOP be chosen so that gop * framerateDenominator * 1000000 / framerateNumerator can be
+    // represented exactly as an integer, as DASH represents durations in integer microseconds. Segments that are not a
+    // multiple of the GOP size end up varying in size by the GOP size, and this causes problems for clients'
+    // calculation of the segment index.
+    gop: number,
+
     // The resolution for this next video stream
     width: number;
     height: number;
@@ -54,8 +63,10 @@ export interface Config {
         configs: AudioConfig[]
     },
     dash: {
-        // Group of pictures duration in milliseconds (distance between keyframes).
-        gop: number,
+        // Multiply the segment length inferred from the GOP size by this amount. This should be an integer to avoid
+        // segment length variations. It is recommended that the segments be approximately 8-16 seconds in duration. It
+        // can be found in the ffmpeg command as the `-seg_duration` value.
+        segmentLengthMultiplier: number,
 
         // Rate control buffer length in milliseconds.
         rateControlBufferLength: number,

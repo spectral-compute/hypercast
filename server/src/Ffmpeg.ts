@@ -164,7 +164,7 @@ function getFilteringArgs(videoConfigs: VideoConfig[]): string[] {
 
 /* Get encoder arguments for a given set of codec configurations.. */
 function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[], codecOptions: CodecOptions,
-                       gopDuration: number, rateControlBufferLength: number): string[] {
+                       rateControlBufferLength: number): string[] {
     let args: string[] = [];
 
     /* Add common arguments. */
@@ -201,8 +201,7 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
             '-bufsize:v:' + index, (config.bitrate * rateControlBufferLength / 1000) + 'k',
 
             // GOP size.
-            '-g:v:' + index, '' + Math.round((gopDuration * config.framerateNumerator) /
-                (config.framerateDenominator * 1000))
+            '-g:v:' + index, '' + config.gop
         ]);
 
         // Special codec-specific options.
@@ -262,11 +261,44 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
 }
 
 /* Get DASH output arguments. */
-function getDashOutputArgs(segmentDuration: number, targetLatency: number, hasAudio: boolean,
-                           port: number, manifest: string): string[] {
+function getDashOutputArgs(segmentLengthMultiplier: number, videoConfigs: VideoConfig[], targetLatency: number,
+                           hasAudio: boolean, port: number, manifest: string): string[] {
+    /* Compute the segment duration. */
+    // Some utility functions.
+    const gcd = (a: number, b: number): number => {
+        if (b == 0) {
+            return a;
+        }
+        return gcd(b, a % b); // Yay for Euclid's algorithm.
+    };
+    const lcm = (a: number, b: number): number => {
+        return (a * b) / gcd(a, b);
+    };
+
+    // Figure out a common time-base. The fraction we're computing is a duration. But we're computing it based on frame
+    // rates, which are a reciprocal time period.
+    let commonGopPeriodDenominator = 1;
+    for (const config of videoConfigs) {
+        commonGopPeriodDenominator = lcm(commonGopPeriodDenominator, config.framerateNumerator);
+    }
+
+    // Figure out the time, in the common time-base, that is the smallest integer multiple of every GOP.
+    let commonGopPeriodNumerator = 1;
+    for (const config of videoConfigs) {
+        const configGopPeriodNumerator =
+            config.framerateDenominator * commonGopPeriodDenominator / config.framerateNumerator;
+        commonGopPeriodNumerator = lcm(configGopPeriodNumerator * config.gop, commonGopPeriodNumerator);
+    }
+
+    // Multiply that by the segment length multiplier.
+    commonGopPeriodNumerator *= segmentLengthMultiplier;
+    const simplify = gcd(commonGopPeriodNumerator, commonGopPeriodDenominator);
+    commonGopPeriodNumerator /= simplify;
+    commonGopPeriodDenominator /= simplify;
+
     /* Specific arguments we receive in the constructor. */
     let args = [
-        '-seg_duration', '' + segmentDuration,
+        '-seg_duration', '' + (commonGopPeriodNumerator / commonGopPeriodDenominator),
         '-target_latency', '' + (targetLatency / 1000)
     ];
 
@@ -539,12 +571,13 @@ export namespace ffmpeg {
             ...args,
 
             // Encoder arguments.
-            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig, config.dash.gop,
+            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig,
                              config.dash.rateControlBufferLength),
 
             // Output arguments.
             ...getDashOutputArgs(
-                config.dash.segmentDuration,
+                config.dash.segmentLengthMultiplier,
+                config.video.configs,
                 config.dash.targetLatency,
                 audioConfigs.length != 0,
                 config.network.port,
