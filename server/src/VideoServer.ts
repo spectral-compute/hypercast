@@ -182,7 +182,7 @@ export class VideoServer extends WebServerProcess {
 
         const manifestPattern = substituteManifestPattern(this.config.dash.manifest, this.uniqueID);
         const livePattern = manifestPattern.replace(/[^/]*$/, ''); // Manifest path up to and including the last '/'.
-        const edgePattern = '(?<=' + livePattern + '.*-)[0-9]+(?=[.][^.]+$)'; // The end matches '-012345.xyz'.
+        const edgePattern = '(?<=' + livePattern + '.*-)[0-9]+(?=(?:[.][^.]+)?$)'; // The end matches '-012345.xyz' or '-012345'.
 
         this.livePaths = new RegExp(livePattern);
         this.edgePaths = new RegExp(edgePattern);
@@ -214,6 +214,7 @@ export class VideoServer extends WebServerProcess {
         this.registerStartupJob("Write server info", async() => {
             this.loadCacheConfiguration();
             this.writeServerInfo();
+            this.addInterleavePatterns();
         });
 
         // Aggressively reconfigure the cameras on every startup in production.
@@ -297,6 +298,26 @@ export class VideoServer extends WebServerProcess {
     }
 
     /**
+     * Returns a map from video quality to the corresponding interleaved audio quality.
+     *
+     * Video qualities without audio are not included in the map.
+     */
+    private getAudioVideoMap(): [number, number][] {
+        if (!this.config.dash.interleave) {
+            return [];
+        }
+
+        const videoConfigCount = this.config.video.configs.length;
+        const audioConfigCount = this.config.audio.configs.length;
+
+        const result = new Array<[number, number]>();
+        for (let i = 0; i < videoConfigCount && i < audioConfigCount; i++) {
+            result.push([i, i + videoConfigCount]);
+        }
+        return result;
+    }
+
+    /**
      * Write some configuration metadata to the virtual filesystem, so clients can ask how many cameras we have.
      */
     private writeServerInfo() {
@@ -312,10 +333,34 @@ export class VideoServer extends WebServerProcess {
         sf.add(Buffer.from(JSON.stringify({
             angles: manifests,
             segmentDuration: this.segmentDuration,
-            segmentPreavailability: this.config.network.preAvailabilityTime
+            segmentPreavailability: this.config.network.preAvailabilityTime,
+            avMap: this.getAudioVideoMap()
         })));
 
         sf.finish();
+    }
+
+    /**
+     * Set up file interleaving.
+     */
+    private addInterleavePatterns(): void {
+        const avMap = this.getAudioVideoMap();
+
+        for (let index = 0; index < this.config.video.sources.length; index++) {
+            // Manifest path up to and including the last '/'.
+            const livePrefix = substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).replace(/[^/]*$/, '');
+
+            for (const va of avMap) {
+                const videoRegex = new RegExp(`${livePrefix}chunk-stream${va[0]}-([0-9]+).[^.]+`);
+                const audioRegex = new RegExp(`${livePrefix}chunk-stream${va[1]}-([0-9]+).[^.]+`);
+                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`, [videoRegex, audioRegex]);
+
+                if (!this.config.dash.interleavedDirectDashSegments) {
+                    this.forbiddenPaths.push(videoRegex);
+                    this.forbiddenPaths.push(audioRegex);
+                }
+            }
+        }
     }
 
     // Add the cache-control header appropriate for the liveness.

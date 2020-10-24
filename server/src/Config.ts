@@ -120,6 +120,15 @@ export interface Config {
         // The limit, in ms, of how far segment start times are allowed to drift before the server terminates itself.
         // Set to zero to disable.
         terminateDriftLimit: number
+
+        // Whether or not to interleave the audio and video streams. This helps evict audio data from the CDN buffer.
+        interleave: boolean
+
+        // Whether or not to allow direct access to dash segments that are interleaved. This should be false for the
+        // production server so that it doesn't have to upload video twice. This also helps the client switch audio and
+        // video at the same time, without accidentally downloading mismatched audio and video segments (and therefore
+        // two video streams). It is useful to be able to set this to true for development and testing.
+        interleavedDirectDashSegments: boolean;
     },
     network: {
         // Time to cache responses to non-live paths.
