@@ -115,6 +115,9 @@ export class VideoServer extends WebServerProcess {
     // The set of files this server will respond to GET requests for. This is an in-memory cache.
     private readonly serverFileStore = new ServerFileStore();
 
+    // Paths that are forbidden for client access.
+    private readonly forbiddenPaths = new Array<RegExp>();
+
     // How long should the CDN cache responses to GET requests that were satisfied by the `serverFileStore`, for each liveness level.
     private readonly foundCacheTimes = new Map<Liveness, number>();
 
@@ -464,6 +467,18 @@ export class VideoServer extends WebServerProcess {
             });
         };
 
+        /* See whether the request is for a banned URL. */
+        for (const regex of this.forbiddenPaths) {
+            if (!regex.test(request.url)) {
+                continue;
+            }
+            response.statusCode = HttpStatus.FORBIDDEN;
+            this.addCacheControl(response, Liveness.none, false);
+            response.end();
+            return;
+        }
+
+        /* Try to find the requested path. */
         if (this.serverFileStore.has(request.url)) {
             doHead();
             if (!isHead) {
