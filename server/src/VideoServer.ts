@@ -32,13 +32,40 @@ enum Liveness {
 }
 
 class EdgeInfo {
-    constructor(nearEdge: string) {
+    constructor(nearEdgeIndex: number, nearEdge: string, initialIndex: number, initialTime: number = -1) {
+        this.nearEdgeIndex = nearEdgeIndex;
         this.nearEdgePath = nearEdge;
         this.nearEdgeTime = Date.now();
+        this.initialIndex = initialIndex;
+        this.initialTime = (initialTime < 0) ? this.nearEdgeTime : initialTime;
     }
 
+    /**
+     * Returns the difference between now, and when the far edge is expected to be uploaded, in ms.
+     *
+     * Late gives positive numbers, and early gives negative numbers.
+     */
+    getFarEdgeDrift(segmentDuration: [number, number]): number {
+        const segmentsSinceStart = this.nearEdgeIndex + 1 - this.initialIndex;
+        return Date.now() - ((segmentsSinceStart * segmentDuration[0] * 1000 / segmentDuration[1]) + this.initialTime);
+    }
+
+    /**
+     * Determine whether the initial segment used for drift calculation is the final choice of initial segment.
+     *
+     * The first segment can arrive a bit late. So we let the second segment set the canonical start time. This could
+     * actually wait for the third index if starting from zero, but that's OK.
+     */
+    isFinalInitial(): boolean {
+        return this.initialIndex >= 2;
+    }
+
+    nearEdgeIndex: number;
     nearEdgePath: string;
     nearEdgeTime: number;
+
+    initialIndex: number;
+    initialTime: number;
 }
 
 export class VideoServer extends WebServerProcess {
@@ -283,6 +310,7 @@ export class VideoServer extends WebServerProcess {
             const now = Date.now();
             let liveness: Liveness = Liveness.none;
             let timeToFarEdgePreavailability = 0;
+            let farEdgeDrift = 0;
             if (this.nearEdgePaths.has(path)) {
                 liveness = Liveness.nearEdge;
             } else if (this.farEdgePaths.has(path)) {
@@ -292,6 +320,12 @@ export class VideoServer extends WebServerProcess {
                 const timeSinceNearEdgeAdded = now - this.farEdgePaths.get(path)!.nearEdgeTime;
                 const preAvailabilityDelay = this.segmentDuration - this.config.network.preAvailabilityTime;
                 timeToFarEdgePreavailability = preAvailabilityDelay - timeSinceNearEdgeAdded;
+                if (request.method == 'PUT') {
+                    farEdgeDrift = this.farEdgePaths.get(path)!.getFarEdgeDrift(this.segmentDurationExact);
+                    if (this.farEdgePaths.get(path)!.isFinalInitial() && this.config.dash.terminateDriftLimit != 0 && Math.abs(farEdgeDrift) > this.config.dash.terminateDriftLimit) {
+                        this.fatalError(`Live edge drifted too far (${farEdgeDrift} ms)!`);
+                    }
+                }
             } else if (this.ephemeralPaths.test(path)) {
                 liveness = Liveness.ephemeral;
             } else if (this.livePaths.test(path)) {
@@ -304,6 +338,9 @@ export class VideoServer extends WebServerProcess {
                 requestInfoString += ` (live for ${now - this.nearEdgePaths.get(path)!} ms)`;
             } else if (liveness == Liveness.farEdge) {
                 requestInfoString += ` (pre-available in ${timeToFarEdgePreavailability} ms)`;
+                if (request.method == 'PUT') {
+                    requestInfoString += ` (drift: ${farEdgeDrift} ms)`;
+                }
             }
             log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
 
@@ -467,7 +504,10 @@ export class VideoServer extends WebServerProcess {
 
     private onFileStoreAdd(path: string): void {
         // Handle edge paths.
+        let farEdgeInfo: EdgeInfo | null = null;
         if (this.farEdgePaths.has(path)) {
+            farEdgeInfo = this.farEdgePaths.get(path)!;
+
             // Whatever else can be said, this path is no longer a far-edge. The predecessor for this path is no longer
             // the near edge either.
             this.nearEdgePaths.delete(this.farEdgePaths.get(path)!.nearEdgePath);
@@ -492,7 +532,19 @@ export class VideoServer extends WebServerProcess {
             const nextPath = prefix + nextIndexString + suffix;
 
             // Add the next path as a far edge once this segment has existed for long enough.
-            const edgeInfo = new EdgeInfo(path);
+            let edgeInfo: EdgeInfo;
+            if (farEdgeInfo) {
+                if (!farEdgeInfo.isFinalInitial()) {
+                    edgeInfo = new EdgeInfo(index, path, index); // Not final initial (i.e: reference) segment yet.
+                } else {
+                    edgeInfo = new EdgeInfo(index, path, farEdgeInfo.initialIndex, farEdgeInfo.initialTime);
+                }
+            } else {
+                if (index != 0 && index != 1) {
+                    this.fatalError(`Live-edge path ${path} added that is neither a starting index nor from the far edge!`);
+                }
+                edgeInfo = new EdgeInfo(index, path, index);
+            }
             this.farEdgePaths.set(nextPath, edgeInfo);
 
             // Add this path as a near edge.
@@ -503,6 +555,11 @@ export class VideoServer extends WebServerProcess {
     private onFileStoreRemove(path: string): void {
         this.nearEdgePaths.delete(path);
         this.farEdgePaths.delete(path);
+    }
+
+    private fatalError(msg: string): void {
+        log.error(msg);
+        void (this.stop()); // I don't see what else I'd do with this promise.
     }
 
     public async startStreaming() {

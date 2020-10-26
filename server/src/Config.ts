@@ -113,7 +113,11 @@ export interface Config {
         manifest: string,
 
         // Advertized target latency in milliseconds.
-        targetLatency: number
+        targetLatency: number,
+
+        // The limit, in ms, of how far segment start times are allowed to drift before the server terminates itself.
+        // Set to zero to disable.
+        terminateDriftLimit: number
     },
     network: {
         // Time to cache responses to non-live paths.
