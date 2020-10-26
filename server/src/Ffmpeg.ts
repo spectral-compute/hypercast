@@ -541,7 +541,7 @@ export namespace ffmpeg {
     }
 
     /* Run ffmpeg to transcode from external input to DASH in one go. */
-    export function launchTranscoder(angle: number, config: Config, source: string): Subprocess {
+    export function launchTranscoder(angle: number, config: Config, source: string, uniqueId: string): Subprocess {
         const name = `Cam ${angle + 1}`;  // Human friendly camera label.
         const videoConfigs = config.video.configs;
         const audioConfigs = config.audio.configs;
@@ -583,7 +583,7 @@ export namespace ffmpeg {
                 config.dash.targetLatency,
                 audioConfigs.length != 0,
                 config.network.port,
-                substituteManifestPattern(config.dash.manifest, angle)
+                substituteManifestPattern(config.dash.manifest, uniqueId, angle)
             )
         ];
 

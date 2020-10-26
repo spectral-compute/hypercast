@@ -71,8 +71,8 @@ export interface Config {
         // Rate control buffer length in milliseconds.
         rateControlBufferLength: number,
 
-        // Manifest path pattern. {N} is replaced by the angle number, with N digits. {unix} is replaced by a unix
-        // timestamp at the time the server starts up.
+        // Manifest path pattern. {N} is replaced by the angle number, with N digits. {uid} is replaced by a string that
+        // is unique to every server startup.
         manifest: string,
 
         // Segment duration in seconds.
@@ -119,8 +119,8 @@ export interface Config {
     }
 }
 
-export function substituteManifestPattern(pattern: string, index?: number): string {
-    let result = pattern.replace(/{unix}/g, '' + Math.round(Date.now() / 1000));
+export function substituteManifestPattern(pattern: string, uniqueId: string, index?: number): string {
+    let result = pattern.replace(/{uid}/g, uniqueId);
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
