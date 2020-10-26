@@ -1,268 +1,411 @@
-import * as manifest from './manifest.js';
+import * as bufferctrl from './bufferctrl.js';
 import * as stream from './stream.js';
-import * as util from './util.js';
 
-declare const segmentPreavailability: number;
-declare const manifestUrl: string;
-
-/* Schedules the download of segments. */
-class MediaDownloader {
-    constructor(representation: manifest.Representation, clock: util.SynchronizedClock,
-                callback: (s: ReadableStream) => void) {
-        this.callback = callback;
-        this.representation = representation;
-
-        /* Figure out where in the stream we are now. */
-        const [segmentIndex, offsetInSegment] = representation.getSegmentIndexAndOffsetForNow(clock);
-        console.log('Segment index: ' + segmentIndex + ', offset: ' + offsetInSegment + ' ms');
-
-        /* Calculate the time when the next segment becomes pre-available. */
-        let timeToNextDl = representation.duration - offsetInSegment - segmentPreavailability;
-
-        // If that time is in the past, then just start the whole process with the next segment.
-        if (timeToNextDl < 0) {
-            timeToNextDl += representation.duration;
-            this.currentIndex = segmentIndex + 1;
-        }
-        else {
-            this.currentIndex = segmentIndex;
+export class Player {
+    /**
+     * Start playing video.
+     *
+     * None of the other methods of this object are valid until this method has been called and the onStartPlaying event
+     * has fired.
+     *
+     * @param infoUrl The URL to the server's info JSON object.
+     * @param video The video tag to play video into.
+     * @param video The audio tag to play audio into. If null, the video tag will be used, but a separate audio tag
+     *              allows for better buffer control.
+     * @param onInit Called when initialization is done.
+     * @param verbose Whether or not to be verbose.
+     */
+    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement, onInit: () => void = null,
+                verbose: boolean = false) {
+        if (verbose) {
+            console.log('Start up at ' + new Date(Date.now()).toISOString());
         }
 
-        // Now figure out *when* the next download is.
-        this.nextDlTime = Date.now().valueOf() + timeToNextDl;
+        this.verbose = verbose;
+        this.video = video;
+        this.audio = audio;
 
-        /* set the downloads going! */
-        this.downloadScheduleCycle();
+        /* Asynchronous stuff. Start by fetching the video server info. */
+        fetch(infoUrl).then((response: Response) => {
+            return response.json();
+        }).then((serverInfo): void => {
+            /* Extract and parse the server info. */
+            this.serverInfo = serverInfo;
+            const urlPrefix = infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, '');
+
+            // Extract angle information.
+            for (const angle of this.serverInfo.angles) {
+                this.angleOptions.push(angle.name);
+                this.angleUrls.push(urlPrefix + angle.path);
+            }
+
+            // Extract quality information.
+            this.serverInfo.videoConfigs.forEach((value) => {
+                this.qualityOptions.push([value.width, value.height]);
+            });
+
+            /* Start muted. This helps prevent browsers from blocking the auto-play. */
+            video.muted = true;
+            if (audio) {
+                audio.muted = true;
+            }
+
+            /* Make sure the video is paused (no auto-play). */
+            video.pause();
+            if (audio) {
+                audio.pause();
+            }
+
+            /* Create the streamer. */
+            this.stream = new stream.MseWrapper(video, audio, this.serverInfo.segmentDuration,
+                                                this.serverInfo.segmentPreavailability);
+
+            /* Set up buffer control for the player. */
+            this.bctrl = new bufferctrl.BufferControl(video, audio ? [audio] : [], verbose);
+
+            /* Set up the "on new source playing" event handler. */
+            this.stream.onNewStreamStart = () => {
+                this.callOnStartPlaying(this.electiveChangeInProgress);
+                this.electiveChangeInProgress = false;
+            };
+
+            /* Set up stream downgrading. */
+            this.stream.onRecommendDowngrade = () => {
+                if (this.quality < this.qualityOptions.length - 1) {
+                    this.quality++; // Quality is actually reversed.
+                }
+                this.updateQualityAndAngle();
+            };
+
+            /* Set the quality to an initial default. */
+            this.updateQualityAndAngle();
+
+            /* Done :) */
+            if (onInit) {
+                onInit();
+            }
+        }).catch((): void => {
+            if (this.onError) {
+                this.onError('Error initializing player');
+            }
+        });
     }
 
+    /**
+     * Start playing video.
+     */
+    start(): void {
+        this.stream.start();
+        this.bctrl.start();
+
+        /* Verbose logging. */
+        if (!this.verbose) {
+            return;
+        }
+        this.verboseInterval = setInterval((): void => {
+            this.printVerboseInvervalInfo();
+        }, 1000);
+    }
+
+    /**
+     * Stop playing video.
+     *
+     * This resets the player back to the state it was in before start() was called.
+     */
     stop(): void {
-        this.nextDlTime = 0;
-        console.log('Download stopping...');
+        if (this.verboseInterval) {
+            clearInterval(this.verboseInterval);
+        }
+        this.stream.stop();
+        this.bctrl.stop();
+        clearInterval(this.verboseInterval);
     }
 
-    private downloadScheduleCycle(): void {
-        /* Do nothing if we've stopped. */
-        if (this.nextDlTime == 0) {
+    /**
+     * Get the live server info JSON object that set up this player.
+     */
+    getServerInfo() {
+        return this.serverInfo;
+    }
+
+    /**
+     * Get the list of possible angle settings.
+     *
+     * This can change whenever the onLoaded event fires.
+     *
+     * @return A list of angle names.
+     */
+    getAngleOptions(): Array<string> {
+        return this.angleOptions;
+    }
+
+    /**
+     * Get the index of the current angle.
+     *
+     * This can change whenever the onStartPlaying event fires. This is not valid between calls to setAngle() and the
+     * onStartPlaying firing.
+     *
+     * @return The index of the new angle to play. This indexes the options returned by getAngleOptions().
+     */
+    getAngle(): number {
+        return this.angle;
+    }
+
+    /**
+     * Change the angle.
+     *
+     * @param index The index of the new angle to play. This indexes the options returned by getAngleOptions().
+     */
+    setAngle(index: number): void {
+        if (index == this.angle) {
+            this.callOnStartPlaying(true);
             return;
         }
 
-        /* Download the current segment. */
-        fetch(this.representation.getSegmentUrl(this.currentIndex)).then((response: Response): void => {
-            this.callback(response.body);
-        });
-
-        /* Schedule the next segment. */
-        setTimeout((): void => {
-            this.downloadScheduleCycle();
-        }, Math.max(this.nextDlTime - Date.now().valueOf(), 1));
-
-        /* Prepare for when the timeout reaches zero. */
-        this.currentIndex++;
-        this.nextDlTime += this.representation.duration;
+        this.electiveChangeInProgress = true;
+        this.angle = index;
+        this.updateQualityAndAngle();
     }
 
-    private currentIndex: number;
-    private nextDlTime: number;
-    private callback: (s: ReadableStream) => void;
-    private representation: manifest.Representation;
-};
-
-/* A buffer class that wraps SourceBuffer and its event-driven system. */
-class MediaBuffer {
-    constructor (sourceBuffer: SourceBuffer) {
-        this.sourceBuffer = sourceBuffer;
-        this.sourceBuffer.onupdateend = (): void => {
-            if (this.sourceBuffer.updating || this.pendingBuffers.length == 0) {
-                return;
-            }
-
-            this.sourceBuffer.appendBuffer(this.pendingBuffers[0]);
-            this.pendingBuffers = this.pendingBuffers.slice(1);
-        };
+    /**
+     * Get the list of possible quality settings.
+     *
+     * This can change whenever the onStartPlaying event fires. This is not valid between calls to getAngle() and the
+     * onStartPlaying firing.
+     *
+     * @return A list of tuples of (width, height) describing each quality setting.
+     */
+    getQualityOptions(): Array<[number, number]> {
+        return this.qualityOptions;
     }
 
-    append(data: ArrayBuffer): void {
-        if (this.sourceBuffer.updating) {
-            this.pendingBuffers.push(data);
+    /**
+     * Get the index of the current quality.
+     *
+     * This can change whenever the onStartPlaying event fires. This is not valid between calls to setAngle() and
+     * setQuality(), and the onStartPlaying firing.
+     *
+     * @return The index of the playing quality. This indexes the options returned by getQualityOptions().
+     */
+    getQuality(): number {
+        return this.quality;
+    }
+
+    /**
+     * Change the playing quality setting.
+     *
+     * @param index The index of the new quality to play. This indexes the options returned by getQualityOptions().
+     */
+    setQuality(index: number) {
+        if (index == this.quality) {
+            this.callOnStartPlaying(true);
+            return;
         }
-        else if (this.pendingBuffers.length > 0) {
-            this.pendingBuffers.push(data);
-            this.sourceBuffer.appendBuffer(this.pendingBuffers[0]);
-            this.pendingBuffers = this.pendingBuffers.slice(1);
+
+        this.electiveChangeInProgress = true;
+        this.quality = index;
+        this.updateQualityAndAngle();
+    }
+
+    /**
+     * Get the list of possible latency settings.
+     *
+     * @return A list of strings describing each latency setting.
+     */
+    getLatencyOptions(): Array<string> {
+        return ['Up to 2s (more smooth)', 'Up to 1s (less smooth)'];
+    }
+
+    /**
+     * Determine whether or not user latency control is available.
+     *
+     * This can change whenever the onStartPlaying event fires.
+     *
+     * @return True if user latency control applies to the playing video, and false otherwise.
+     */
+    getLatencyAvailable(): boolean {
+        return this.quality < this.qualityOptions.length - 1;
+    }
+
+    /**
+     * Get the index of the current quality.
+     *
+     * @return The index of the current latency setting. This indexes the options returned by getLatencyOptions().
+     */
+    getLatency(): number {
+        return this.latency;
+    }
+
+    /**
+     * Change the playing quality setting.
+     *
+     * @param index The index of the new latency to use. This indexes the options returned by getLatencyOptions().
+     */
+    setLatency(index: number) {
+        this.latency = index;
+        this.updateLatency();
+    }
+
+    /**
+     * Determine whether or not the currently playing video has audio.
+     *
+     * This can change whenever the onStartPlaying event fires.
+     */
+    hasAudio(): boolean {
+        return this.audioStream !== null;
+    }
+
+    /**
+     * Determine whether or not the audio is muted.
+     *
+     * @return muted True if the audio is muted, and false otherwise.
+     */
+    getMuted(): boolean {
+        return this.stream.getMuted();
+    }
+
+    /**
+     * Sets whether or not the audio is muted.
+     *
+     * @param muted True if the audio should be muted, and false otherwise.
+     */
+    setMuted(muted: boolean) {
+        this.stream.setMuted(muted);
+    }
+
+    /**
+     * Called whenever the media source changes (i.e: change of quality or change of angle).
+     *
+     * Note that a call to setAngle() or setQuality() will always call this event to fire, even if no actual change
+     * occurred.
+     *
+     * @param elective Whether or not the change was requested by setAngle() or setQuality().
+     */
+    onStartPlaying: (elective: boolean) => void;
+
+    /**
+     * Called when an error occurs.
+     */
+    onError: (description: string) => void;
+
+    /**
+     * Convenience method for calling onStartPlaying only if it's been registered.
+     */
+    private callOnStartPlaying(elective: boolean): void {
+        if (this.onStartPlaying) {
+            this.onStartPlaying(elective);
+        }
+    }
+
+    /**
+     * This must be called whenever latency setting changes.
+     */
+    private updateLatency(): void {
+        if (!this.getLatencyAvailable()) {
+            this.bctrl.setSaferLatency();
+            return;
+        }
+        switch (this.latency) {
+            case 0:
+                this.bctrl.setLowLatency();
+                break;
+            case 1:
+                this.bctrl.setUltraLowLatency();
+                break;
+        }
+    }
+
+    /**
+     * This must be called whenever the current quality or angle changes.
+     */
+    private updateQualityAndAngle(): void {
+        /* We, in fact, also need to update the buffer control settings. */
+        this.updateLatency();
+
+        /* Figure out which streams the quality corresponds to. */
+        if (this.serverInfo.avMap.length > 0) {
+            if (this.quality < this.serverInfo.avMap.length) {
+                this.videoStream = this.serverInfo.avMap[this.quality][0];
+                this.audioStream = this.serverInfo.avMap[this.quality][1];
+            }
+            else {
+                this.videoStream = this.quality;
+                this.audioStream = null;
+            }
         }
         else {
-            this.sourceBuffer.appendBuffer(data);
-        }
-    }
-
-    private sourceBuffer: SourceBuffer;
-    private pendingBuffers: Array<ArrayBuffer> = new Array<ArrayBuffer>();
-};
-
-/* Class that adapts the media element for us. This does things like create source buffers, and monitor
-   buffer sizes. */
-class MediaInterface {
-    constructor() {
-        this.mediaSource = new MediaSource();
-        this.mediaElement = document.getElementById('video') as HTMLMediaElement;
-        this.mediaElement.src = URL.createObjectURL(this.mediaSource);
-
-        this.mediaElement.onerror = (): void => {
-            throw this.mediaElement.error;
-        };
-    }
-
-    async addVideoSource(representation: manifest.Representation): Promise<void> {
-        if (this.videoSource) {
-            // TODO
+            this.videoStream = this.quality;
+            this.audioStream = (this.quality < this.serverInfo.audioConfigs.length) ? this.quality : null;
         }
 
-        const initData = await representation.initData;
-
-        this.videoSource = this.mediaSource.addSourceBuffer(representation.mimeType);
-        this.videoSource.appendBuffer(await representation.initData);
-        this.videoMediaBuffer = new MediaBuffer(this.videoSource);
-        this.videoStreams = new stream.MultiStreamReader((data) => {
-            //this.videoMediaBuffer.append(initData);
-            this.videoMediaBuffer.append(data);
-        });
+        /* Tell the streamer. */
+        this.stream.setSource(this.angleUrls[this.angle], this.videoStream, this.audioStream,
+                              this.serverInfo.avMap.length > 0 && this.audioStream !== null);
     }
 
-    addVideoData(s: ReadableStream, onDone: (rate: number) => void = () => {}): void {
-        this.videoStreams.addStream(s, onDone);
-    }
-
-    mediaSource: MediaSource = new MediaSource();
-    videoSource: SourceBuffer = null;
-    videoMediaBuffer: MediaBuffer;
-    mediaElement: HTMLMediaElement;
-    videoStreams: stream.MultiStreamReader;
-};
-
-/* Initialization. */
-export async function init(): Promise<void> {
-    /* Load the manifest. */
-    const manifestInfo = new manifest.Manifest(await util.fetchString(manifestUrl));
-
-    /* Create the clock. */
-    let clock = new util.SynchronizedClock(await util.fetchString(manifestInfo.timeSyncUrl));
-
-    /* Shuffle video into the media interface. */
-    const mediaInterface = new MediaInterface();
-    let mediaDownloader = null;
-
-    mediaInterface.mediaSource.onsourceopen = (): void => {
-        if (mediaInterface.videoSource) {
+    /**
+     * Prints verbose information about the current state of streaming.
+     */
+    private printVerboseInvervalInfo(): void {
+        if (this.video.paused) {
             return;
         }
 
-        console.log('Source open');
-        mediaInterface.addVideoSource(manifestInfo.videoRepresentations[0]);
+        const videoBufferLength = this.bctrl.getBufferLength();
+        const audioBufferLength = this.audio ? this.bctrl.getBufferLength(0) : NaN;
+        const combinedBufferLength = this.audio ? Math.min(videoBufferLength, audioBufferLength) : videoBufferLength;
 
-        mediaDownloader = new MediaDownloader(manifestInfo.videoRepresentations[0], clock,
-                                              (s: ReadableStream): void => {
-            mediaInterface.addVideoData(s);
-        });
-    };
+        const [minBuffer, maxBuffer] = this.bctrl.getBufferTargets();
+        const ewmaBuffer = this.bctrl.getCatchUpEventEwma();
 
-    /* Keep the video close to the end of the buffer. */
-    let playrate = 1;
-    setInterval((): void => {
-        const me = mediaInterface.mediaElement;
+        const videoUnprunedBufferLength =
+            (this.video.buffered.length == 0) ? 0 :
+            (this.video.buffered.end(this.video.buffered.length - 1) - this.video.buffered.start(0));
+        const audioUnprunedBufferLength =
+            (!this.audio || this.audio.buffered.length == 0) ? 0 :
+            (this.audio.buffered.end(this.audio.buffered.length - 1) - this.audio.buffered.start(0));
 
-        const ranges = me.buffered;
-        if (ranges.length == 0) {
-            return;
-        }
+        console.log(
+            'Video buffer length: ' + videoBufferLength + ' ms\n' +
+            'Audio buffer length: ' + audioBufferLength + ' ms\n' +
+            'Combined buffer length: ' + combinedBufferLength + ' ms\n' +
+            'Extra video buffer length: ' + (videoBufferLength - combinedBufferLength) + ' ms\n' +
+            'Extra audio buffer length: ' + (audioBufferLength - combinedBufferLength) + ' ms\n' +
+            'Unpruned video buffer length: ' + (videoUnprunedBufferLength * 1000) + ' ms\n' +
+            'Unpruned audio buffer length: ' + (audioUnprunedBufferLength * 1000) + ' ms\n' +
+            'Video playback rate: ' + this.video.playbackRate + '\n' +
+            'Audio playback rate: ' + (this.audio ? this.audio.playbackRate : NaN) + '\n' +
+            'AV synchronization offset: ' + (this.audio ? this.bctrl.getSecondarySync(0) : 0) + ' ms\n' +
+            'Buffer targets: ' + minBuffer + ' ms - ' + maxBuffer + ' ms (' + ewmaBuffer + ')\n'
+        );
+    }
 
-        const end = ranges.end(ranges.length - 1);
-        const playhead = me.currentTime;
-        const delay = end - playhead;
+    // Stuff from the constructor.
+    private readonly verbose: boolean;
+    private readonly video: HTMLVideoElement;
+    private readonly audio: HTMLAudioElement;
 
-        const targetDelay = 0.25;
-        const hysteresisDelay = 1.0;
-        const maxFastPlayTime = 10;
-        const maxFastPlayRate = 4;
+    // Worker objects.
+    private stream: stream.MseWrapper;
+    private bctrl: bufferctrl.BufferControl;
+    private verboseInterval;
 
+    // Server information.
+    private serverInfo;
+    private angleUrls: Array<string> = new Array<string>();
+    private angleOptions: Array<string> = new Array<string>();
+    private qualityOptions: Array<[number, number]> = new Array<[number, number]>(); // Map: quality -> (width,height).
 
-        const x = (delay - targetDelay) / (maxFastPlayTime - targetDelay); // Scales [0, 1]
-        const y = x * x; // Also scales [0, 1], but a bit more aggressively at longer delays.
-        const fastCachupRate = (maxFastPlayRate - 1) * x + 1;
+    // Current settings.
+    private angle: number = 0;
+    private quality: number = 0;
+    private latency: number = 0;
 
-        if (delay <= targetDelay) {
-            if (playrate != 1) {
-                playrate = 1;
-                me.playbackRate = 1;
-            }
-        }
-        else if (delay <= hysteresisDelay) {
-            if (playrate > 1) {
-                playrate = fastCachupRate;
-                me.playbackRate = fastCachupRate;
-            }
-            else if (playrate != 1) {
-                playrate = 1;
-                me.playbackRate = 1;
-            }
-        }
-        else if (delay <= maxFastPlayTime) {
-            playrate = fastCachupRate;
-            me.playbackRate = fastCachupRate;
-        }
-        else {
-            playrate = 1;
-            me.playbackRate = 1;
-            me.currentTime = end - 0.5;
-            console.log('Seeked');
-        }
-    }, 100);
+    // Derived settings.
+    private videoStream: number;
+    private audioStream: number;
 
-    /* Some primitive UI :) */
-    document.getElementById('play').onclick = (): void => {
-        mediaInterface.mediaElement.play();
-    };
-    document.getElementById('stop').onclick = (): void => {
-        if (mediaDownloader !== null) {
-            mediaDownloader.stop();
-        }
-    };
-
-    // Logging.
-    const infoDiv = document.getElementById('info');
-    setInterval((): void => {
-        const me = mediaInterface.mediaElement;
-        const info = {
-            'Play head delay': ((): string => {
-                const ranges = me.buffered;
-                if (ranges.length == 0) {
-                    return 'None';
-                }
-                return '' + (ranges.end(ranges.length - 1) - me.currentTime) + ' s';
-            })(),
-            'Play rate': me.playbackRate + ', ' + playrate,
-            'Buffer': ((): string => {
-                const ranges = me.buffered;
-                if (ranges.length == 0) {
-                    return 'None';
-                }
-
-                let result: string = '';
-                for (let i = 0; i < ranges.length; i++) {
-                    const start = ranges.start(i);
-                    const end = ranges.end(i);
-                    result += '[' + start + ' - ' + end + '] (' + (end - start) + ' s), ';
-                }
-                return result.slice(0, -2);
-            })(),
-            'Paused': me.paused,
-            'Ready state': me.readyState,
-        };
-
-        let table: string = '';
-        for (const key in info) {
-            table += '<tr><td>' + key + '</td><td>' + info[key] + '</td></tr>\n';
-        }
-        infoDiv.innerHTML = table;
-    }, 100);
-}
+    // State machine.
+    private electiveChangeInProgress: boolean = false;
+};
 
