@@ -123,6 +123,14 @@ export class VideoServer extends WebServerProcess {
         this.config = config ?? loadConfig('video-server');
         assertType<Config>(this.config);
 
+        this.serverFileStore.on('add', (path: string): void => {
+            this.onFileStoreAdd(path);
+        });
+
+        this.serverFileStore.on('remove', (path: string): void => {
+            this.onFileStoreRemove(path);
+        });
+
         await super.start();
     }
 
@@ -429,40 +437,6 @@ export class VideoServer extends WebServerProcess {
         // Before we get here, we checked the request came from localhost. So we always accept.
         response.writeHead(200);
 
-        // Handle edge paths.
-        if (this.farEdgePaths.has(request.url)) {
-            // Whatever else can be said, this path is no longer a far-edge. The predecessor for this path is no longer
-            // the near edge either.
-            this.nearEdgePaths.delete(this.farEdgePaths.get(request.url)!.nearEdgePath);
-            this.farEdgePaths.delete(request.url);
-        }
-
-        const edgeMatch = request.url.match(this.edgePaths);
-
-        if (edgeMatch?.index !== undefined) {
-            // Figure out the next path.
-            const prefix = request.url.substr(0, edgeMatch.index);
-            const indexString = edgeMatch[0];
-            const suffix = request.url.substr(edgeMatch.index + indexString.length);
-
-            const index = parseInt(indexString);
-            let nextIndexString = '' + (index + 1);
-            if (nextIndexString.length < indexString.length) {
-                nextIndexString = nextIndexString.padStart(indexString.length, '0');
-            } else if (nextIndexString.length > indexString.length) {
-                nextIndexString = nextIndexString.substr(nextIndexString.length - indexString.length,
-                    indexString.length);
-            }
-            const nextPath = prefix + nextIndexString + suffix;
-
-            // Add the next path as a far edge once this segment has existed for long enough.
-            const edgeInfo = new EdgeInfo(request.url);
-            this.farEdgePaths.set(nextPath, edgeInfo);
-
-            // Add this path as a near edge.
-            this.nearEdgePaths.set(request.url, edgeInfo.nearEdgeTime);
-        }
-
         /* Create a server file, and make it accept this PUT's data. */
         const sf = this.serverFileStore.add(request.url);
         request.on('data', (b: Buffer): void => {
@@ -476,19 +450,53 @@ export class VideoServer extends WebServerProcess {
 
     private handleDelete(request: http.IncomingMessage, response: http.ServerResponse): void {
         assertNonNull(request.url);
-
-        if (!this.serverFileStore.has(request.url)) {
+        if (this.serverFileStore.has(request.url)) {
+            this.serverFileStore.remove(request.url);
+            response.statusCode = HttpStatus.OK;
+        } else {
             response.statusCode = HttpStatus.NOT_FOUND;
-            response.end();
-            return;
+        }
+        response.end();
+    }
+
+    private onFileStoreAdd(path: string): void {
+        // Handle edge paths.
+        if (this.farEdgePaths.has(path)) {
+            // Whatever else can be said, this path is no longer a far-edge. The predecessor for this path is no longer
+            // the near edge either.
+            this.nearEdgePaths.delete(this.farEdgePaths.get(path)!.nearEdgePath);
+            this.farEdgePaths.delete(path);
         }
 
-        this.serverFileStore.remove(request.url);
-        this.nearEdgePaths.delete(request.url);
-        this.farEdgePaths.delete(request.url);
+        const edgeMatch = path.match(this.edgePaths);
 
-        response.statusCode = HttpStatus.OK;
-        response.end();
+        if (edgeMatch?.index !== undefined) {
+            // Figure out the next path.
+            const prefix = path.substr(0, edgeMatch.index);
+            const indexString = edgeMatch[0];
+            const suffix = path.substr(edgeMatch.index + indexString.length);
+
+            const index = parseInt(indexString);
+            let nextIndexString = '' + (index + 1);
+            if (nextIndexString.length < indexString.length) {
+                nextIndexString = nextIndexString.padStart(indexString.length, '0');
+            } else if (nextIndexString.length > indexString.length) {
+                nextIndexString = nextIndexString.substr(nextIndexString.length - indexString.length, indexString.length);
+            }
+            const nextPath = prefix + nextIndexString + suffix;
+
+            // Add the next path as a far edge once this segment has existed for long enough.
+            const edgeInfo = new EdgeInfo(path);
+            this.farEdgePaths.set(nextPath, edgeInfo);
+
+            // Add this path as a near edge.
+            this.nearEdgePaths.set(path, edgeInfo.nearEdgeTime);
+        }
+    }
+
+    private onFileStoreRemove(path: string): void {
+        this.nearEdgePaths.delete(path);
+        this.farEdgePaths.delete(path);
     }
 
     public async startStreaming() {
