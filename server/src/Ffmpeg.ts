@@ -4,7 +4,7 @@ import * as process from 'process';
 import * as stream from 'stream';
 import {Logger} from "winston";
 import {getLogger} from "../common/LoggerConfig";
-import {AudioConfig, CodecOptions, Config, substituteManifestPattern, VideoConfig} from "./Config";
+import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern, VideoConfig} from "./Config";
 import {ChildProcess} from "child_process";
 
 export const log: Logger = getLogger("Ffmpeg");
@@ -266,41 +266,11 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
 function getDashOutputArgs(segmentLengthMultiplier: number, videoConfigs: VideoConfig[], targetLatency: number,
                            hasAudio: boolean, port: number, manifest: string): string[] {
     /* Compute the segment duration. */
-    // Some utility functions.
-    const gcd = (a: number, b: number): number => {
-        if (b == 0) {
-            return a;
-        }
-        return gcd(b, a % b); // Yay for Euclid's algorithm.
-    };
-    const lcm = (a: number, b: number): number => {
-        return (a * b) / gcd(a, b);
-    };
-
-    // Figure out a common time-base. The fraction we're computing is a duration. But we're computing it based on frame
-    // rates, which are a reciprocal time period.
-    let commonGopPeriodDenominator = 1;
-    for (const config of videoConfigs) {
-        commonGopPeriodDenominator = lcm(commonGopPeriodDenominator, config.framerateNumerator);
-    }
-
-    // Figure out the time, in the common time-base, that is the smallest integer multiple of every GOP.
-    let commonGopPeriodNumerator = 1;
-    for (const config of videoConfigs) {
-        const configGopPeriodNumerator =
-            config.framerateDenominator * commonGopPeriodDenominator / config.framerateNumerator;
-        commonGopPeriodNumerator = lcm(configGopPeriodNumerator * config.gop, commonGopPeriodNumerator);
-    }
-
-    // Multiply that by the segment length multiplier.
-    commonGopPeriodNumerator *= segmentLengthMultiplier;
-    const simplify = gcd(commonGopPeriodNumerator, commonGopPeriodDenominator);
-    commonGopPeriodNumerator /= simplify;
-    commonGopPeriodDenominator /= simplify;
+    const commonGopPeriod: [number, number] = computeSegmentDuration(segmentLengthMultiplier, videoConfigs);
 
     /* Specific arguments we receive in the constructor. */
     let args = [
-        '-seg_duration', '' + (commonGopPeriodNumerator / commonGopPeriodDenominator),
+        '-seg_duration', '' + (commonGopPeriod[0] / commonGopPeriod[1]),
         '-target_latency', '' + (targetLatency / 1000)
     ];
 

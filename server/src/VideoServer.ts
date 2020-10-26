@@ -5,7 +5,7 @@ import {WebServerProcess} from "../common/WebServerNode";
 import http from "http";
 import {loadConfig} from "../common/Config";
 import {assertType} from "@ckitching/typescript-is";
-import {Config, substituteManifestPattern} from "./Config";
+import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config";
 import {ServerFileStore} from "./ServerFileStore";
 import {StatusCodes as HttpStatus} from "http-status-codes";
 import {assertNonNull} from "../common/util/Assertion";
@@ -43,6 +43,10 @@ class EdgeInfo {
 
 export class VideoServer extends WebServerProcess {
     private config!: Config;
+
+    // The duration of each segment.
+    private segmentDurationExact!: [number, number]; // In seconds.
+    private segmentDuration!: number; // In milliseconds.
 
     // The set of files this server will respond to GET requests for. This is an in-memory cache.
     private readonly serverFileStore = new ServerFileStore();
@@ -84,9 +88,8 @@ export class VideoServer extends WebServerProcess {
     private loadCacheConfiguration() {
         /* Add the caching times. Note that near edge paths are by definition guaranteed to be found. Far edge paths are
            known about and their cache time is specially calculated. */
-        const segmentDurationInSeconds = this.config.dash.segmentDuration * 1000;
         this.foundCacheTimes.set(Liveness.none, this.config.network.nonLiveCacheTime);
-        this.foundCacheTimes.set(Liveness.live, Math.round(segmentDurationInSeconds * (this.config.network.segmentRetentionCount + 1) / 1000));
+        this.foundCacheTimes.set(Liveness.live, Math.round(this.segmentDuration * (this.config.network.segmentRetentionCount + 1) / 1000));
         this.foundCacheTimes.set(Liveness.nearEdge, this.foundCacheTimes.get(Liveness.live)!);
         this.foundCacheTimes.set(Liveness.farEdge, this.foundCacheTimes.get(Liveness.live)! + Math.round(this.config.network.preAvailabilityTime / 1000));
         this.foundCacheTimes.set(Liveness.ephemeral, 1);
@@ -96,7 +99,7 @@ export class VideoServer extends WebServerProcess {
 
         // Calculate live 404 time under the assumption that the requested path is the next far live edge. Round up so
         // we don't get a barrage of uncacheable requests near pre-availability time.
-        this.notFoundCacheTimes.set(Liveness.live, Math.max(Math.round((segmentDurationInSeconds - this.config.network.preAvailabilityTime) / 1000), 1));
+        this.notFoundCacheTimes.set(Liveness.live, Math.max(Math.round((this.segmentDuration - this.config.network.preAvailabilityTime) / 1000), 1));
 
         if (this.notFoundCacheTimes.get(Liveness.live) == 0) {
             log.warn('Warning: Caching of 404s for paths that may become live is disabled. Consider increasing pre-availability time.');
@@ -122,6 +125,10 @@ export class VideoServer extends WebServerProcess {
     async start(config?: Config): Promise<void> {
         this.config = config ?? loadConfig('video-server');
         assertType<Config>(this.config);
+
+        /* Calculate the segment duration. */
+        this.segmentDurationExact = computeSegmentDuration(this.config.dash.segmentLengthMultiplier, this.config.video.configs);
+        this.segmentDuration = (this.segmentDurationExact[0] * 1000) / this.segmentDurationExact[1];
 
         this.serverFileStore.on('add', (path: string): void => {
             this.onFileStoreAdd(path);
@@ -237,7 +244,7 @@ export class VideoServer extends WebServerProcess {
         const sf = this.serverFileStore.add(this.config.serverInfo.live);
         sf.add(Buffer.from(JSON.stringify({
             angles: manifests,
-            segmentDuration: this.config.dash.segmentDuration * 1000,
+            segmentDuration: this.segmentDuration,
             segmentPreavailability: this.config.network.preAvailabilityTime
         })));
 
@@ -283,8 +290,7 @@ export class VideoServer extends WebServerProcess {
                 // pre-available yet.
                 liveness = Liveness.farEdge;
                 const timeSinceNearEdgeAdded = now - this.farEdgePaths.get(path)!.nearEdgeTime;
-                const preAvailabilityDelay =
-                    (this.config.dash.segmentDuration * 1000) - this.config.network.preAvailabilityTime;
+                const preAvailabilityDelay = this.segmentDuration - this.config.network.preAvailabilityTime;
                 timeToFarEdgePreavailability = preAvailabilityDelay - timeSinceNearEdgeAdded;
             } else if (this.ephemeralPaths.test(path)) {
                 liveness = Liveness.ephemeral;

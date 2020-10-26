@@ -112,9 +112,6 @@ export interface Config {
         // is unique to every server startup.
         manifest: string,
 
-        // Segment duration in seconds.
-        segmentDuration: number,
-
         // Advertized target latency in milliseconds.
         targetLatency: number
     },
@@ -150,6 +147,43 @@ export interface Config {
         // List of video angle sources (as RTSP streams).
         sources: string[]
     }
+}
+
+export function computeSegmentDuration(segmentLengthMultiplier: number, videoConfigs: VideoConfig[]): [number, number] {
+    // Some utility functions.
+    const gcd = (a: number, b: number): number => {
+        if (b == 0) {
+            return a;
+        }
+        return gcd(b, a % b); // Yay for Euclid's algorithm.
+    };
+    const lcm = (a: number, b: number): number => {
+        return (a * b) / gcd(a, b);
+    };
+
+    // Figure out a common time-base. The fraction we're computing is a duration. But we're computing it based on frame
+    // rates, which are a reciprocal time period.
+    let commonGopPeriodDenominator = 1;
+    for (const config of videoConfigs) {
+        commonGopPeriodDenominator = lcm(commonGopPeriodDenominator, config.framerateNumerator);
+    }
+
+    // Figure out the time, in the common time-base, that is the smallest integer multiple of every GOP.
+    let commonGopPeriodNumerator = 1;
+    for (const config of videoConfigs) {
+        const configGopPeriodNumerator =
+            config.framerateDenominator * commonGopPeriodDenominator / config.framerateNumerator;
+        commonGopPeriodNumerator = lcm(configGopPeriodNumerator * config.gop, commonGopPeriodNumerator);
+    }
+
+    // Multiply that by the segment length multiplier.
+    commonGopPeriodNumerator *= segmentLengthMultiplier;
+    const simplify = gcd(commonGopPeriodNumerator, commonGopPeriodDenominator);
+    commonGopPeriodNumerator /= simplify;
+    commonGopPeriodDenominator /= simplify;
+
+    // Done :)
+    return [commonGopPeriodNumerator, commonGopPeriodDenominator];
 }
 
 export function substituteManifestPattern(pattern: string, uniqueId: string, index?: number): string {
