@@ -379,7 +379,7 @@ export namespace ffmpeg {
 
                 this.log.debug(`Spawning FFmpeg Command:\n%s`, argsString);
 
-                this.process.stdout!.once('data', () => {
+                this.process.stderr!.once('data', () => {
                     // This presumably means it's alive...
                     resolve();
                 });

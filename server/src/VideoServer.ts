@@ -10,6 +10,7 @@ import {ServerFileStore} from "./ServerFileStore";
 import {StatusCodes as HttpStatus} from "http-status-codes";
 import {assertNonNull} from "../common/util/Assertion";
 import {ffmpeg} from "./Ffmpeg";
+import {CamAPI} from "./CamAPI";
 
 export const log: Logger = getLogger("VideoServer");
 
@@ -133,6 +134,19 @@ export class VideoServer extends WebServerProcess {
             this.writeServerInfo();
         });
 
+        // Aggressively reconfigure the cameras on every startup in production.
+        if (process.env.NODE_ENV === 'production') {
+            this.registerStartupJob(`Configure cameras`, async() => {
+                await Promise.all(this.config.video.sources.map(async(src, i) => this.configureCamera(src, i)));
+            });
+        }
+
+        this.registerStartupJob(`Turn cameras on`, async() => {
+            await Promise.all(this.config.video.sources.map(async(src) => {
+                return (await this.getCamAPI(src)).turnOn();
+            }));
+        });
+
         this.registerStartupJob("Begin streaming", async() => {
             await this.startStreaming();
         });
@@ -144,6 +158,44 @@ export class VideoServer extends WebServerProcess {
         this.registerShutdownJob("Stop ffmpeg processes", async() => {
             await this.stopStreaming();
         }, {before: "Stop HTTP server"});
+
+        this.registerShutdownJob(`Turn cameras off`, async() => {
+            await Promise.all(this.config.video.sources.map(async(src) => {
+                return (await this.getCamAPI(src)).turnOff();
+            }));
+        });
+    }
+
+    private async getCamAPI(srcUrl: string) {
+        const url = "http://" + srcUrl.slice(7, srcUrl.lastIndexOf(':'));
+        const api = new CamAPI(url);
+        await api.authenticate();
+        return api;
+    }
+
+    // Apply the configuration we want to the camera using its undocumented REST API :D. This also power-cycles the
+    // camera, recovering it from any broken state.
+    private async configureCamera(srcUrl: string, num: number) {
+        const api = await this.getCamAPI(srcUrl);
+        const camNum = num + 1;
+
+        log.info(`Cam ${camNum}: Checking camera firmware compatibility...`);
+        await api.checkFirmwareVersion();
+
+        log.info(`Cam ${camNum}: Power off...`);
+        await api.turnOff();
+
+        log.info(`Cam ${camNum}: Setting resolution...`);
+        await api.setResolution();
+
+        log.info(`Cam ${camNum}: Setting stream configuration...`);
+        await api.configureStreams(`Cam ${num + 1}`);
+
+        log.info(`Cam ${camNum}: Setting audio configuration...`);
+        await api.configureAudio(num == 0);
+
+        log.info(`Cam ${camNum}: Setting clock configuration...`);
+        await api.configureClock();
     }
 
     /**
