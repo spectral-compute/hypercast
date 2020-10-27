@@ -80,10 +80,7 @@ export class VideoServer extends WebServerProcess {
         this.uniqueID = Math.round(Date.now() + Math.random() * 1000000).toString(36);
     }
 
-    async start(config?: Config): Promise<void> {
-        this.config = config ?? loadConfig('video-server');
-        assertType<Config>(this.config);
-
+    private loadCacheConfiguration() {
         /* Add the caching times. Note that near edge paths are by definition guaranteed to be found. Far edge paths are
            known about and their cache time is specially calculated. */
         const segmentDurationInSeconds = this.config.dash.segmentDuration * 1000;
@@ -119,11 +116,30 @@ export class VideoServer extends WebServerProcess {
         this.livePaths = new RegExp(livePattern);
         this.edgePaths = new RegExp(edgePattern);
         this.ephemeralPaths = new RegExp('^(?:(?:' + manifestPattern + ')|(?:' + this.config.serverInfo.live + '))$');
+    }
 
-        this.writeServerInfo();
+    async start(config?: Config): Promise<void> {
+        this.config = config ?? loadConfig('video-server');
+        assertType<Config>(this.config);
 
         await super.start();
-        await this.startStreaming();
+    }
+
+    protected registerStartJobs() {
+        super.registerStartJobs();
+
+        this.registerStartupJob("Write server info", async() => {
+            this.loadCacheConfiguration();
+            this.writeServerInfo();
+        });
+
+        this.registerStartupJob("Begin streaming", async() => {
+            await this.startStreaming();
+        });
+    }
+
+    registerStopJobs() {
+        super.registerStopJobs();
 
         this.registerShutdownJob("Stop ffmpeg processes", async() => {
             await this.stopStreaming();
