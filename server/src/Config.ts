@@ -81,10 +81,6 @@ export interface Config {
         // Advertized target latency in milliseconds.
         targetLatency: number
     },
-    misc: {
-        // Use a single-process ffmpeg pipeline for each angle. If false, a multi-process pipeline is used.
-        monolithic: boolean
-    },
     network: {
         // Time to cache responses to non-live paths.
         nonLiveCacheTime: number,
