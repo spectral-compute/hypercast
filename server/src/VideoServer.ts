@@ -203,6 +203,15 @@ export class VideoServer extends WebServerProcess {
 
         log.info(`Cam ${camNum}: Setting clock configuration...`);
         await api.configureClock();
+
+        // Power cycle the camera, since occasionally it gets stuck :D.
+        if (this.config.camera.configurePowerCycle) {
+            log.info(`Cam ${camNum}: Power off...`);
+            await api.turnOff();
+
+            log.info(`Cam ${camNum}: Power on...`);
+            await api.turnOn();
+        }
     }
 
     /**
