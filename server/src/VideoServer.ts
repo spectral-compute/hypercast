@@ -135,17 +135,19 @@ export class VideoServer extends WebServerProcess {
         });
 
         // Aggressively reconfigure the cameras on every startup in production.
-        if (process.env.NODE_ENV === 'production') {
+        if (this.config.camera.configure) {
             this.registerStartupJob(`Configure cameras`, async() => {
                 await Promise.all(this.config.video.sources.map(async(src, i) => this.configureCamera(src, i)));
             }, {before: "Launch webserver"});
         }
 
-        this.registerStartupJob(`Turn cameras on`, async() => {
-            await Promise.all(this.config.video.sources.map(async(src) => {
-                return (await this.getCamAPI(src)).turnOn();
-            }));
-        });
+        if (this.config.camera.powerOn) {
+            this.registerStartupJob(`Turn cameras on`, async() => {
+                await Promise.all(this.config.video.sources.map(async(src) => {
+                    return (await this.getCamAPI(src)).turnOn();
+                }));
+            });
+        }
 
         this.registerStartupJob("Begin streaming", async() => {
             await this.startStreaming();
@@ -159,16 +161,18 @@ export class VideoServer extends WebServerProcess {
             await this.stopStreaming();
         }, {before: "Stop HTTP server"});
 
-        this.registerShutdownJob(`Turn cameras off`, async() => {
-            await Promise.all(this.config.video.sources.map(async(src) => {
-                return (await this.getCamAPI(src)).turnOff();
-            }));
-        });
+        if (this.config.camera.powerOff) {
+            this.registerShutdownJob(`Turn cameras off`, async() => {
+                await Promise.all(this.config.video.sources.map(async(src) => {
+                    return (await this.getCamAPI(src)).turnOff();
+                }));
+            });
+        }
     }
 
     private async getCamAPI(srcUrl: string) {
         const url = "http://" + srcUrl.slice(7, srcUrl.lastIndexOf(':'));
-        const api = new CamAPI(url);
+        const api = new CamAPI(url, this.config.camera);
         await api.authenticate();
         return api;
     }
@@ -183,11 +187,13 @@ export class VideoServer extends WebServerProcess {
         await api.checkFirmwareVersion();
 
         // Power cycle the camera, since occasionally it gets stuck :D.
-        log.info(`Cam ${camNum}: Power off...`);
-        await api.turnOff();
+        if (this.config.camera.configurePowerCycle) {
+            log.info(`Cam ${camNum}: Power off...`);
+            await api.turnOff();
 
-        log.info(`Cam ${camNum}: Power on...`);
-        await api.turnOn();
+            log.info(`Cam ${camNum}: Power on...`);
+            await api.turnOn();
+        }
 
         log.info(`Cam ${camNum}: Setting stream configuration...`);
         await api.configureStreams(`Cam ${num + 1}`);

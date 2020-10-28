@@ -3,6 +3,11 @@ import {assertNonNull} from "../common/util/Assertion";
 export type AudioCodec = 'aac' | 'opus';
 export type VideoCodec = 'h264' | 'h265' | 'vp8' | 'vp9' | 'av1';
 
+export type CameraResolution = '4k' | '1080P' | '720P@1080P' | '720P@720P';
+export type CameraFramerate = '60' | '59.94' | '50' | '30' | '29.97' | '25' | '25@30' |
+    '19' | '19@60' | '18' | '18@60' | '17' | '17@60' | '16' | '16@60' |
+    '15' | '15@60' | '14' | '14@60' | '13@60' | '12';
+
 export interface AudioConfig {
     // The bitrate in kBit/s for this audio stream.
     bitrate: number,
@@ -22,7 +27,9 @@ export interface VideoConfig {
     // The codec for this video stream.
     codec: VideoCodec
 
-    // Frame rate for the next video stream, as a rational.
+    // Frame rate for the next video stream, as a rational. For the smoothest playback, it's recommended that this is
+    // chosen so that the camera's frame rate is an integer multiple of this. If not, then frames will be dropped or
+    // inserted at non-constant intervals to achieve the requested frame rate.
     framerateNumerator: number,
     framerateDenominator: number,
 
@@ -57,11 +64,41 @@ export interface CodecOptions {
     h265Preset: string,
 }
 
+export interface CameraConfig {
+    // Whether or not to power on the cameras at start.
+    powerOn: boolean,
+
+    // Whether or not to power off the cameras on terminate.
+    powerOff: boolean,
+
+    // Whether or not to configure the cameras.
+    configure: boolean,
+
+    // Whether or not to power cycle the cameras when configuring. This is useful because the cameras occasionally get
+    // stuck. This is ignored if configuration is not enabled.
+    configurePowerCycle: boolean,
+
+    // Whether or not to forcibly configure the cameras, even if we detect that their configuration is correct. This
+    // is useful for debugging, and for handling the case where a setting we don't test gets changed. This does nothing
+    // if configuration is not enabled.
+    forceConfigure: boolean,
+
+    // The resolution to configure the camera with.
+    resolution: CameraResolution,
+
+    // The frameate to configure the camera with.
+    framerate: CameraFramerate,
+
+    // The bitrate, in kbit/s to configure the stream to use. This must be a bitrate that the camera supports.
+    bitrate: number,
+}
+
 export interface Config {
     audio: {
         // For each source, generate this set of output audio streams.
         configs: AudioConfig[]
     },
+    camera: CameraConfig,
     dash: {
         // Multiply the segment length inferred from the GOP size by this amount. This should be an integer to avoid
         // segment length variations. It is recommended that the segments be approximately 8-16 seconds in duration. It
