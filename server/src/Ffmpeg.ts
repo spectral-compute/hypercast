@@ -241,7 +241,7 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
     audioConfigs.forEach((config: AudioConfig, index: number): void => {
         args = args.concat([
             // Codec.
-            '-c:a:' + index, config.codec,
+            '-c:a:' + index, (config.codec == 'opus') ? 'libopus' : config.codec,
 
             // Bitrate.
             '-b:a:' + index, config.bitrate + 'k'
