@@ -40,7 +40,6 @@ const outputArgs = [
     // Low latency options.
     '-flush_packets', '1',
     '-fflags', 'flush_packets',
-    '-chunk_duration', '10000',
 
     // Try and tweak the AV interleaving to reduce latency.
     '-max_interleave_delta', '' + minimalDuration,
@@ -62,8 +61,7 @@ const dashArgs = [
     '-single_file', '0',
     '-media_seg_name', 'chunk-stream$RepresentationID$-$Number%09d$.$ext$',
     '-format_options', 'movflags=cmaf',
-    '-frag_type', 'duration',
-    '-frag_duration', '' + (minimalDuration / 1000000),
+    '-frag_type', 'every_frame',
 
     // How many segments to keep/advertise.
     '-window_size', '3', // Segments the manifest advertises.
