@@ -138,7 +138,7 @@ export class VideoServer extends WebServerProcess {
         if (process.env.NODE_ENV === 'production') {
             this.registerStartupJob(`Configure cameras`, async() => {
                 await Promise.all(this.config.video.sources.map(async(src, i) => this.configureCamera(src, i)));
-            });
+            }, {before: "Launch webserver"});
         }
 
         this.registerStartupJob(`Turn cameras on`, async() => {
