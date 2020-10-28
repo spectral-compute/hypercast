@@ -182,11 +182,12 @@ export class VideoServer extends WebServerProcess {
         log.info(`Cam ${camNum}: Checking camera firmware compatibility...`);
         await api.checkFirmwareVersion();
 
+        // Power cycle the camera, since occasionally it gets stuck :D.
         log.info(`Cam ${camNum}: Power off...`);
         await api.turnOff();
 
-        log.info(`Cam ${camNum}: Setting resolution...`);
-        await api.setResolution();
+        log.info(`Cam ${camNum}: Power on...`);
+        await api.turnOn();
 
         log.info(`Cam ${camNum}: Setting stream configuration...`);
         await api.configureStreams(`Cam ${num + 1}`);
