@@ -41,13 +41,21 @@ class EdgeInfo {
     }
 
     /**
+     * Returns the difference between when the near edge was uploaded, and when it was expected to be uploaded, in ms.
+     *
+     * Late gives positive numbers, and early gives negative numbers.
+     */
+    getNearEdgeDrift(segmentDuration: [number, number]): number {
+        return this.calculateDrift(segmentDuration, this.nearEdgeTime, 0);
+    }
+
+    /**
      * Returns the difference between now, and when the far edge is expected to be uploaded, in ms.
      *
      * Late gives positive numbers, and early gives negative numbers.
      */
     getFarEdgeDrift(segmentDuration: [number, number]): number {
-        const segmentsSinceStart = this.nearEdgeIndex + 1 - this.initialIndex;
-        return Date.now() - ((segmentsSinceStart * segmentDuration[0] * 1000 / segmentDuration[1]) + this.initialTime);
+        return this.calculateDrift(segmentDuration,  Date.now(), 1);
     }
 
     /**
@@ -60,12 +68,41 @@ class EdgeInfo {
         return this.initialIndex >= 2;
     }
 
+    private calculateDrift(segmentDuration: [number, number], nowTime: number, segmentIncrement: number): number {
+        const segmentsSinceStart = this.nearEdgeIndex + segmentIncrement - this.initialIndex;
+        return nowTime - ((segmentsSinceStart * segmentDuration[0] * 1000 / segmentDuration[1]) + this.initialTime);
+    }
+
     nearEdgeIndex: number;
     nearEdgePath: string;
     nearEdgeTime: number;
 
     initialIndex: number;
     initialTime: number;
+}
+
+class DriftInfo {
+    add(drift: number): void {
+        this.drifts.push(drift);
+    }
+
+    get() {
+        let earliest: number = this.drifts[0];
+        let latest: number = this.drifts[0];
+        let sum: number = 0;
+        for (const drift of this.drifts) {
+            earliest = Math.min(earliest, drift);
+            latest = Math.max(latest, drift);
+            sum += drift;
+        }
+        return {
+            earliest: earliest,
+            latest: latest,
+            mean: sum / this.drifts.length
+        };
+    }
+
+    private readonly drifts = new Array<number>();
 }
 
 export class VideoServer extends WebServerProcess {
@@ -146,7 +183,7 @@ export class VideoServer extends WebServerProcess {
 
         this.livePaths = new RegExp(livePattern);
         this.edgePaths = new RegExp(edgePattern);
-        this.ephemeralPaths = new RegExp('^(?:(?:' + manifestPattern + ')|(?:' + this.config.serverInfo.live + '))$');
+        this.ephemeralPaths = new RegExp('^(?:(?:' + manifestPattern + ')|(?:' + this.config.serverInfo.live + ')|(?:' + livePattern + 'drift.json))$');
     }
 
     async start(config?: Config): Promise<void> {
@@ -549,12 +586,32 @@ export class VideoServer extends WebServerProcess {
 
             // Add this path as a near edge.
             this.nearEdgePaths.set(path, edgeInfo.nearEdgeTime);
+
+            // Update the drift file.
+            this.updateDriftFiles();
         }
     }
 
     private onFileStoreRemove(path: string): void {
         this.nearEdgePaths.delete(path);
         this.farEdgePaths.delete(path);
+    }
+
+    private updateDriftFiles(): void {
+        const driftMap = new Map<string, DriftInfo>();
+        this.farEdgePaths.forEach((edgeInfo: EdgeInfo): void => {
+            const driftPath = edgeInfo.nearEdgePath.replace(/[^/]+$/, 'drift.json');
+            if (!driftMap.has(driftPath)) {
+                driftMap.set(driftPath, new DriftInfo());
+            }
+            driftMap.get(driftPath)!.add(edgeInfo.getNearEdgeDrift(this.segmentDurationExact));
+        });
+
+        driftMap.forEach((driftInfo: DriftInfo, driftPath: string): void => {
+            const sf = this.serverFileStore.add(driftPath);
+            sf.add(Buffer.from(JSON.stringify(driftInfo.get())));
+            sf.finish();
+        });
     }
 
     private fatalError(msg: string): void {
