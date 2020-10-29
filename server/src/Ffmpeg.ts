@@ -78,7 +78,7 @@ const dashArgs = [
     // Low latency options.
     '-ldash', '1',
     '-streaming', '1',
-    '-index_correction', '1',
+    '-index_correction', '0',
 
     // Upload via HTTP PUT.
     `-tcp_nodelay`, '1', // I'm not sure if this does anything for HTTP/DASH.
