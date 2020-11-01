@@ -3,6 +3,8 @@ import {assertNonNull} from "../common/util/Assertion";
 export type AudioCodec = 'aac' | 'opus';
 export type VideoCodec = 'h264' | 'h265' | 'vp8' | 'vp9' | 'av1';
 
+// These are the options that the camera advertizes. But not all models of camera support all all of these, or all
+// combinations of them.
 export type CameraResolution = '4k' | '1080P' | '720P@1080P' | '720P@720P';
 export type CameraFramerate = '60' | '59.94' | '50' | '30' | '29.97' | '25' | '25@30' |
     '19' | '19@60' | '18' | '18@60' | '17' | '17@60' | '16' | '16@60' |
