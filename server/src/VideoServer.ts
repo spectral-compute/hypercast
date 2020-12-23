@@ -89,7 +89,7 @@ class DriftInfo {
     get() {
         let earliest: number = this.drifts[0];
         let latest: number = this.drifts[0];
-        let sum: number = 0;
+        let sum = 0;
         for (const drift of this.drifts) {
             earliest = Math.min(earliest, drift);
             latest = Math.max(latest, drift);
