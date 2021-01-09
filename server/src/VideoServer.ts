@@ -389,6 +389,7 @@ export class VideoServer extends WebServerProcess {
             });
 
             /* Configure for low latency. */
+            assertNonNull(response.socket);
             response.socket.setNoDelay();
 
             /* Switch on method. */
