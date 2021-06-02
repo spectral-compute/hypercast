@@ -66,6 +66,9 @@ class InterleavedFile {
 
         /* Handle new data as it comes in. */
         const onAdd = (b: Buffer): void => {
+            if (b.length == 0) {
+                return; // We use 0-lengthed chunks to mean "end of file".
+            }
             this.addChunk(index, b);
         };
         sf.on('add', onAdd);
@@ -73,6 +76,7 @@ class InterleavedFile {
 
         /* Handle the finishing of the source file. */
         const onFinish = (): void => {
+            this.addChunk(index, Buffer.alloc(0));
             this.onSourceFinish(path);
         };
         sf.on('finish', onFinish);
