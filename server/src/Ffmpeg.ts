@@ -11,7 +11,6 @@ export const log: Logger = getLogger("Ffmpeg");
 
 /* FFMPEG Arguments. */
 const pipeSize = 1024; // Buffer size for pipes that ffmpeg uses to communicate.
-const minimalDuration = 10000; // A minimal duration for muxing parameters in microseconds.
 
 // Global arguments to put before everything else. These are process-global, and are for things like loglevel config.
 const globalArgs = [
@@ -39,11 +38,7 @@ const rtspInputArgs = [...inputArgs, '-rtsp_transport', 'tcp'];
 const outputArgs = [
     // Low latency options.
     '-flush_packets', '1',
-    '-fflags', 'flush_packets',
-
-    // Try and tweak the AV interleaving to reduce latency.
-    '-max_interleave_delta', '' + minimalDuration,
-    '-max_delay', '' + minimalDuration
+    '-fflags', 'flush_packets'
 ];
 
 const dashArgs = [
@@ -66,9 +61,6 @@ const dashArgs = [
     // How many segments to keep/advertise.
     '-window_size', '3', // Segments the manifest advertises.
     '-extra_window_size', '2', // Segments that are kept once evicted from the manifest for lagging clients.
-
-    // Try and tweak the AV interleaving to reduce latency.
-    '-audio_preload', '' + minimalDuration,
 
     // Pedantic flags we need for standards compliance.
     '-utc_timing_url', 'https://time.akamai.com/?iso',
