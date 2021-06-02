@@ -430,10 +430,10 @@ export class VideoServer extends WebServerProcess {
             log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
 
             request.on('error', (e): void => {
-                log.error('Error in request `$s`: %O', requestInfoString, e);
+                log.error(`Error in request ${requestInfoString}: ${e}`);
             });
             response.on('error', (e): void => {
-                log.error('Error in response `$s`: %O', requestInfoString, e);
+                log.error(`Error in response ${requestInfoString}: ${e}`);
             });
 
             /* Configure for low latency. */
