@@ -38,7 +38,11 @@ const rtspInputArgs = [...inputArgs, '-rtsp_transport', 'tcp'];
 const outputArgs = [
     // Low latency options.
     '-flush_packets', '1',
-    '-fflags', 'flush_packets'
+    '-fflags', 'flush_packets',
+
+    // Flag to stop ffmpeg from emitting incorrect timestamps that lead to AV desynchronization and buffer length
+    // issues.
+    `-copyts`
 ];
 
 const dashArgs = [
