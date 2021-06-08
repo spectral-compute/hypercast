@@ -105,6 +105,26 @@ class DriftInfo {
     private readonly drifts = new Array<number>();
 }
 
+class SegmentIndexDescriptor {
+    constructor(index: number, indexWidth: number) {
+        this.timestamp = Date.now();
+        this.index = index;
+        this.indexWidth = indexWidth;
+    }
+
+    toJson(): Buffer {
+        return Buffer.from(JSON.stringify({
+            index: this.index,
+            indexWidth: this.indexWidth,
+            age: Math.floor(Date.now() - this.timestamp) // Age in ms.
+        }));
+    }
+
+    readonly index: number;
+    readonly indexWidth: number;
+    readonly timestamp: number;
+}
+
 export class VideoServer extends WebServerProcess {
     private config!: Config;
 
@@ -129,6 +149,9 @@ export class VideoServer extends WebServerProcess {
 
     // Keeps information about what ffmpeg is expected to upload next (when it's expected to start, and what file it follows).
     private readonly farEdgePaths = new Map<string, EdgeInfo>();
+
+    // Keeps information about what segment indices are available.
+    private readonly segmentIndexDescriptors = new Map<string, SegmentIndexDescriptor>();
 
     // Which paths should be subject to the special "HTTP 200 then stall" behaviour?
     // When a GET request for a path matching thisn regex hits a 404 condition, the server instead responds HTTP 200 and
@@ -318,6 +341,36 @@ export class VideoServer extends WebServerProcess {
     }
 
     /**
+     * Get an object for each video stream configuration.
+     */
+    private getVideoStreamInfos(): any[] {
+        const result = new Array<any>();
+        for (const codec of this.config.video.configs) {
+            result.push({
+                codec: codec.codec,
+                bitrate: codec.bitrate,
+                width: codec.width,
+                height: codec.height
+            });
+        }
+        return result;
+    }
+
+    /**
+     * Get an object for each audio stream configuration.
+     */
+    private getAudioStreamInfos(): any[] {
+        const result = new Array<any>();
+        for (const codec of this.config.audio.configs) {
+            result.push({
+                codec: codec.codec,
+                bitrate: codec.bitrate
+            });
+        }
+        return result;
+    }
+
+    /**
      * Write some configuration metadata to the virtual filesystem, so clients can ask how many cameras we have.
      */
     private writeServerInfo() {
@@ -325,7 +378,8 @@ export class VideoServer extends WebServerProcess {
         this.config.video.sources.forEach((_: string, index: number): void => {
             manifests.push({
                 name: 'Angle ' + index,
-                path: substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index)
+                path: substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).
+                      replace(/(?<=^.*)[/][^/]+$/, '')
             });
         });
 
@@ -334,6 +388,8 @@ export class VideoServer extends WebServerProcess {
             angles: manifests,
             segmentDuration: this.segmentDuration,
             segmentPreavailability: this.config.network.preAvailabilityTime,
+            videoConfigs: this.getVideoStreamInfos(),
+            audioConfigs: this.getAudioStreamInfos(),
             avMap: this.getAudioVideoMap()
         })));
 
@@ -530,6 +586,15 @@ export class VideoServer extends WebServerProcess {
                 doTransfer();
             }
             return;
+        } else if (this.segmentIndexDescriptors.has(request.url)) {
+            response.statusCode = HttpStatus.OK;
+            this.addCacheControl(response, Liveness.ephemeral, true);
+            if (this.config.network.origin) {
+                response.setHeader('Access-Control-Allow-Origin', this.config.network.origin);
+            }
+            response.write(this.segmentIndexDescriptors.get(request.url)!.toJson());
+            response.end();
+            return;
         } else if (liveness == Liveness.farEdge && timeToFarEdgePreavailability > 0) {
             const maxAge = Math.ceil(timeToFarEdgePreavailability / 1000);
             response.statusCode = HttpStatus.NOT_FOUND;
@@ -647,6 +712,10 @@ export class VideoServer extends WebServerProcess {
 
             // Add this path as a near edge.
             this.nearEdgePaths.set(path, edgeInfo.nearEdgeTime);
+
+            // Update the index descriptor for this segment's stream.
+            this.segmentIndexDescriptors.set(`${prefix}index.json`,
+                                             new SegmentIndexDescriptor(index, indexString.length));
 
             // Update the drift file.
             this.updateDriftFiles();
