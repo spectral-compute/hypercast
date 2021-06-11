@@ -4,5 +4,5 @@ OUT="$1"
 
 DIR="$(dirname "$0")"
 
-tsc -t ES2017 --outDir "${OUT}" $(find "${DIR}" -type f -path '*.ts')
+tsc --outDir "${OUT}"
 cp "${DIR}/liveStreamExample.html" "${OUT}"

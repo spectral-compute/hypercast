@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    // Compatibility.
+    "target": "ES2017",
+
+    // Code generation.
+    "removeComments": true,
+    "sourceMap": true
+  },
+  "include": ["*.ts"]
+}
