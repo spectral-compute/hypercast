@@ -5,8 +5,7 @@ export class Player {
     /**
      * Start playing video.
      *
-     * None of the other methods of this object are valid until this method has been called and the onStartPlaying event
-     * has fired.
+     * None of the other methods of this object are valid until onInit has been called.
      *
      * @param infoUrl The URL to the server's info JSON object.
      * @param video The video tag to play video into.
@@ -15,7 +14,7 @@ export class Player {
      * @param onInit Called when initialization is done.
      * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement, onInit: () => void = null,
+    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement, onInit: (() => void) | null = null,
                 verbose: boolean = false) {
         if (verbose) {
             console.log('Start up at ' + new Date(Date.now()).toISOString());
@@ -40,7 +39,7 @@ export class Player {
             }
 
             // Extract quality information.
-            this.serverInfo.videoConfigs.forEach((value) => {
+            this.serverInfo.videoConfigs.forEach((value: any) => {
                 this.qualityOptions.push([value.width, value.height]);
             });
 
@@ -95,8 +94,8 @@ export class Player {
      * Start playing video.
      */
     start(): void {
-        this.stream.start();
-        this.bctrl.start();
+        this.stream!.start();
+        this.bctrl!.start();
 
         /* Verbose logging. */
         if (!this.verbose) {
@@ -116,9 +115,8 @@ export class Player {
         if (this.verboseInterval) {
             clearInterval(this.verboseInterval);
         }
-        this.stream.stop();
-        this.bctrl.stop();
-        clearInterval(this.verboseInterval);
+        this.stream!.stop();
+        this.bctrl!.stop();
     }
 
     /**
@@ -261,7 +259,7 @@ export class Player {
      * @return muted True if the audio is muted, and false otherwise.
      */
     getMuted(): boolean {
-        return this.stream.getMuted();
+        return this.stream!.getMuted();
     }
 
     /**
@@ -270,7 +268,7 @@ export class Player {
      * @param muted True if the audio should be muted, and false otherwise.
      */
     setMuted(muted: boolean) {
-        this.stream.setMuted(muted);
+        this.stream!.setMuted(muted);
     }
 
     /**
@@ -281,12 +279,12 @@ export class Player {
      *
      * @param elective Whether or not the change was requested by setAngle() or setQuality().
      */
-    onStartPlaying: (elective: boolean) => void;
+    onStartPlaying: ((elective: boolean) => void) | null = null;
 
     /**
      * Called when an error occurs.
      */
-    onError: (description: string) => void;
+    onError: ((description: string) => void) | null = null;
 
     /**
      * Convenience method for calling onStartPlaying only if it's been registered.
@@ -302,15 +300,15 @@ export class Player {
      */
     private updateLatency(): void {
         if (!this.getLatencyAvailable()) {
-            this.bctrl.setSaferLatency();
+            this.bctrl!.setSaferLatency();
             return;
         }
         switch (this.latency) {
             case 0:
-                this.bctrl.setLowLatency();
+                this.bctrl!.setLowLatency();
                 break;
             case 1:
-                this.bctrl.setUltraLowLatency();
+                this.bctrl!.setUltraLowLatency();
                 break;
         }
     }
@@ -339,7 +337,7 @@ export class Player {
         }
 
         /* Tell the streamer. */
-        this.stream.setSource(this.angleUrls[this.angle], this.videoStream, this.audioStream,
+        this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream!, this.audioStream!,
                               this.serverInfo.avMap.length > 0 && this.audioStream !== null);
     }
 
@@ -351,12 +349,12 @@ export class Player {
             return;
         }
 
-        const videoBufferLength = this.bctrl.getBufferLength();
-        const audioBufferLength = this.audio ? this.bctrl.getBufferLength(0) : NaN;
+        const videoBufferLength = this.bctrl!.getBufferLength();
+        const audioBufferLength = this.audio ? this.bctrl!.getBufferLength(0) : NaN;
         const combinedBufferLength = this.audio ? Math.min(videoBufferLength, audioBufferLength) : videoBufferLength;
 
-        const [minBuffer, maxBuffer] = this.bctrl.getBufferTargets();
-        const ewmaBuffer = this.bctrl.getCatchUpEventEwma();
+        const [minBuffer, maxBuffer] = this.bctrl!.getBufferTargets();
+        const ewmaBuffer = this.bctrl!.getCatchUpEventEwma();
 
         const videoUnprunedBufferLength =
             (this.video.buffered.length == 0) ? 0 :
@@ -375,7 +373,7 @@ export class Player {
             'Unpruned audio buffer length: ' + (audioUnprunedBufferLength * 1000) + ' ms\n' +
             'Video playback rate: ' + this.video.playbackRate + '\n' +
             'Audio playback rate: ' + (this.audio ? this.audio.playbackRate : NaN) + '\n' +
-            'AV synchronization offset: ' + (this.audio ? this.bctrl.getSecondarySync(0) : 0) + ' ms\n' +
+            'AV synchronization offset: ' + (this.audio ? this.bctrl!.getSecondarySync(0) : 0) + ' ms\n' +
             'Buffer targets: ' + minBuffer + ' ms - ' + maxBuffer + ' ms (' + ewmaBuffer + ')\n'
         );
     }
@@ -386,12 +384,12 @@ export class Player {
     private readonly audio: HTMLAudioElement;
 
     // Worker objects.
-    private stream: stream.MseWrapper;
-    private bctrl: bufferctrl.BufferControl;
-    private verboseInterval;
+    private stream: stream.MseWrapper | null = null;
+    private bctrl: bufferctrl.BufferControl | null = null;
+    private verboseInterval: number | null = null;
 
     // Server information.
-    private serverInfo;
+    private serverInfo: any;
     private angleUrls: Array<string> = new Array<string>();
     private angleOptions: Array<string> = new Array<string>();
     private qualityOptions: Array<[number, number]> = new Array<[number, number]>(); // Map: quality -> (width,height).
@@ -402,8 +400,8 @@ export class Player {
     private latency: number = 0;
 
     // Derived settings.
-    private videoStream: number;
-    private audioStream: number;
+    private videoStream: number | null = null;
+    private audioStream: number | null = null;
 
     // State machine.
     private electiveChangeInProgress: boolean = false;

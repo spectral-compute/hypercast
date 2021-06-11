@@ -5,7 +5,17 @@
 
     // Code generation.
     "removeComments": true,
-    "sourceMap": true
+    "sourceMap": true,
+
+    // Checking
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": ["*.ts"]
 }

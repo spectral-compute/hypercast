@@ -1,5 +1,5 @@
 export class Deinterleaver {
-    constructor(onData: (ArrayBuffer, number) => void) {
+    constructor(onData: (data: ArrayBuffer, index: number) => void) {
         this.onData = onData;
     }
 
@@ -10,7 +10,7 @@ export class Deinterleaver {
             buffer = new Uint8Array(this.remainderBuffer.length + newBuffer.length);
             buffer.set(this.remainderBuffer);
             buffer.set(newBuffer, this.remainderBuffer.length);
-            this.remainderBuffer = undefined;
+            this.remainderBuffer = null;
         }
 
         /* Iterate, reading 1 chunk at a time. */
@@ -18,7 +18,7 @@ export class Deinterleaver {
             // Handle the start of a new chunk. We might have started part way through a chunk, and might finish part
             // way through, so this condition isn't always true.
             if (this.currentOffset == this.currentLength) {
-                const contentId: number = buffer[offset];
+                const contentId: number = buffer[offset]!;
                 const lengthWidth: number = ((): number => {
                     switch (Math.floor(contentId / 64)) {
                         case 0: return 1;
@@ -26,6 +26,7 @@ export class Deinterleaver {
                         case 2: return 4;
                         case 3: return 8;
                     }
+                    return 0; // Unreachable.
                 })();
 
                 // Handle the case where the buffer stops part way through a chunk header.
@@ -39,7 +40,7 @@ export class Deinterleaver {
                 this.currentLength = 0;
                 let multiplier: number = 1;
                 for (let i = 0; i < lengthWidth; i++) {
-                    this.currentLength += buffer[offset + i + 1] * multiplier;
+                    this.currentLength += buffer[offset + i + 1]! * multiplier;
                     multiplier *= 256;
                 }
 
@@ -59,10 +60,10 @@ export class Deinterleaver {
         }
     }
 
-    private readonly onData: (ArrayBuffer, number) => void;
+    private readonly onData: (data: ArrayBuffer, index: number) => void;
 
     private currentIndex = 0; // Index of the current chunk's content.
     private currentOffset = 0; // Offset within the current chunk.
     private currentLength = 0; // Length of the current chunk.
-    private remainderBuffer: Uint8Array;
+    private remainderBuffer: Uint8Array | null = null;
 }

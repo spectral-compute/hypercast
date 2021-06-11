@@ -26,10 +26,8 @@ const PruneMaxMediaSourceBufferLength = 16000;
  * Manages a media source buffer, and a queue of data to go with it.
  */
 class Stream {
-    constructor(mediaSource: MediaSource, baseUrl: string, init: ArrayBuffer, mimeType: string,
-                onStart: () => void = null) {
+    constructor(mediaSource: MediaSource, init: ArrayBuffer, mimeType: string, onStart: (() => void) | null = null) {
         this.mediaSource = mediaSource;
-        this.baseUrl = baseUrl;
         this.init = init;
         this.onStart = onStart;
 
@@ -101,7 +99,7 @@ class Stream {
             if (!this.otherSegmentsQueue.has(segment)) {
                 this.otherSegmentsQueue.set(segment, new Array<ArrayBuffer>());
             }
-            this.otherSegmentsQueue.get(segment).push(data);
+            this.otherSegmentsQueue.get(segment)!.push(data);
         }
     }
 
@@ -126,7 +124,7 @@ class Stream {
 
         /* Now shovel as much data into the queue as we can. */
         while (this.queue.length > 0 && !this.sourceBuffer.updating) {
-            this.sourceBuffer.appendBuffer(this.queue.shift());
+            this.sourceBuffer.appendBuffer(this.queue.shift()!);
         }
     }
 
@@ -158,16 +156,15 @@ class Stream {
         if (!this.otherSegmentsQueue.has(this.currentSegment)) {
             return;
         }
-        for (const buffer of this.otherSegmentsQueue.get(this.currentSegment)) {
+        for (const buffer of this.otherSegmentsQueue.get(this.currentSegment)!) {
             this.queue.push(buffer);
         }
         this.otherSegmentsQueue.delete(this.currentSegment);
     }
 
     private readonly mediaSource: MediaSource;
-    private readonly baseUrl: string;
     private readonly init: ArrayBuffer;
-    private readonly onStart: () => void;
+    private readonly onStart: (() => void) | null;
 
     private readonly sourceBuffer: SourceBuffer;
     private readonly queue = new Array<ArrayBuffer>();
@@ -181,7 +178,7 @@ class Stream {
  * Schedules download of segments.
  */
 class SegmentDownloader {
-    constructor(info, interleaved: boolean, streams: Array<Stream>, streamIndex: number,
+    constructor(info: any, interleaved: boolean, streams: Array<Stream>, streamIndex: number,
                 baseUrl: string, segmentDuration: number, segmentPreavailability: number) {
         this.info = info;
         this.interleaved = interleaved;
@@ -192,10 +189,6 @@ class SegmentDownloader {
         this.segmentPreavailability = segmentPreavailability;
 
         this.setSegmentDownloadSchedule(info);
-    }
-
-    start(): void {
-
     }
 
     stop(): void {
@@ -214,7 +207,7 @@ class SegmentDownloader {
      *
      * @param A segment index info object that has just been downloaded.
      */
-    private setSegmentDownloadSchedule(info): void {
+    private setSegmentDownloadSchedule(info: any): void {
         /* Schedule periodic updates to the download scheduler. */
         this.schedulerTimeout = setTimeout((): void => {
             fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`).
@@ -272,7 +265,7 @@ class SegmentDownloader {
 
         /* Download the current segment. */
         fetch(url).then((response: Response): void => {
-            this.pump(response.body.getReader());
+            this.pump(response.body!.getReader()); // TODO: Error handling.
         });
 
         /* Schedule the downloading of the next segment. */
@@ -283,8 +276,8 @@ class SegmentDownloader {
         this.nextSegmentStart += this.segmentDuration;
     }
 
-    private pump(reader: ReadableStreamDefaultReader, logicalSegmentIndex: number = null,
-                 deinterleaver: deinterleave.Deinterleaver = null): void {
+    private pump(reader: ReadableStreamDefaultReader, logicalSegmentIndex: number | null = null,
+                 deinterleaver: deinterleave.Deinterleaver | null = null): void {
         reader.read().then(({done, value}): void => {
             /* If we're done, then the value means nothing. */
             if (done) {
@@ -314,16 +307,16 @@ class SegmentDownloader {
                             return;
                         }
                         if (data.byteLength == 0) { // End of file.
-                            this.streams[index].endSegment(logicalSegmentIndex);
+                            this.streams[index]!.endSegment(logicalSegmentIndex!);
                             return;
                         }
-                        this.streams[index].acceptSegmentData(data, logicalSegmentIndex);
+                        this.streams[index]!.acceptSegmentData(data, logicalSegmentIndex!);
                     });
                 }
                 deinterleaver.acceptData(value);
             }
             else {
-                this.streams[0].acceptSegmentData(value, logicalSegmentIndex);
+                this.streams[0]!.acceptSegmentData(value, logicalSegmentIndex);
             }
 
             /* This is essentially a loop. */
@@ -341,9 +334,9 @@ class SegmentDownloader {
 
     private logicalSegmentIndex: number = 0;
     private segmentIndex: number = -1;
-    private nextSegmentStart: number;
-    private downloadTimeout;
-    private schedulerTimeout;
+    private nextSegmentStart: number = 0;
+    private downloadTimeout: number | null = null;
+    private schedulerTimeout: number | null = null;
 }
 
 export class MseWrapper {
@@ -431,12 +424,12 @@ export class MseWrapper {
     /**
      * Called when a new stream starts playing.
      */
-    onNewStreamStart: () => void;
+    onNewStreamStart: (() => void) | null = null;
 
     /**
      * Called when a quality downgrade is recommended.
      */
-    onRecommendDowngrade: () => void;
+    onRecommendDowngrade: (() => void) | null = null;
 
     private cleaup(): void {
         if (this.segmentDownloader) {
@@ -475,15 +468,15 @@ export class MseWrapper {
         }
     }
 
-    private setupStreams(manifest: string, videoInfo, videoInit: ArrayBuffer, audioInfo = null,
-                         audioInit: ArrayBuffer = null): void {
+    private setupStreams(manifest: string, videoInfo: any, videoInit: ArrayBuffer, audioInfo: any = null,
+                         audioInit: ArrayBuffer | null = null): void {
         /* Clean up whatever already existed. */
         this.cleaup();
 
         /* Create afresh. */
         this.setMediaSources((): void => {
             // New streams.
-            this.videoStream = new Stream(this.videoMediaSource, this.baseUrl, videoInit,
+            this.videoStream = new Stream(this.videoMediaSource!, videoInit,
                                           this.getMineForStream(manifest, this.videoStreamIndex), (): void => {
                 this.video.play();
                 if (this.audio && !this.audio.muted) {
@@ -496,8 +489,8 @@ export class MseWrapper {
             });
             if (audioInfo && this.interleaved) {
                 this.audioStream =
-                    new Stream(this.audio ? this.audioMediaSource : this.videoMediaSource, this.baseUrl,
-                               audioInit, this.getMineForStream(manifest, this.audioStreamIndex));
+                    new Stream(this.audio ? this.audioMediaSource! : this.videoMediaSource!,
+                               audioInit!, this.getMineForStream(manifest, this.audioStreamIndex));
             }
 
             // Segment downloader.
@@ -507,7 +500,7 @@ export class MseWrapper {
             }
             this.segmentDownloader =
                 new SegmentDownloader(videoInfo, this.interleaved, streams, this.videoStreamIndex,
-                                      this.baseUrl, this.segmentDuration, this.segmentPreavailability);
+                                      this.baseUrl!, this.segmentDuration, this.segmentPreavailability);
         }, audioInfo !== null);
     }
 
@@ -526,20 +519,20 @@ export class MseWrapper {
         }
 
         /* Wait for the media sourecs to be ready. */
-        if (this.videoMediaSource.readyState != 'open') {
+        if (this.videoMediaSource!.readyState != 'open') {
             const callback = () => {
-                this.videoMediaSource.removeEventListener('opensource', callback);
+                this.videoMediaSource!.removeEventListener('opensource', callback);
                 this.setMediaSources(onMediaSourceReady, withAudio, true);
             };
-            this.videoMediaSource.addEventListener('sourceopen', callback);
+            this.videoMediaSource!.addEventListener('sourceopen', callback);
             return;
         }
-        if (withAudio && this.audio && this.audioMediaSource.readyState != 'open') {
+        if (withAudio && this.audio && this.audioMediaSource!.readyState != 'open') {
             const callback = () => {
-                this.audioMediaSource.removeEventListener('opensource', callback);
+                this.audioMediaSource!.removeEventListener('opensource', callback);
                 this.setMediaSources(onMediaSourceReady, withAudio, true);
             };
-            this.audioMediaSource.addEventListener('sourceopen', callback);
+            this.audioMediaSource!.addEventListener('sourceopen', callback);
             return;
         }
 
@@ -559,7 +552,7 @@ export class MseWrapper {
             fetch(`${this.baseUrl}/chunk-stream${index}-index.json`),
             fetch(`${this.baseUrl}/init-stream${index}.m4s`)
         ]).then((responses: Array<Response>): Promise<[any, ArrayBuffer]> => {
-            return Promise.all([responses[0].json(), responses[1].arrayBuffer()]);
+            return Promise.all([responses[0]!.json(), responses[1]!.arrayBuffer()]);
         });
     }
 
@@ -576,7 +569,7 @@ export class MseWrapper {
     private getMineForStream(manifest: string, stream: number): string {
         const re = new RegExp(`<Representation id="${stream}" mimeType="([^"]*)" codecs="([^"]*)"`);
         const match = manifest.match(re);
-        return `${match[1]}; codecs="${match[2]}"`;
+        return `${match![1]}; codecs="${match![2]}"`; // TODO: Error handling.
     }
 
     private readonly video: HTMLVideoElement;
@@ -584,17 +577,17 @@ export class MseWrapper {
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
 
-    private videoMediaSource: MediaSource;
-    private audioMediaSource: MediaSource;
+    private videoMediaSource: MediaSource | null = null;
+    private audioMediaSource: MediaSource | null = null;
 
-    private baseUrl: string;
-    private videoStreamIndex: number;
-    private audioStreamIndex: number;
-    private interleaved: boolean;
+    private baseUrl: string | null = null;
+    private videoStreamIndex: number = 0;
+    private audioStreamIndex: number = 0;
+    private interleaved: boolean = false;
 
-    private segmentDownloader: SegmentDownloader;
-    private videoStream: Stream;
-    private audioStream: Stream;
+    private segmentDownloader: SegmentDownloader | null = null;
+    private videoStream: Stream | null = null;
+    private audioStream: Stream | null = null;
 
     private playing: boolean = false;
 }

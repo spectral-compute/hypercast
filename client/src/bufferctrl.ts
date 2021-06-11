@@ -68,7 +68,9 @@ export class BufferControl {
      * Stop controlling anything.
      */
     stop(): void {
-        clearInterval(this.interval);
+        if (this.interval) {
+            clearInterval(this.interval);
+        }
     }
 
     /**
@@ -78,9 +80,9 @@ export class BufferControl {
      *                  primary media element's buffer length is returned.
      * @return The buffer length, in seconds, of the chosen media element.
      */
-    getBufferLength(secondary: number = null): number {
+    getBufferLength(secondary: number | null = null): number {
         const mediaElement = (secondary === null) ? this.primaryMediaElement : this.secondaryMediaElements[secondary];
-        const buffered = mediaElement.buffered;
+        const buffered = mediaElement!.buffered;
         if (buffered.length == 0) {
             return NaN;
         }
@@ -93,7 +95,7 @@ export class BufferControl {
      * @param secondary The secondary element index to check.
      */
     getSecondarySync(secondary: number): number {
-        return this.secondaryMediaElementSync[secondary];
+        return this.secondaryMediaElementSync[secondary]!;
     }
 
     // Should get 3 seconds overall. Intended for the minimum quality to cope with poor connections/CDN buffering.
@@ -204,7 +206,7 @@ export class BufferControl {
 
             // If the secondary element is seeking or it's synchronized, then we don't need to do anything except match
             // playback rates.
-            if (mediaElement.seeking || Math.abs(this.secondaryMediaElementSync[i]) <= this.secondarySyncTolerance) {
+            if (mediaElement.seeking || Math.abs(this.secondaryMediaElementSync[i]!) <= this.secondarySyncTolerance) {
                 mediaElement.playbackRate = this.primaryMediaElement.playbackRate;
                 return;
             }
@@ -219,7 +221,7 @@ export class BufferControl {
             // so either by adjusting the playback rate (if possible and they're not too far out of sync), or by seeking
             // if necessary.
             if (!isNaN(adjustPlaybackRate) &&
-                Math.abs(this.secondaryMediaElementSync[i]) < this.secondarySkipThreshold)
+                Math.abs(this.secondaryMediaElementSync[i]!) < this.secondarySkipThreshold)
             { // Adjust playback rate.
                 adjustPlaybackRate = Math.min(Math.max(adjustPlaybackRate, 0), this.maxPlaybackRate);
                 if (this.verbose) {
@@ -229,7 +231,7 @@ export class BufferControl {
             }
             else { // Seek.
                 if (this.verbose) {
-                    console.log(`Seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]}`);
+                    console.log(`Seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
                 }
                 mediaElement.currentTime = this.primaryMediaElement.currentTime;
             }
@@ -271,17 +273,17 @@ export class BufferControl {
     private readonly verbose: boolean;
 
     // Buffer mode.
-    private minBuffer: number;
-    private maxBuffer: number;
-    private secondarySyncTolerance: number;
+    private minBuffer: number = 0;
+    private maxBuffer: number = 0;
+    private secondarySyncTolerance: number = 0;
 
     // Tracking buffering performance.
     private catchUpEventsEwma: Ewma = new Ewma(60000);
-    private lastCatchUpEventClusterEnd: number;
+    private lastCatchUpEventClusterEnd: number = 0;
 
     // Tracking synchronization performance.
     private readonly secondaryMediaElementSync = new Array<number>();
 
     // Other internal stuff.
-    private interval;
+    private interval: number | null = null;
 };
