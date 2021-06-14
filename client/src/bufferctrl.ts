@@ -204,12 +204,23 @@ export class BufferControl {
             this.secondaryMediaElementSync[i] =
                 (mediaElement.currentTime - this.primaryMediaElement.currentTime) * 1000;
 
-            // If the secondary element is seeking or it's synchronized, then we don't need to do anything except match
-            // playback rates.
-            if (mediaElement.seeking || Math.abs(this.secondaryMediaElementSync[i]!) <= this.secondarySyncTolerance) {
+            // If the secondary element is synchronized, then we don't need to do anything except match playback rates.
+            if (Math.abs(this.secondaryMediaElementSync[i]!) <= this.secondarySyncTolerance) {
                 mediaElement.playbackRate = this.primaryMediaElement.playbackRate;
                 return;
             }
+
+            // If the secondary element is seeking, then we need to give it a chance to finish doing so. This logic is
+            // needed because sometimes seeking gets stuck.
+            if (mediaElement.seeking && !this.seekStallMap.has(i)) {
+                this.seekStallMap.set(i, 1); // We've already been seeking for one tick.
+                return;
+            }
+            if (mediaElement.seeking && this.seekStallMap.get(i)! < this.secondarySeekTimeout) {
+                this.seekStallMap.set(i, this.seekStallMap.get(i)! + 1);
+                return;
+            }
+            this.seekStallMap.delete(i);
 
             // Figure out what adjustment to the playback rate would be needed to bring the secondary element in sync
             // with the primary element at the next tick.
@@ -266,6 +277,7 @@ export class BufferControl {
     private readonly secondarySkipThreshold = 1000;
     private readonly catchUpEventDuration = 2000;
     private readonly catchUpInitDuration = 10000;
+    private readonly secondarySeekTimeout = 10; // If we were seeking for too long (in ticks), we probably got stuck.
 
     // Constructor inputs.
     private readonly primaryMediaElement: HTMLMediaElement;
@@ -286,4 +298,5 @@ export class BufferControl {
 
     // Other internal stuff.
     private interval: number | null = null;
+    private readonly seekStallMap = new Map<number, number>();
 };
