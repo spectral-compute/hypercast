@@ -26,6 +26,9 @@ export class Player {
 
         /* Asynchronous stuff. Start by fetching the video server info. */
         fetch(infoUrl).then((response: Response) => {
+            if (response.status != 200) {
+                throw response;
+            }
             return response.json();
         }).then((serverInfo): void => {
             /* Extract and parse the server info. */
@@ -57,7 +60,11 @@ export class Player {
 
             /* Create the streamer. */
             this.stream = new stream.MseWrapper(video, audio, this.serverInfo.segmentDuration,
-                                                this.serverInfo.segmentPreavailability);
+                                                this.serverInfo.segmentPreavailability, (description: string): void => {
+                if (this.onError) {
+                    this.onError(description);
+                }
+            });
 
             /* Set up buffer control for the player. */
             this.bctrl = new bufferctrl.BufferControl(video, audio ? [audio] : [], verbose);
