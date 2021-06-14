@@ -160,7 +160,10 @@ export interface Config {
         configs: VideoConfig[],
 
         // List of video angle sources (as RTSP streams).
-        sources: string[]
+        sources: string[],
+
+        // Whether or not to print a timestamp onto the video.
+        timestamp: boolean
     }
 }
 

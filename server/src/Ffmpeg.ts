@@ -138,8 +138,19 @@ function getExternalSourceArgs(src: string): string[] {
     return args;
 }
 
+/* Get a filter string to print a timestamp onto the video. */
+function getTimestampFilteringArgs(enabled: boolean, width: number): string {
+    if (!enabled) {
+        return '';
+    }
+    return `,drawtext=text='%{gmtime}':` +
+           `x=${width / 40}:y=${width / 40}:fontsize=${width / 30}:borderw=${width / 480}:` +
+           `fontfile=/usr/share/fonts/TTF/DejaVuSansMono.ttf:` +
+           `fontcolor=#ffffff:bordercolor=#000000`;
+}
+
 /* Add filtering. This assumes a single video input stream. The output streams are v0, v1, v2, ... */
-function getFilteringArgs(videoConfigs: VideoConfig[]): string[] {
+function getFilteringArgs(videoConfigs: VideoConfig[], timestamp: boolean): string[] {
     // Split the input.
     let videoFilter = "[0:v]split=" + videoConfigs.length;
     videoConfigs.forEach((_config: VideoConfig, i: number): void => {
@@ -149,7 +160,9 @@ function getFilteringArgs(videoConfigs: VideoConfig[]): string[] {
 
     // Filter each stream.
     videoConfigs.forEach((config: VideoConfig, i: number): void => {
-        videoFilter += `[vin${i}]fps=${config.framerateNumerator}/${config.framerateDenominator},scale=${config.width}x${config.height}[v${i}]; `;
+        videoFilter += `[vin${i}]fps=${config.framerateNumerator}/${config.framerateDenominator},` +
+                       `scale=${config.width}x${config.height}` +
+                       `${getTimestampFilteringArgs(timestamp, config.width)}[v${i}]; `;
     });
     videoFilter = videoFilter.substr(0, videoFilter.length - 2);
 
@@ -515,7 +528,7 @@ export namespace ffmpeg {
             ...getExternalSourceArgs(source),
 
             // Video filtering
-            ...getFilteringArgs(videoConfigs),
+            ...getFilteringArgs(videoConfigs, config.video.timestamp),
         ];
 
         /* Output map. */
