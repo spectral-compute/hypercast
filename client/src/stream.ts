@@ -228,6 +228,7 @@ class SegmentDownloader {
     }
 
     stop(): void {
+        this.segmentIndex = Infinity; // Stop the download of any new segments.
         if (this.downloadTimeout) {
             clearTimeout(this.downloadTimeout);
             this.downloadTimeout = null;
@@ -309,9 +310,18 @@ class SegmentDownloader {
 
         /* Download the current segment. */
         fetch(url).then((response: Response): void => {
+            // Handle the error case.
             if (response.status != 200) {
                 throw response;
             }
+
+            // If this is an old segment, just cancel it. A new one should be along soon if it hasn't already arrived.
+            if (segmentIndex < this.segmentIndex - 1) {
+                response.body!.cancel();
+                return;
+            }
+
+            // Start reading from the response.
             this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
         }).catch((): void => {
             this.onError('Error downloading segment');
