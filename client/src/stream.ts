@@ -1,3 +1,4 @@
+import * as debug from './debug.js';
 import * as deinterleave from './deinterleave.js';
 
 /**
@@ -49,10 +50,14 @@ class Stream {
      * Notify the stream of the start of a new segment.
      *
      * @param segment The index of the segment. Must be successive integers, with the first being 0.
+     * @param description A description of the segment.
      */
-    startSegment(segment: number): void {
+    startSegment(segment: number, description: string): void {
         if (segment == 0 && this.onStart) {
             this.onStart();
+        }
+        if (this.checksum) {
+            this.checksumDescriptions.set(segment, description);
         }
         this.acceptSegmentData(this.init, segment);
     }
@@ -77,6 +82,9 @@ class Stream {
         while (this.finishedSegments.has(this.currentSegment)) {
             // Add data we collected for the segment to the queue.
             this.moveOtherSegmentBufferToQueue();
+
+            // Let advanceQueue() know about the end of the segment.
+            this.queue.push(null);
 
             // We're completely done with this segment now, and don't ened to track that it's completed.
             this.finishedSegments.delete(this.currentSegment);
@@ -132,7 +140,20 @@ class Stream {
 
         /* Now shovel as much data into the queue as we can. */
         while (this.queue.length > 0 && !this.sourceBuffer.updating) {
-            this.sourceBuffer.appendBuffer(this.queue.shift()!);
+            const data = this.queue.shift();
+            if (data !== null) {
+                this.sourceBuffer.appendBuffer(data!);
+                if (this.checksum) {
+                    this.checksum.update(data!);
+                }
+            }
+            else if (this.checksum) {
+                console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)} ` +
+                            `checksum: ${this.checksum.getChecksum()}, length: ${this.checksum.getLength()}`);
+                this.checksum = new debug.Addler32();
+                this.checksumDescriptions.delete(this.checksumIndex);
+                this.checksumIndex++;
+            }
         }
     }
 
@@ -176,11 +197,15 @@ class Stream {
     private readonly onStart: (() => void) | null;
 
     private readonly sourceBuffer: SourceBuffer;
-    private readonly queue = new Array<ArrayBuffer>();
+    private readonly queue = new Array<ArrayBuffer | null>();
 
     private readonly otherSegmentsQueue = new Map<number, Array<ArrayBuffer>>();
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
+
+    private checksum: debug.Addler32 | null = null; // Set non-null to print checksums.
+    private checksumIndex: number = 0;
+    private readonly checksumDescriptions = new Map<number, string>();
 }
 
 /**
@@ -273,7 +298,8 @@ class SegmentDownloader {
 
     private download(): void {
         /* Figure out the URL of the segment to download. */
-        let segmentIndexString: string = '' + this.segmentIndex;
+        const segmentIndex = this.segmentIndex;
+        let segmentIndexString: string = '' + segmentIndex;
         while (segmentIndexString.length < this.info.indexWidth) {
             segmentIndexString = '0' + segmentIndexString;
         }
@@ -286,7 +312,7 @@ class SegmentDownloader {
             if (response.status != 200) {
                 throw response;
             }
-            this.pump(response.body!.getReader()); // TODO: Error handling.
+            this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
         }).catch((): void => {
             this.onError('Error downloading segment');
         });
@@ -299,7 +325,7 @@ class SegmentDownloader {
         this.nextSegmentStart += this.segmentDuration;
     }
 
-    private pump(reader: ReadableStreamDefaultReader, logicalSegmentIndex: number | null = null,
+    private pump(reader: ReadableStreamDefaultReader, description: string, logicalSegmentIndex: number | null = null,
                  deinterleaver: deinterleave.Deinterleaver | null = null): void {
         reader.read().then(({done, value}): void => {
             /* If we're done, then the value means nothing. */
@@ -317,9 +343,9 @@ class SegmentDownloader {
             if (logicalSegmentIndex === null) {
                 logicalSegmentIndex = this.logicalSegmentIndex;
                 this.logicalSegmentIndex++;
-                for (const stream of this.streams) {
-                    stream.startSegment(logicalSegmentIndex);
-                }
+                this.streams.forEach((stream: Stream, index: number): void => {
+                    stream.startSegment(logicalSegmentIndex!, `${description}, sub-stream ${index}`);
+                });
             }
 
             /* Handle the data we just downloaded. */
@@ -334,7 +360,7 @@ class SegmentDownloader {
                             return;
                         }
                         this.streams[index]!.acceptSegmentData(data, logicalSegmentIndex!);
-                    });
+                    }, description);
                 }
                 deinterleaver.acceptData(value);
             }
@@ -343,7 +369,7 @@ class SegmentDownloader {
             }
 
             /* This is essentially a loop. */
-            this.pump(reader, logicalSegmentIndex, deinterleaver);
+            this.pump(reader, description, logicalSegmentIndex, deinterleaver);
         }).catch((): void => {
             this.onError('Error downloading or playing segment');
         });

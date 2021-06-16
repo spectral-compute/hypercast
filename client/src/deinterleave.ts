@@ -1,6 +1,9 @@
+import * as debug from './debug.js';
+
 export class Deinterleaver {
-    constructor(onData: (data: ArrayBuffer, index: number) => void) {
+    constructor(onData: (data: ArrayBuffer, index: number) => void, description: string) {
         this.onData = onData;
+        this.description = description;
     }
 
     acceptData(newBuffer: Uint8Array): void {
@@ -57,16 +60,35 @@ export class Deinterleaver {
             }
 
             // Store whatever of the chunk we currently have.
-            this.onData(buffer.slice(offset, offset + chunkLength), this.currentIndex);
+            const data = buffer.slice(offset, offset + chunkLength);
+            this.onData(data, this.currentIndex);
             this.currentOffset += chunkLength;
             offset += chunkLength;
+
+            // Print checksums.
+            if (this.checksums) {
+                if (!this.checksums.has(this.currentIndex)) {
+                    this.checksums.set(this.currentIndex, new debug.Addler32());
+                }
+                if (chunkLength == 0) {
+                    const checksum = this.checksums.get(this.currentIndex)!;
+                    console.log(`[Deinterleave Checksum] ${this.description} ` +
+                                `checksum: ${checksum.getChecksum()}, length: ${checksum.getLength()}`);
+                }
+                else {
+                    this.checksums.get(this.currentIndex)!.update(data);
+                }
+            }
         }
     }
 
     private readonly onData: (data: ArrayBuffer, index: number) => void;
+    private readonly description: string;
 
     private currentIndex = 0; // Index of the current chunk's content.
     private currentOffset = 0; // Offset within the current chunk.
     private currentLength = 0; // Length of the current chunk.
     private remainderBuffer: Uint8Array | null = null;
+
+    private readonly checksums: Map<number, debug.Addler32> | null = null; // Set non-null to print checksums.
 }
