@@ -242,9 +242,30 @@ export class BufferControl {
             }
             else { // Seek.
                 if (this.verbose) {
-                    console.log(`Seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
+                    console.log(`Try seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
                 }
-                mediaElement.currentTime = this.primaryMediaElement.currentTime;
+
+                // If there's nothing in the audio buffer, don't bother trying to seek. We'll try again later when the
+                // buffer isn't empty.
+                if (mediaElement.buffered.length == 0) {
+                    if (this.verbose) {
+                        console.log(`Buffer for secondary media element ${i} is empty`);
+                    }
+                    return;
+                }
+
+                // If the start of the audio buffer has progressed beyond the video, then we need to wait for the video
+                // to catch up.
+                if (mediaElement.buffered.start(0) > this.primaryMediaElement.currentTime) {
+                    if (this.verbose) {
+                        console.log(`Buffer for secondary media element ${i} is ahead of primary media element`);
+                    }
+                    return;
+                }
+
+                // Seek as close to the video's time as we can within the buffer.
+                const bufferHead = mediaElement.buffered.end(mediaElement.buffered.length - 1);
+                mediaElement.currentTime = Math.min(this.primaryMediaElement.currentTime, bufferHead);
             }
         });
     }
