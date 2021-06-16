@@ -52,6 +52,9 @@ export class Deinterleaver {
             // Copy as much chunk data as we can. Note that we might not have just decoded a chunk. We might instead be
             // resuming one we've started on.
             const chunkLength = Math.min(buffer.length - offset, this.currentLength - this.currentOffset);
+            if (chunkLength == 0 && this.currentLength != 0) {
+                continue; // Don't emit a spurious empty chunk.
+            }
 
             // Store whatever of the chunk we currently have.
             this.onData(buffer.slice(offset, offset + chunkLength), this.currentIndex);
