@@ -102,7 +102,7 @@ export class BufferControl {
     setSaferLatency(): void {
         this.minBuffer = 750;
         this.maxBuffer = 1750;
-        this.secondarySyncTolerance = 50;
+        this.secondarySyncTolerance = 100;
         this.catchUpEventsEwma.reset();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
     }
@@ -111,7 +111,7 @@ export class BufferControl {
     setLowLatency(): void {
         this.minBuffer = 500;
         this.maxBuffer = 1000;
-        this.secondarySyncTolerance = 50;
+        this.secondarySyncTolerance = 100;
         this.catchUpEventsEwma.reset();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
     }
@@ -234,7 +234,7 @@ export class BufferControl {
             if (!isNaN(adjustPlaybackRate) &&
                 Math.abs(this.secondaryMediaElementSync[i]!) < this.secondarySkipThreshold)
             { // Adjust playback rate.
-                adjustPlaybackRate = Math.min(Math.max(adjustPlaybackRate, 0), this.maxPlaybackRate);
+                adjustPlaybackRate = Math.min(Math.max(adjustPlaybackRate, this.minPlaybackRate), this.maxPlaybackRate);
                 if (this.verbose) {
                     console.log(`Adjusting secondary playback rate ${i} to ${adjustPlaybackRate}`);
                 }
@@ -272,9 +272,10 @@ export class BufferControl {
 
     // Settings.
     private readonly syncClockPeriod = 100;
+    private readonly minPlaybackRate = 0.5;
     private readonly maxPlaybackRate = 2;
     private readonly skipThreshold = 4000;
-    private readonly secondarySkipThreshold = 1000;
+    private readonly secondarySkipThreshold = 500;
     private readonly catchUpEventDuration = 2000;
     private readonly catchUpInitDuration = 10000;
     private readonly secondarySeekTimeout = 10; // If we were seeking for too long (in ticks), we probably got stuck.
