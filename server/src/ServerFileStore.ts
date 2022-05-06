@@ -1,5 +1,7 @@
 import {EventEmitter} from "events";
-import {log} from "./VideoServer";
+import {Logger} from "./Log";
+
+const log = new Logger('Server File Store');
 
 class InterleavedFile {
     constructor(fileStore: ServerFileStore, namePattern: string, captureGroups: string[], interleaveTotal: number) {
@@ -161,7 +163,7 @@ class InterleavePattern {
 
     private onServerAddPath(path: string) {
         for (let patternIndex = 0; patternIndex < this.patterns.length; patternIndex++) {
-            const match = this.patterns[patternIndex].exec(path);
+            const match = this.patterns[patternIndex]!.exec(path);
             if (!match) {
                 continue;
             }

@@ -1,5 +1,5 @@
-import * as bufferctrl from './bufferctrl.js';
-import * as stream from './stream.js';
+import * as bufferctrl from './bufferctrl';
+import * as stream from './stream';
 
 export class Player {
     /**

@@ -1,4 +1,4 @@
-import * as debug from './debug.js';
+import * as debug from './debug';
 
 export class Deinterleaver {
     constructor(onData: (data: ArrayBuffer, index: number) => void, description: string) {

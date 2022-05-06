@@ -1,0 +1,37 @@
+{
+  "name": "live-video-streamer-client",
+  "description": "Client for ultra low-latency live video streaming over CDN",
+  "author": "Spectral Compute",
+  "license": "Custom",
+  "private": true,
+  "main": "dist/live-video-streamer-client.js",
+  "types": "dist/live-video-streamer-client.d.ts",
+  "version": "0.0.0",
+  "scripts": {
+    "bundle": "yarn webpack --mode production",
+    "bundle-dev": "yarn webpack --mode development",
+    "clean": "rm -rf build dist"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "dependencies": {
+    "@babel/core": "^7.17.10",
+    "@babel/preset-env": "^7.17.10",
+    "babel-loader": "^8.2.5",
+    "ts-loader": "^9.3.0",
+    "typescript": "^4.6.4",
+    "typescript-declaration-webpack-plugin": "^0.2.2",
+    "webpack": "^5.72.0",
+    "webpack-cli": "^4.9.2"
+  }
+}

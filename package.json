@@ -1,0 +1,17 @@
+{
+  "name": "live-video-streamer",
+  "description": "Ultra low-latency live video streaming over CDN",
+  "repository": "git@gitlab.com:spectral-ai/engineering/media/live-video-streamer.git",
+  "author": "Spectral Compute",
+  "license": "Custom",
+  "private": true,
+  "workspaces": [
+    "client",
+    "demo-client",
+    "server"
+  ],
+  "scripts": {
+    "foreach": "(cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)"
+  },
+  "packageManager": "yarn@3.2.0"
+}

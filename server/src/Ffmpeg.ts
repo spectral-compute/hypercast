@@ -2,12 +2,9 @@
 import * as child_process from 'child_process';
 import * as process from 'process';
 import * as stream from 'stream';
-import {Logger} from "winston";
-import {getLogger} from "../common/LoggerConfig";
 import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern, VideoConfig} from "./Config";
 import {ChildProcess} from "child_process";
-
-export const log: Logger = getLogger("Ffmpeg");
+import {Logger} from "./Log"
 
 /* FFMPEG Arguments. */
 const pipeSize = 1024; // Buffer size for pipes that ffmpeg uses to communicate.
@@ -316,7 +313,7 @@ export namespace ffmpeg {
         inputStreams: stream.Writable[] = [];
         outputStreams: stream.Readable[] = [];
 
-        private process!: ChildProcess;
+        private process?: ChildProcess;
 
         // Are we currently in the process of trying to quit?
         private stopping: boolean = false;
@@ -354,7 +351,7 @@ export namespace ffmpeg {
                         ('"' + arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"') : arg);
                 });
 
-                this.log.debug(`Spawning FFmpeg Command:\n%s`, argsString);
+                this.log.debug(`Spawning FFmpeg Command:\n${argsString}`);
 
                 this.process.stderr!.once('data', () => {
                     // This presumably means it's alive...
@@ -483,7 +480,7 @@ export namespace ffmpeg {
                 let murderiseCountdown: Timeout | undefined = undefined;
                 if (timeoutMs !== undefined) {
                     murderiseCountdown = setTimeout(() => {
-                        this.process.kill('SIGKILL');
+                        this.process!.kill('SIGKILL');
                     }, timeoutMs);
                 }
 
@@ -494,26 +491,26 @@ export namespace ffmpeg {
                         clearTimeout(murderiseCountdown);
                     }
 
-                    this.process.off('error', errorHandler);
+                    this.process!.off('error', errorHandler!);
 
                     resolve();
                 };
 
                 errorHandler = (e: Error) => {
-                    log.error(`[${this.name}] Error during shutdown: %O`, e);
-                    this.process.off('exit', exitHandler);
+                    this.log.error(`[${this.name}] Error during shutdown: ${e}`);
+                    this.process!.off('exit', exitHandler);
                 };
 
-                this.process.once('exit', exitHandler);
-                this.process.on('error', errorHandler);
+                this.process!.once('exit', exitHandler);
+                this.process!.on('error', errorHandler);
 
-                this.process.kill('SIGTERM');
+                this.process!.kill('SIGTERM');
             });
         }
 
         constructor(private readonly name: string,
                     private readonly args: string[]) {
-            this.log =  getLogger("Ffmpeg_" + name);
+            this.log = new Logger("Ffmpeg " + name);
         }
     }
 

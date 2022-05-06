@@ -1,5 +1,5 @@
-import * as debug from './debug.js';
-import * as deinterleave from './deinterleave.js';
+import * as debug from './debug';
+import * as deinterleave from './deinterleave';
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -586,7 +586,7 @@ export class MseWrapper {
 
             this.video.src = URL.createObjectURL(this.videoMediaSource);
             if (withAudio && this.audio) {
-                this.audio.src = URL.createObjectURL(this.audioMediaSource);
+                this.audio.src = URL.createObjectURL(this.audioMediaSource!);
             }
         }
 

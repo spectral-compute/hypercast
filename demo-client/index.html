@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            .ui {
+                margin-bottom: 2px;
+            }
+            video {
+                border-color: #000000;
+                border-style: solid;
+                border-width: 1px;
+            }
+
+            video.primary {
+                width: 1600px;
+                height: 900px;
+            }
+
+            video.secondary {
+                width: 240px;
+                height: 135px;
+            }
+
+        </style>
+        <link rel="icon" href="data:," />
+    </head>
+    <body>
+        <div class="ui">
+            <span id="innerui" hidden>
+                <label id="angleLabel" for="angle">Angle:</label>
+                <select id="angle"></select>
+                <label id="qualityLabel" for="quality">Quality:</label>
+                <select id="quality"></select>
+                <label id="latencyLabel" for="latency">Latency target:</label>
+                <select id="latency"></select>
+                <button id="mute">Mute</button>
+                <button id="unmute">Unmute</button>
+                <span id="change">No changes so source made yet</span>
+            </span>
+            <button id="stop" hidden>Stop</button>
+            <button id="start" hidden>Start</button>
+        </div>
+        <video id="video" class="primary"></video>
+        <video id="secondaryVideo" class="secondary"></video>
+        <audio id="audio"></audio>
+        <script src="app.js"></script>
+    </body>
+</html>

@@ -1,14 +1,8 @@
-import {assertNonNull} from "../common/util/Assertion";
+import {readFileSync} from "fs";
+import {assertNonNull} from "./Assertion";
 
 export type AudioCodec = 'aac' | 'opus';
 export type VideoCodec = 'h264' | 'h265' | 'vp8' | 'vp9' | 'av1';
-
-// These are the options that the camera advertizes. But not all models of camera support all all of these, or all
-// combinations of them.
-export type CameraResolution = '4k' | '1080P' | '720P@1080P' | '720P@720P';
-export type CameraFramerate = '60' | '59.94' | '50' | '30' | '29.97' | '25' | '25@30' |
-    '19' | '19@60' | '18' | '18@60' | '17' | '17@60' | '16' | '16@60' |
-    '15' | '15@60' | '14' | '14@60' | '13@60' | '12';
 
 export interface AudioConfig {
     // The bitrate in kBit/s for this audio stream.
@@ -66,41 +60,11 @@ export interface CodecOptions {
     h265Preset: string,
 }
 
-export interface CameraConfig {
-    // Whether or not to power on the cameras at start.
-    powerOn: boolean,
-
-    // Whether or not to power off the cameras on terminate.
-    powerOff: boolean,
-
-    // Whether or not to configure the cameras.
-    configure: boolean,
-
-    // Whether or not to power cycle the cameras when configuring. This is useful because the cameras occasionally get
-    // stuck. This is ignored if configuration is not enabled.
-    configurePowerCycle: boolean,
-
-    // Whether or not to forcibly configure the cameras, even if we detect that their configuration is correct. This
-    // is useful for debugging, and for handling the case where a setting we don't test gets changed. This does nothing
-    // if configuration is not enabled.
-    forceConfigure: boolean,
-
-    // The resolution to configure the camera with.
-    resolution: CameraResolution,
-
-    // The frameate to configure the camera with.
-    framerate: CameraFramerate,
-
-    // The bitrate, in kbit/s to configure the stream to use. This must be a bitrate that the camera supports.
-    bitrate: number,
-}
-
 export interface Config {
     audio: {
         // For each source, generate this set of output audio streams.
         configs: AudioConfig[]
     },
-    camera: CameraConfig,
     dash: {
         // Multiply the segment length inferred from the GOP size by this amount. This should be an integer to avoid
         // segment length variations. It is recommended that the segments be approximately 8-16 seconds in duration. It
@@ -219,12 +183,18 @@ export function substituteManifestPattern(pattern: string, uniqueId: string, ind
         assertNonNull(match.index);
 
         const startIdx = match.index;
-        const endIdx = match.index + match[0].length;
-        const numDigits = parseInt(match[1]);
+        const endIdx = match.index + match[0]!.length;
+        const numDigits = parseInt(match[1]!);
 
         const replacement = (index === undefined) ?
             ('[0-9]{' + numDigits + ',}') : index.toString().padStart(numDigits, '0');
         result = result.substr(0, startIdx) + replacement + result.substr(endIdx);
     }
     return result;
+}
+
+export function loadConfig(path: string): Config {
+    const json: string = readFileSync(path, {encoding: "utf-8"});
+    const obj = JSON.parse(json);
+    return obj as Config; // TODO: Proper validation: checking for extra fields, and missing fields, and add defaults.
 }

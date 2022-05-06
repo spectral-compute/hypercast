@@ -1,18 +1,13 @@
 /* eslint-disable @typescript-eslint/prefer-regexp-exec */
-import {Logger} from "winston";
-import {getLogger} from "../common/LoggerConfig";
-import {WebServerProcess} from "../common/WebServerNode";
-import http from "http";
-import {loadConfig} from "../common/Config";
-import {assertType} from "@ckitching/typescript-is";
-import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config";
-import {ServerFileStore} from "./ServerFileStore";
+import assert = require("assert");
+import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
-import {assertNonNull} from "../common/util/Assertion";
-import {ffmpeg} from "./Ffmpeg";
-import {CamAPI} from "./CamAPI";
+import {assertNonNull} from "./Assertion";
 
-export const log: Logger = getLogger("VideoServer");
+import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config";
+import {ffmpeg} from "./Ffmpeg";
+import {Logger} from "./Log";
+import {ServerFileStore} from "./ServerFileStore";
 
 enum Liveness {
     // Nothing to do with the live stream.
@@ -87,8 +82,9 @@ class DriftInfo {
     }
 
     get() {
-        let earliest: number = this.drifts[0];
-        let latest: number = this.drifts[0];
+        assert(this.drifts.length > 0);
+        let earliest: number = this.drifts[0]!;
+        let latest: number = this.drifts[0]!;
         let sum = 0;
         for (const drift of this.drifts) {
             earliest = Math.min(earliest, drift);
@@ -125,8 +121,9 @@ class SegmentIndexDescriptor {
     readonly timestamp: number;
 }
 
-export class VideoServer extends WebServerProcess {
-    private config!: Config;
+export class VideoServer {
+    // Object used for simple logging (just prints to the console).
+    private readonly log: Logger;
 
     // The duration of each segment.
     private segmentDurationExact!: [number, number]; // In seconds.
@@ -170,9 +167,30 @@ export class VideoServer extends WebServerProcess {
     // process.
     private readonly uniqueID: string;
 
-    constructor() {
-        super("VideoServer");
+    constructor(private readonly config: Config) {
+        this.log = new Logger("VideoServer");
         this.uniqueID = Math.round(Date.now() + Math.random() * 1000000).toString(36);
+
+        /* Calculate the segment duration. */
+        this.segmentDurationExact = computeSegmentDuration(this.config.dash.segmentLengthMultiplier,
+            this.config.video.configs);
+        this.segmentDuration = (this.segmentDurationExact[0] * 1000) / this.segmentDurationExact[1];
+
+        this.serverFileStore.on('add', (path: string): void => {
+            this.onFileStoreAdd(path);
+        });
+
+        this.serverFileStore.on('remove', (path: string): void => {
+            this.onFileStoreRemove(path);
+        });
+
+        this.loadCacheConfiguration();
+        this.writeServerInfo();
+        this.addInterleavePatterns();
+
+        this.buildServer();
+        this.startStreaming();
+        // this.stopStreaming();
     }
 
     private loadCacheConfiguration() {
@@ -192,15 +210,15 @@ export class VideoServer extends WebServerProcess {
         this.notFoundCacheTimes.set(Liveness.live, Math.max(Math.round((this.segmentDuration - this.config.network.preAvailabilityTime) / 1000), 1));
 
         if (this.notFoundCacheTimes.get(Liveness.live) == 0) {
-            log.warn('Warning: Caching of 404s for paths that may become live is disabled. Consider increasing pre-availability time.');
+            this.log.warn('Warning: Caching of 404s for paths that may become live is disabled. Consider increasing pre-availability time.');
         }
 
-        log.debug("Cache times:");
+        this.log.debug("Cache times:");
         this.foundCacheTimes.forEach((value: number, key: Liveness): void => {
-            log.debug(`  200 ${Liveness[key]}: ${value}`);
+            this.log.debug(`  200 ${Liveness[key]}: ${value}`);
         });
         this.notFoundCacheTimes.forEach((value: number, key: Liveness): void => {
-            log.debug(`  404 ${Liveness[key]}: ${value}`);
+            this.log.debug(`  404 ${Liveness[key]}: ${value}`);
         });
 
         const manifestPattern = substituteManifestPattern(this.config.dash.manifest, this.uniqueID);
@@ -210,114 +228,6 @@ export class VideoServer extends WebServerProcess {
         this.livePaths = new RegExp(livePattern);
         this.edgePaths = new RegExp(edgePattern);
         this.ephemeralPaths = new RegExp('^(?:(?:' + manifestPattern + ')|(?:' + this.config.serverInfo.live + ')|(?:' + livePattern + 'drift.json))$');
-    }
-
-    async start(config?: Config): Promise<void> {
-        this.config = config ?? loadConfig('video-server');
-        assertType<Config>(this.config);
-
-        /* Calculate the segment duration. */
-        this.segmentDurationExact = computeSegmentDuration(this.config.dash.segmentLengthMultiplier, this.config.video.configs);
-        this.segmentDuration = (this.segmentDurationExact[0] * 1000) / this.segmentDurationExact[1];
-
-        this.serverFileStore.on('add', (path: string): void => {
-            this.onFileStoreAdd(path);
-        });
-
-        this.serverFileStore.on('remove', (path: string): void => {
-            this.onFileStoreRemove(path);
-        });
-
-        await super.start();
-    }
-
-    protected registerStartJobs() {
-        super.registerStartJobs();
-
-        this.registerStartupJob("Write server info", async() => {
-            this.loadCacheConfiguration();
-            this.writeServerInfo();
-            this.addInterleavePatterns();
-        });
-
-        // Aggressively reconfigure the cameras on every startup in production.
-        if (this.config.camera.configure) {
-            this.registerStartupJob(`Configure cameras`, async() => {
-                await Promise.all(this.config.video.sources.map(async(src, i) => this.configureCamera(src, i)));
-            }, {before: "Launch webserver"});
-        }
-
-        if (this.config.camera.powerOn) {
-            this.registerStartupJob(`Turn cameras on`, async() => {
-                await Promise.all(this.config.video.sources.map(async(src) => {
-                    return (await this.getCamAPI(src)).turnOn();
-                }));
-            });
-        }
-
-        this.registerStartupJob("Begin streaming", async() => {
-            await this.startStreaming();
-        });
-    }
-
-    registerStopJobs() {
-        super.registerStopJobs();
-
-        this.registerShutdownJob("Stop ffmpeg processes", async() => {
-            await this.stopStreaming();
-        }, {before: "Stop HTTP server"});
-
-        if (this.config.camera.powerOff) {
-            this.registerShutdownJob(`Turn cameras off`, async() => {
-                await Promise.all(this.config.video.sources.map(async(src) => {
-                    return (await this.getCamAPI(src)).turnOff();
-                }));
-            });
-        }
-    }
-
-    private async getCamAPI(srcUrl: string) {
-        const url = "http://" + srcUrl.slice(7, srcUrl.lastIndexOf(':'));
-        const api = new CamAPI(url, this.config.camera);
-        await api.authenticate();
-        return api;
-    }
-
-    // Apply the configuration we want to the camera using its undocumented REST API :D. This also power-cycles the
-    // camera, recovering it from any broken state.
-    private async configureCamera(srcUrl: string, num: number) {
-        const api = await this.getCamAPI(srcUrl);
-        const camNum = num + 1;
-
-        log.info(`Cam ${camNum}: Checking camera firmware compatibility...`);
-        await api.checkFirmwareVersion();
-
-        // Power cycle the camera, since occasionally it gets stuck :D.
-        if (this.config.camera.configurePowerCycle) {
-            log.info(`Cam ${camNum}: Power off...`);
-            await api.turnOff();
-
-            log.info(`Cam ${camNum}: Power on...`);
-            await api.turnOn();
-        }
-
-        log.info(`Cam ${camNum}: Setting stream configuration...`);
-        await api.configureStreams(`Cam ${num + 1}`);
-
-        log.info(`Cam ${camNum}: Setting audio configuration...`);
-        await api.configureAudio(num == 0);
-
-        log.info(`Cam ${camNum}: Setting clock configuration...`);
-        await api.configureClock();
-
-        // Power cycle the camera, since occasionally it gets stuck :D.
-        if (this.config.camera.configurePowerCycle) {
-            log.info(`Cam ${camNum}: Power off...`);
-            await api.turnOff();
-
-            log.info(`Cam ${camNum}: Power on...`);
-            await api.turnOn();
-        }
     }
 
     /**
@@ -436,7 +346,7 @@ export class VideoServer extends WebServerProcess {
         return false;
     }
 
-    protected buildServer(listenCallback: () => void): http.Server {
+    protected buildServer(): http.Server {
         return http.createServer((request: http.IncomingMessage, response: http.ServerResponse): void => {
             /* Extract request information. */
             const path = request.url;
@@ -464,7 +374,7 @@ export class VideoServer extends WebServerProcess {
                 if (request.method == 'PUT') {
                     farEdgeDrift = this.farEdgePaths.get(path)!.getFarEdgeDrift(this.segmentDurationExact);
                     if (this.farEdgePaths.get(path)!.isFinalInitial() && this.config.dash.terminateDriftLimit != 0 && Math.abs(farEdgeDrift) > this.config.dash.terminateDriftLimit) {
-                        this.fatalError(`Live edge drifted too far (${farEdgeDrift} ms)!`);
+                        this.log.fatal(`Live edge drifted too far (${farEdgeDrift} ms)!`);
                     }
                 }
             } else if (this.ephemeralPaths.test(path)) {
@@ -483,13 +393,13 @@ export class VideoServer extends WebServerProcess {
                     requestInfoString += ` (drift: ${farEdgeDrift} ms)`;
                 }
             }
-            log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
+            this.log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
 
             request.on('error', (e): void => {
-                log.error(`Error in request ${requestInfoString}: ${e}`);
+                this.log.error(`Error in request ${requestInfoString}: ${e}`);
             });
             response.on('error', (e): void => {
-                log.error(`Error in response ${requestInfoString}: ${e}`);
+                this.log.error(`Error in response ${requestInfoString}: ${e}`);
             });
 
             /* Configure for low latency. */
@@ -523,7 +433,7 @@ export class VideoServer extends WebServerProcess {
                     this.addCacheControl(response, Liveness.none, false);
                     response.end();
             }
-        }).listen(this.config.network.port, listenCallback);
+        }).listen(this.config.network.port);
     }
 
     // Request handlers.
@@ -626,7 +536,7 @@ export class VideoServer extends WebServerProcess {
             /* If we got an intervening delete, then the best we can do is just finish now. This is really an error
                condition though. */
             if (!this.serverFileStore.has(request.url)) {
-                log.warn(`Warning: ${request.url} was deleted while being served to active request!`);
+                this.log.warn(`Warning: ${request.url} was deleted while being served to active request!`);
                 response.end();
                 return;
             }
@@ -682,7 +592,7 @@ export class VideoServer extends WebServerProcess {
         if (edgeMatch?.index !== undefined) {
             // Figure out the next path.
             const prefix = path.substr(0, edgeMatch.index);
-            const indexString = edgeMatch[0];
+            const indexString = edgeMatch[0]!;
             const suffix = path.substr(edgeMatch.index + indexString.length);
 
             const index = parseInt(indexString);
@@ -704,7 +614,7 @@ export class VideoServer extends WebServerProcess {
                 }
             } else {
                 if (index != 0 && index != 1) {
-                    this.fatalError(`Live-edge path ${path} added that is neither a starting index nor from the far edge!`);
+                    this.log.fatal(`Live-edge path ${path} added that is neither a starting index nor from far edge!`);
                 }
                 edgeInfo = new EdgeInfo(index, path, index);
             }
@@ -744,25 +654,20 @@ export class VideoServer extends WebServerProcess {
         });
     }
 
-    private fatalError(msg: string): void {
-        log.error(msg);
-        void (this.stop()); // I don't see what else I'd do with this promise.
-    }
-
-    public async startStreaming() {
-        log.info("Building ffmpeg processes...");
+    public startStreaming() {
+        this.log.info("Building ffmpeg processes...");
         this.ffmpegProcesses = this.config.video.sources.map((source: string, i: number) => {
             return ffmpeg.launchTranscoder(i, this.config, source, this.uniqueID);
         });
 
-        log.info("Launching ffmpeg processes...");
-        await Promise.all(this.ffmpegProcesses.map(async(p) => p.start()));
-        log.info("All ffmpeg processes started.");
+        this.log.info("Launching ffmpeg processes...");
+        this.ffmpegProcesses.map(p => p.start());
+        this.log.info("All ffmpeg processes started.");
     }
 
-    public async stopStreaming() {
-        log.info("Shutting down ffmpeg processes...");
-        await Promise.all(this.ffmpegProcesses.map(async(p) => p.stop(10000)));
-        log.info("All ffmepg processes have stopped.");
+    public stopStreaming() {
+        this.log.info("Shutting down ffmpeg processes...");
+        this.ffmpegProcesses.map(p => p.stop(10000));
+        this.log.info("All ffmepg processes have stopped.");
     }
 }
