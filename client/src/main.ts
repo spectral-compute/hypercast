@@ -111,9 +111,9 @@ export class Player {
             if (onInit) {
                 onInit();
             }
-        }).catch((): void => {
+        }).catch((e: Error): void => {
             if (this.onError) {
-                this.onError("Error initializing player");
+                this.onError(`Error initializing player: ${e.message}`);
             }
         });
     }
