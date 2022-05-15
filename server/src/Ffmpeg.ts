@@ -1,5 +1,6 @@
 import assert = require("assert");
 import * as child_process from "child_process";
+import * as fs from "fs";
 import * as process from "process";
 import * as stream from "stream";
 import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern,
@@ -23,15 +24,17 @@ const globalArgs = [
 ];
 
 // Arguments that apply to input streams.
-const inputArgs = [
+const realtimeInputArgs = [
     "-avioflags", "direct",
     "-fflags", "nobuffer",
     "-rtbufsize", `${pipeSize}`,
     "-thread_queue_size", "0"
 ];
 
-const pipeInputArgs = [...inputArgs, "-blocksize", `${pipeSize}`];
-const rtspInputArgs = [...inputArgs, "-rtsp_transport", "tcp"];
+const pipeInputArgs = [...realtimeInputArgs, "-blocksize", `${pipeSize}`];
+const rtspInputArgs = [...realtimeInputArgs, "-rtsp_transport", "tcp"];
+
+const fileInputArgs = ["-re"]; // Stream the file in realtime, rather than getting ahead.
 
 const outputArgs = [
     // Low latency options.
@@ -127,8 +130,14 @@ function getExternalSourceArgs(src: string): string[] {
         args = [...args, ...pipeInputArgs];
     } else if (src.startsWith("rtsp://")) {
         args = [...args, ...rtspInputArgs];
+    } else if (src.search(/^[A-Za-z0-9]+:[/]{2}/) === 0) {
+        args = [...args, ...realtimeInputArgs]; // This is a guess, but the intended use of this system is realtime.
+    } else if (fs.statSync(src).isFile()) {
+        args = [...args, ...fileInputArgs];
+    } else if (fs.statSync(src).isFIFO()) {
+        args = [...args, ...pipeInputArgs]; // This is just a pipe that is named in the filesystem.
     } else {
-        args = [...args, ...inputArgs];
+        args = [...args, ...realtimeInputArgs]; // This is a guess, but the intended use of this system is realtime.
     }
 
     args = [...args, "-i", src];
@@ -522,7 +531,7 @@ export namespace ffmpeg {
 
     /* Run ffmpeg to transcode from external input to DASH in one go. */
     export function launchTranscoder(angle: number, config: Config, source: string, uniqueId: string): Subprocess {
-        const name = `Cam ${angle + 1}`; // Human friendly camera label.
+        const name = `Source ${angle + 1}`; // Human friendly camera label.
         const videoConfigs = config.video.configs;
         const audioConfigs = config.audio.configs;
 
