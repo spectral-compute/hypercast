@@ -1,5 +1,5 @@
-import * as debug from './debug';
-import * as deinterleave from './deinterleave';
+import * as debug from "./debug";
+import * as deinterleave from "./deinterleave";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -24,6 +24,15 @@ const PruneMinMediaSourceBufferLength = 8000;
 const PruneMaxMediaSourceBufferLength = 16000;
 
 /**
+ * Stream index info objects we receive.
+ */
+interface SegmentIndexDescriptor {
+    index: number;
+    indexWidth: number;
+    age: number;
+}
+
+/**
  * Manages a media source buffer, and a queue of data to go with it.
  */
 class Stream {
@@ -35,13 +44,13 @@ class Stream {
         this.onStart = onStart;
 
         this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
-        this.sourceBuffer.addEventListener('onabort', (): void => {
-            this.onError('SourceBuffer aborted');
+        this.sourceBuffer.addEventListener("onabort", (): void => {
+            this.onError("SourceBuffer aborted");
         });
-        this.sourceBuffer.addEventListener('onerror', (): void => {
-            this.onError('Error with SourceBuffer');
+        this.sourceBuffer.addEventListener("onerror", (): void => {
+            this.onError("Error with SourceBuffer");
         });
-        this.sourceBuffer.addEventListener('update', (): void => {
+        this.sourceBuffer.addEventListener("update", (): void => {
             this.advanceQueue(); // We might have more data that we can add immediately.
         });
     }
@@ -53,7 +62,7 @@ class Stream {
      * @param description A description of the segment.
      */
     startSegment(segment: number, description: string): void {
-        if (segment == 0 && this.onStart) {
+        if (segment === 0 && this.onStart) {
             this.onStart();
         }
         if (this.checksum) {
@@ -107,11 +116,10 @@ class Stream {
      * @param segment The segment that the data is from.
      */
     acceptSegmentData(data: ArrayBuffer, segment: number): void {
-        if (segment == this.currentSegment) {
+        if (segment === this.currentSegment) {
             this.queue.push(data);
             this.advanceQueue();
-        }
-        else {
+        } else {
             if (!this.otherSegmentsQueue.has(segment)) {
                 this.otherSegmentsQueue.set(segment, new Array<ArrayBuffer>());
             }
@@ -146,9 +154,8 @@ class Stream {
                 if (this.checksum) {
                     this.checksum.update(data!);
                 }
-            }
-            else if (this.checksum) {
-                console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)} ` +
+            } else if (this.checksum) {
+                console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)!} ` +
                             `checksum: ${this.checksum.getChecksum()}, length: ${this.checksum.getLength()}`);
                 this.checksum = new debug.Addler32();
                 this.checksumDescriptions.delete(this.checksumIndex);
@@ -163,7 +170,7 @@ class Stream {
     private prune(): void {
         /* Figure out if anything is buffered at all. */
         const buffered = this.sourceBuffer.buffered;
-        if (buffered.length == 0) {
+        if (buffered.length === 0) {
             return;
         }
 
@@ -199,7 +206,7 @@ class Stream {
     private readonly sourceBuffer: SourceBuffer;
     private readonly queue = new Array<ArrayBuffer | null>();
 
-    private readonly otherSegmentsQueue = new Map<number, Array<ArrayBuffer>>();
+    private readonly otherSegmentsQueue = new Map<number, ArrayBuffer[]>();
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
 
@@ -212,7 +219,7 @@ class Stream {
  * Schedules download of segments.
  */
 class SegmentDownloader {
-    constructor(info: any, interleaved: boolean, streams: Array<Stream>, streamIndex: number,
+    constructor(info: SegmentIndexDescriptor, interleaved: boolean, streams: Stream[], streamIndex: number,
                 baseUrl: string, segmentDuration: number, segmentPreavailability: number,
                 onError: (description: string) => void) {
         this.info = info;
@@ -244,22 +251,21 @@ class SegmentDownloader {
      *
      * @param A segment index info object that has just been downloaded.
      */
-    private setSegmentDownloadSchedule(info: any): void {
+    private setSegmentDownloadSchedule(info: SegmentIndexDescriptor): void {
         /* Schedule periodic updates to the download scheduler. */
         this.schedulerTimeout = setTimeout((): void => {
             fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`).
-                then((response: Response): Promise<any> =>
-            {
-                if (response.status != 200) {
-                    throw response;
+            then((response: Response): Promise<SegmentIndexDescriptor> => {
+                if (response.status !== 200) {
+                    throw new Error(`Fetching stream index descriptor gave HTTP status code ${response.status}`);
                 }
                 return response.json();
             }).catch((): void => {
-                this.onError('Error downloading stream index descriptor');
-            }).then((newInfo): void => {
-                this.setSegmentDownloadSchedule(newInfo);
+                this.onError("Error downloading stream index descriptor");
+            }).then((newInfo: SegmentIndexDescriptor | void): void => {
+                this.setSegmentDownloadSchedule(newInfo as SegmentIndexDescriptor);
             }).catch((): void => {
-                this.onError('Error updating download schedule');
+                this.onError("Error updating download schedule");
             });
         }, this.segmentDuration * DownloadSchedulerUpdatePeriod);
 
@@ -300,9 +306,9 @@ class SegmentDownloader {
     private download(): void {
         /* Figure out the URL of the segment to download. */
         const segmentIndex = this.segmentIndex;
-        let segmentIndexString: string = '' + segmentIndex;
+        let segmentIndexString: string = `${segmentIndex}`;
         while (segmentIndexString.length < this.info.indexWidth) {
-            segmentIndexString = '0' + segmentIndexString;
+            segmentIndexString = `0${segmentIndexString}`;
         }
         const url = this.interleaved ?
                     `${this.baseUrl}/interleaved${this.streamIndex}-${segmentIndexString}` :
@@ -311,20 +317,20 @@ class SegmentDownloader {
         /* Download the current segment. */
         fetch(url).then((response: Response): void => {
             // Handle the error case.
-            if (response.status != 200) {
-                throw response;
+            if (response.status !== 200) {
+                throw Error(`Fetching chunk ${url} returnt HTTP status code ${response.status}`);
             }
 
             // If this is an old segment, just cancel it. A new one should be along soon if it hasn't already arrived.
             if (segmentIndex < this.segmentIndex - 1) {
-                response.body!.cancel();
+                void response.body!.cancel();
                 return;
             }
 
             // Start reading from the response.
             this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
         }).catch((): void => {
-            this.onError('Error downloading segment');
+            this.onError("Error downloading segment");
         });
 
         /* Schedule the downloading of the next segment. */
@@ -337,7 +343,7 @@ class SegmentDownloader {
 
     private pump(reader: ReadableStreamDefaultReader, description: string, logicalSegmentIndex: number | null = null,
                  deinterleaver: deinterleave.Deinterleaver | null = null): void {
-        reader.read().then(({done, value}): void => {
+        reader.read().then(({value, done}: ReadableStreamDefaultReadResult<Uint8Array>): void => {
             /* If we're done, then the value means nothing. */
             if (done) {
                 if (logicalSegmentIndex === null) {
@@ -365,7 +371,7 @@ class SegmentDownloader {
                         if (this.streams.length <= index) {
                             return;
                         }
-                        if (data.byteLength == 0) { // End of file.
+                        if (data.byteLength === 0) { // End of file.
                             this.streams[index]!.endSegment(logicalSegmentIndex!);
                             return;
                         }
@@ -373,21 +379,20 @@ class SegmentDownloader {
                     }, description);
                 }
                 deinterleaver.acceptData(value);
-            }
-            else {
+            } else {
                 this.streams[0]!.acceptSegmentData(value, logicalSegmentIndex);
             }
 
             /* This is essentially a loop. */
             this.pump(reader, description, logicalSegmentIndex, deinterleaver);
         }).catch((): void => {
-            this.onError('Error downloading or playing segment');
+            this.onError("Error downloading or playing segment");
         });
     }
 
-    private readonly info;
+    private readonly info: SegmentIndexDescriptor;
     private readonly interleaved: boolean;
-    private readonly streams: Array<Stream>;
+    private readonly streams: Stream[];
     private readonly streamIndex: number;
     private readonly baseUrl: string;
     private readonly segmentDuration: number;
@@ -402,8 +407,8 @@ class SegmentDownloader {
 }
 
 export class MseWrapper {
-    constructor(video: HTMLVideoElement, audio: HTMLAudioElement, segmentDuration: number, segmentPreavailability: number,
-                onError: (description: string) => void) {
+    constructor(video: HTMLVideoElement, audio: HTMLAudioElement | null, segmentDuration: number,
+                segmentPreavailability: number, onError: (description: string) => void) {
         this.video = video;
         this.audio = audio;
         this.segmentDuration = segmentDuration;
@@ -411,11 +416,10 @@ export class MseWrapper {
         this.onError = onError;
     }
 
-    setSource(baseUrl: string, videoStream: number, audioStream: number, interleaved: boolean): void {
+    setSource(baseUrl: string, videoStream: number, audioStream: number | null, interleaved: boolean): void {
         /* If we're setting the source to what it's already set to, do nothing. */
         if (baseUrl === this.baseUrl && videoStream === this.videoStreamIndex &&
-            audioStream === this.audioStreamIndex)
-        {
+            audioStream === this.audioStreamIndex) {
             return;
         }
         this.baseUrl = baseUrl;
@@ -470,10 +474,9 @@ export class MseWrapper {
         if (this.audio) {
             this.audio.muted = muted;
             if (!muted && !this.video.paused) {
-                this.audio.play();
+                void this.audio.play();
             }
-        }
-        else {
+        } else {
             this.video.muted = muted;
         }
     }
@@ -510,37 +513,34 @@ export class MseWrapper {
      */
     private startSetStreams(): void {
         /* Fetch the manifest, stream info and initial data. Once we have it, set up streaming. */
-        const manifestPromise: Promise<string> = fetch(`${this.baseUrl}/manifest.mpd`).
-            then((response: Response): Promise<string> =>
-        {
-            if (response.status != 200) {
-                throw response;
+        const manifestPromise: Promise<string> =
+        fetch(`${this.baseUrl!}/manifest.mpd`).then((response: Response): Promise<string> => {
+            if (response.status !== 200) {
+                throw Error(`Manifest HTTP status code is not OK: ${response.status}`);
             }
             return response.text();
         });
         if (this.audioStreamIndex === null) {
             Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex)]).
-                then((fetched: [string, [any, ArrayBuffer]]) =>
-            {
+                    then((fetched: [string, [SegmentIndexDescriptor, ArrayBuffer]]) => {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1]);
             }).catch((): void => {
-                this.onError('Error initializing streams');
+                this.onError("Error initializing streams");
             });
-        }
-        else {
+        } else {
             Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex),
                          this.getStreamInfoAndInit(this.audioStreamIndex)]).
-                then((fetched: [string, [any, ArrayBuffer], [any, ArrayBuffer]]) =>
-            {
+                    then((fetched: [string, [SegmentIndexDescriptor, ArrayBuffer],
+                                    [SegmentIndexDescriptor, ArrayBuffer]]) => {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1], fetched[2][0], fetched[2][1]);
             }).catch((): void => {
-                this.onError('Error initializing streams');
+                this.onError("Error initializing streams");
             });
         }
     }
 
-    private setupStreams(manifest: string, videoInfo: any, videoInit: ArrayBuffer, audioInfo: any = null,
-                         audioInit: ArrayBuffer | null = null): void {
+    private setupStreams(manifest: string, videoInfo: SegmentIndexDescriptor, videoInit: ArrayBuffer,
+                         audioInfo: SegmentIndexDescriptor | null = null, audioInit: ArrayBuffer | null = null): void {
         /* Clean up whatever already existed. */
         this.cleaup();
 
@@ -550,9 +550,9 @@ export class MseWrapper {
             this.videoStream = new Stream(this.videoMediaSource!, videoInit,
                                           this.getMineForStream(manifest, this.videoStreamIndex), this.onError,
                                           (): void => {
-                this.video.play();
+                void this.video.play();
                 if (this.audio && !this.audio.muted) {
-                    this.audio.play();
+                    void this.audio.play();
                 }
 
                 if (this.onNewStreamStart) {
@@ -562,7 +562,7 @@ export class MseWrapper {
             if (audioInfo && this.interleaved) {
                 this.audioStream =
                     new Stream(this.audio ? this.audioMediaSource! : this.videoMediaSource!,
-                               audioInit!, this.getMineForStream(manifest, this.audioStreamIndex), this.onError);
+                               audioInit!, this.getMineForStream(manifest, this.audioStreamIndex!), this.onError);
             }
 
             // Segment downloader.
@@ -591,20 +591,20 @@ export class MseWrapper {
         }
 
         /* Wait for the media sourecs to be ready. */
-        if (this.videoMediaSource!.readyState != 'open') {
-            const callback = () => {
-                this.videoMediaSource!.removeEventListener('opensource', callback);
+        if (this.videoMediaSource!.readyState !== "open") {
+            const callback = (): void => {
+                this.videoMediaSource!.removeEventListener("opensource", callback);
                 this.setMediaSources(onMediaSourceReady, withAudio, true);
             };
-            this.videoMediaSource!.addEventListener('sourceopen', callback);
+            this.videoMediaSource!.addEventListener("sourceopen", callback);
             return;
         }
-        if (withAudio && this.audio && this.audioMediaSource!.readyState != 'open') {
-            const callback = () => {
-                this.audioMediaSource!.removeEventListener('opensource', callback);
+        if (withAudio && this.audio && this.audioMediaSource!.readyState !== "open") {
+            const callback = (): void => {
+                this.audioMediaSource!.removeEventListener("opensource", callback);
                 this.setMediaSources(onMediaSourceReady, withAudio, true);
             };
-            this.audioMediaSource!.addEventListener('sourceopen', callback);
+            this.audioMediaSource!.addEventListener("sourceopen", callback);
             return;
         }
 
@@ -619,14 +619,14 @@ export class MseWrapper {
      * @param baseUrl Base URL for the stream.
      * @param index Stream index.
      */
-    private getStreamInfoAndInit(index: number): Promise<[any, ArrayBuffer]> {
+    private getStreamInfoAndInit(index: number): Promise<[SegmentIndexDescriptor, ArrayBuffer]> {
         return Promise.all([
-            fetch(`${this.baseUrl}/chunk-stream${index}-index.json`),
-            fetch(`${this.baseUrl}/init-stream${index}.m4s`)
-        ]).then((responses: Array<Response>): Promise<[any, ArrayBuffer]> => {
+            fetch(`${this.baseUrl!}/chunk-stream${index}-index.json`),
+            fetch(`${this.baseUrl!}/init-stream${index}.m4s`)
+        ]).then((responses: Response[]): Promise<[SegmentIndexDescriptor, ArrayBuffer]> => {
             for (const response of responses) {
-                if (response.status != 200) {
-                    throw response;
+                if (response.status !== 200) {
+                    throw Error(`Fetching stream info or init gave HTTP status code ${response.status}`);
                 }
             }
             return Promise.all([responses[0]!.json(), responses[1]!.arrayBuffer()]);
@@ -646,11 +646,11 @@ export class MseWrapper {
     private getMineForStream(manifest: string, stream: number): string {
         const re = new RegExp(`<Representation id="${stream}" mimeType="([^"]*)" codecs="([^"]*)"`);
         const match = manifest.match(re);
-        return `${match![1]}; codecs="${match![2]}"`; // TODO: Error handling.
+        return `${match![1]!}; codecs="${match![2]!}"`; // TODO: Error handling.
     }
 
     private readonly video: HTMLVideoElement;
-    private readonly audio: HTMLAudioElement;
+    private readonly audio: HTMLAudioElement | null;
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
     private readonly onError: (description: string) => void;
@@ -660,7 +660,7 @@ export class MseWrapper {
 
     private baseUrl: string | null = null;
     private videoStreamIndex: number = 0;
-    private audioStreamIndex: number = 0;
+    private audioStreamIndex: number | null = null;
     private interleaved: boolean = false;
 
     private segmentDownloader: SegmentDownloader | null = null;

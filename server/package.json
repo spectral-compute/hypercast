@@ -10,6 +10,7 @@
     "bundle": "yarn webpack --mode production",
     "bundle-dev": "yarn webpack --mode development",
     "clean": "rm -rf build dist",
+    "lint": "yarn eslint --max-warnings=0 --ext .ts src",
     "start": "yarn bundle-dev && yarn node dist/live-video-streamer-server.js $@"
   },
   "dependencies": {
@@ -21,5 +22,10 @@
     "typescript": "^4.6.4",
     "webpack": "^5.72.1",
     "webpack-cli": "^4.9.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.23.0",
+    "@typescript-eslint/parser": "^5.23.0",
+    "eslint": "^8.15.0"
   }
 }

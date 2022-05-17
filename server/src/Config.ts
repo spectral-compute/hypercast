@@ -1,8 +1,8 @@
 import {readFileSync} from "fs";
 import {assertNonNull} from "./Assertion";
 
-export type AudioCodec = 'aac' | 'opus';
-export type VideoCodec = 'h264' | 'h265' | 'vp8' | 'vp9' | 'av1';
+export type AudioCodec = "aac" | "opus";
+export type VideoCodec = "h264" | "h265" | "vp8" | "vp9" | "av1";
 
 export interface AudioConfig {
     // The bitrate in kBit/s for this audio stream.
@@ -134,7 +134,7 @@ export interface Config {
 export function computeSegmentDuration(segmentLengthMultiplier: number, videoConfigs: VideoConfig[]): [number, number] {
     // Some utility functions.
     const gcd = (a: number, b: number): number => {
-        if (b == 0) {
+        if (b === 0) {
             return a;
         }
         return gcd(b, a % b); // Yay for Euclid's algorithm.
@@ -170,12 +170,9 @@ export function computeSegmentDuration(segmentLengthMultiplier: number, videoCon
 
 export function substituteManifestPattern(pattern: string, uniqueId: string, index?: number): string {
     let result = pattern.replace(/{uid}/g, uniqueId);
-
-    // eslint-disable-next-line no-constant-condition
     while (true) {
-        // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
-        const match = result.match('[{]([0-9]+)[}]');
-        if (match == null) {
+        const match = /[{]([0-9]+)[}]/.exec(result);
+        if (match === null) {
             break;
         }
 
@@ -187,7 +184,7 @@ export function substituteManifestPattern(pattern: string, uniqueId: string, ind
         const numDigits = parseInt(match[1]!);
 
         const replacement = (index === undefined) ?
-            ('[0-9]{' + numDigits + ',}') : index.toString().padStart(numDigits, '0');
+            (`[0-9]{${numDigits},}`) : index.toString().padStart(numDigits, "0");
         result = result.substr(0, startIdx) + replacement + result.substr(endIdx);
     }
     return result;
@@ -195,6 +192,6 @@ export function substituteManifestPattern(pattern: string, uniqueId: string, ind
 
 export function loadConfig(path: string): Config {
     const json: string = readFileSync(path, {encoding: "utf-8"});
-    const obj = JSON.parse(json);
+    const obj: unknown = JSON.parse(json);
     return obj as Config; // TODO: Proper validation: checking for extra fields, and missing fields, and add defaults.
 }

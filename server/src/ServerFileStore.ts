@@ -1,7 +1,7 @@
 import {EventEmitter} from "events";
 import {Logger} from "./Log";
 
-const log = new Logger('Server File Store');
+const log = new Logger("Server File Store");
 
 class InterleavedFile {
     constructor(fileStore: ServerFileStore, namePattern: string, captureGroups: string[], interleaveTotal: number) {
@@ -12,7 +12,7 @@ class InterleavedFile {
         /* Figure out what the path for the interleaved file is. */
         let substitutedPattern: string = namePattern;
         captureGroups.forEach((value: string, index: number): void => {
-            substitutedPattern = substitutedPattern.replaceAll('{' + (index + 1) + '}', value);
+            substitutedPattern = substitutedPattern.replaceAll(`{${index + 1}}`, value);
         });
         this.interleavedPath = substitutedPattern;
 
@@ -22,13 +22,13 @@ class InterleavedFile {
     }
 
     captureGroupsMatch(captureGroups: string[]): boolean {
-        if (captureGroups.length != this.captureGroups.length) {
+        if (captureGroups.length !== this.captureGroups.length) {
             return false;
         }
 
         let result = true;
         captureGroups.forEach((value: string, index: number): void => {
-            if (value != this.captureGroups[index]) {
+            if (value !== this.captureGroups[index]) {
                 result = false;
             }
         });
@@ -42,18 +42,17 @@ class InterleavedFile {
         this.interleaveCount++;
         const sf: ServerFile = this.fileStore.get(path);
         this.sourceInProgressPaths.add(path);
-        this.eventHandlers.set(path, new Array<[string, any, any]>());
+        this.eventHandlers.set(path, new Array<[string, (...args: any[]) => void, ServerFileStore]>());
         const eventHandlersForPath = this.eventHandlers.get(path)!;
 
         /* Set up the handler for when the source file is deleted. */
         const onRemove = (removedPath: string): void => {
-            if (removedPath == path) {
+            if (removedPath === path) {
                 this.onSourceDeleted(path);
-                return;
             }
         };
-        this.fileStore.on('remove', onRemove);
-        eventHandlersForPath.push(['remove', onRemove, this.fileStore]);
+        this.fileStore.on("remove", onRemove);
+        eventHandlersForPath.push(["remove", onRemove, this.fileStore]);
 
         /* Write the initial contents of the buffer. */
         sf.writeWith((b: Buffer): void => {
@@ -68,28 +67,28 @@ class InterleavedFile {
 
         /* Handle new data as it comes in. */
         const onAdd = (b: Buffer): void => {
-            if (b.length == 0) {
+            if (b.length === 0) {
                 return; // We use 0-lengthed chunks to mean "end of file".
             }
             this.addChunk(index, b);
         };
-        sf.on('add', onAdd);
-        eventHandlersForPath.push(['add', onAdd, sf]);
+        sf.on("add", onAdd);
+        eventHandlersForPath.push(["add", onAdd, sf]);
 
         /* Handle the finishing of the source file. */
         const onFinish = (): void => {
             this.addChunk(index, Buffer.alloc(0));
             this.onSourceFinish(path);
         };
-        sf.on('finish', onFinish);
-        eventHandlersForPath.push(['finish', onFinish, sf]);
+        sf.on("finish", onFinish);
+        eventHandlersForPath.push(["finish", onFinish, sf]);
     }
 
     private addChunk(index: number, b: Buffer): void {
         const getValueAsBuffer = (value: number, length: number): Buffer => {
-            const b = Buffer.alloc(length);
-            b.writeUIntLE(value, 0, length);
-            return b;
+            const vb = Buffer.alloc(length);
+            vb.writeUIntLE(value, 0, length);
+            return vb;
         };
 
         let contentId: number;
@@ -111,21 +110,21 @@ class InterleavedFile {
         this.serverFile.add(Buffer.concat([getValueAsBuffer(contentId, 1), lengthBuffer, b]));
     }
 
-    private onSourceFinish(path: string) {
+    private onSourceFinish(path: string): void {
         this.sourceInProgressPaths.delete(path);
-        if (this.interleaveCount == this.interleaveTotal && this.sourceInProgressPaths.size == 0) {
+        if (this.interleaveCount === this.interleaveTotal && this.sourceInProgressPaths.size === 0) {
             this.serverFile.finish();
             log.debug(`Finishing interleaved file ${this.interleavedPath}`);
         }
     }
 
-    private onSourceDeleted(path: string) {
+    private onSourceDeleted(path: string): void {
         for (const entry of this.eventHandlers.get(path)!) {
             entry[2].off(entry[0], entry[1]);
         }
         this.eventHandlers.delete(path);
 
-        if (this.interleaveCount == this.interleaveTotal && this.eventHandlers.size == 0) {
+        if (this.interleaveCount === this.interleaveTotal && this.eventHandlers.size === 0) {
             this.fileStore.remove(this.interleavedPath);
             log.debug(`Removing interleaved file ${this.interleavedPath}`);
         }
@@ -142,7 +141,8 @@ class InterleavedFile {
 
     // Map from source path that has not been deleted to [event name, event handler, event emitter]. Needed so we can
     // remove the event handlers and keep track of which sources have been deleted.
-    private readonly eventHandlers = new Map<string, [string, any, any][]>();
+    private readonly eventHandlers =
+        new Map<string, [string, (...args: any[]) => void, ServerFileStore | ServerFile][]>();
 }
 
 class InterleavePattern {
@@ -156,12 +156,12 @@ class InterleavePattern {
         this.namePattern = namePattern;
         this.patterns = patterns;
 
-        fileStore.on('add', (path: string): void => {
+        fileStore.on("add", (path: string): void => {
             this.onServerAddPath(path);
         });
     }
 
-    private onServerAddPath(path: string) {
+    private onServerAddPath(path: string): void {
         for (let patternIndex = 0; patternIndex < this.patterns.length; patternIndex++) {
             const match = this.patterns[patternIndex]!.exec(path);
             if (!match) {
@@ -171,7 +171,7 @@ class InterleavePattern {
         }
     }
 
-    private onServerAddMatchingPath(path: string, patternIndex: number, captureGroups: string[]) {
+    private onServerAddMatchingPath(path: string, patternIndex: number, captureGroups: string[]): void {
         for (const interleavedFile of this.interleavedFiles) {
             if (interleavedFile.captureGroupsMatch(captureGroups)) {
                 interleavedFile.addFileAtIndex(path, patternIndex);
@@ -210,13 +210,13 @@ class ServerFile extends EventEmitter {
 
     add(b: Buffer): void {
         this.buffers.push(b);
-        this.emit('add', b);
+        this.emit("add", b);
     }
 
     finish(): void {
         /* Notify everything that this file is now complete. */
         this.finished = true;
-        this.emit('finish');
+        this.emit("finish");
     }
 
     isFinished(): boolean {
@@ -269,13 +269,13 @@ export class ServerFileStore extends EventEmitter {
     add(path: string): ServerFile {
         const sf = new ServerFile();
         this.files.set(path, sf);
-        this.emit('add', path);
+        this.emit("add", path);
         return sf;
     }
 
     remove(path: string): void {
         this.files.delete(path);
-        this.emit('remove', path);
+        this.emit("remove", path);
     }
 
     has(path: string): boolean {

@@ -1,5 +1,26 @@
-import * as bufferctrl from './bufferctrl';
-import * as stream from './stream';
+import * as bufferctrl from "./bufferctrl";
+import * as stream from "./stream";
+
+interface VideoConfig {
+    codec: string,
+    bitrate: number,
+    width: number,
+    height: number
+}
+
+interface AudioConfig {
+    codec: string,
+    bitrate: number
+}
+
+interface ServerInfo {
+    angles: {name: string, path: string}[],
+    segmentDuration: number,
+    segmentPreavailability: number,
+    videoConfigs: VideoConfig[],
+    audioConfigs: AudioConfig[],
+    avMap: [number, number][]
+}
 
 export class Player {
     /**
@@ -14,10 +35,10 @@ export class Player {
      * @param onInit Called when initialization is done.
      * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement, onInit: (() => void) | null = null,
-                verbose: boolean = false) {
+    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement | null,
+                onInit: (() => void) | null = null, verbose: boolean = false) {
         if (verbose) {
-            console.log('Start up at ' + new Date(Date.now()).toISOString());
+            console.log("Start up at " + new Date(Date.now()).toISOString());
         }
 
         this.verbose = verbose;
@@ -26,14 +47,14 @@ export class Player {
 
         /* Asynchronous stuff. Start by fetching the video server info. */
         fetch(infoUrl).then((response: Response) => {
-            if (response.status != 200) {
-                throw response;
+            if (response.status !== 200) {
+                throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
             }
             return response.json();
-        }).then((serverInfo): void => {
+        }).then((serverInfo: ServerInfo): void => {
             /* Extract and parse the server info. */
             this.serverInfo = serverInfo;
-            const urlPrefix = infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, '');
+            const urlPrefix = infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, "");
 
             // Extract angle information.
             for (const angle of this.serverInfo.angles) {
@@ -42,7 +63,7 @@ export class Player {
             }
 
             // Extract quality information.
-            this.serverInfo.videoConfigs.forEach((value: any) => {
+            this.serverInfo.videoConfigs.forEach((value: VideoConfig) => {
                 this.qualityOptions.push([value.width, value.height]);
             });
 
@@ -70,13 +91,13 @@ export class Player {
             this.bctrl = new bufferctrl.BufferControl(video, audio ? [audio] : [], verbose);
 
             /* Set up the "on new source playing" event handler. */
-            this.stream.onNewStreamStart = () => {
+            this.stream.onNewStreamStart = (): void => {
                 this.callOnStartPlaying(this.electiveChangeInProgress);
                 this.electiveChangeInProgress = false;
             };
 
             /* Set up stream downgrading. */
-            this.stream.onRecommendDowngrade = () => {
+            this.stream.onRecommendDowngrade = (): void => {
                 if (this.quality < this.qualityOptions.length - 1) {
                     this.quality++; // Quality is actually reversed.
                 }
@@ -92,7 +113,7 @@ export class Player {
             }
         }).catch((): void => {
             if (this.onError) {
-                this.onError('Error initializing player');
+                this.onError("Error initializing player");
             }
         });
     }
@@ -129,7 +150,7 @@ export class Player {
     /**
      * Get the live server info JSON object that set up this player.
      */
-    getServerInfo() {
+    getServerInfo(): ServerInfo {
         return this.serverInfo;
     }
 
@@ -140,7 +161,7 @@ export class Player {
      *
      * @return A list of angle names.
      */
-    getAngleOptions(): Array<string> {
+    getAngleOptions(): string[] {
         return this.angleOptions;
     }
 
@@ -162,7 +183,7 @@ export class Player {
      * @param index The index of the new angle to play. This indexes the options returned by getAngleOptions().
      */
     setAngle(index: number): void {
-        if (index == this.angle) {
+        if (index === this.angle) {
             this.callOnStartPlaying(true);
             return;
         }
@@ -180,7 +201,7 @@ export class Player {
      *
      * @return A list of tuples of (width, height) describing each quality setting.
      */
-    getQualityOptions(): Array<[number, number]> {
+    getQualityOptions(): [number, number][] {
         return this.qualityOptions;
     }
 
@@ -201,8 +222,8 @@ export class Player {
      *
      * @param index The index of the new quality to play. This indexes the options returned by getQualityOptions().
      */
-    setQuality(index: number) {
-        if (index == this.quality) {
+    setQuality(index: number): void {
+        if (index === this.quality) {
             this.callOnStartPlaying(true);
             return;
         }
@@ -217,8 +238,8 @@ export class Player {
      *
      * @return A list of strings describing each latency setting.
      */
-    getLatencyOptions(): Array<string> {
-        return ['Up to 2s (more smooth)', 'Up to 1s (less smooth)'];
+    getLatencyOptions(): string[] {
+        return ["Up to 2s (more smooth)", "Up to 1s (less smooth)"];
     }
 
     /**
@@ -246,7 +267,7 @@ export class Player {
      *
      * @param index The index of the new latency to use. This indexes the options returned by getLatencyOptions().
      */
-    setLatency(index: number) {
+    setLatency(index: number): void {
         this.latency = index;
         this.updateLatency();
     }
@@ -274,7 +295,7 @@ export class Player {
      *
      * @param muted True if the audio should be muted, and false otherwise.
      */
-    setMuted(muted: boolean) {
+    setMuted(muted: boolean): void {
         this.stream!.setMuted(muted);
     }
 
@@ -330,21 +351,19 @@ export class Player {
         /* Figure out which streams the quality corresponds to. */
         if (this.serverInfo.avMap.length > 0) {
             if (this.quality < this.serverInfo.avMap.length) {
-                this.videoStream = this.serverInfo.avMap[this.quality][0];
-                this.audioStream = this.serverInfo.avMap[this.quality][1];
-            }
-            else {
+                this.videoStream = this.serverInfo.avMap[this.quality]![0];
+                this.audioStream = this.serverInfo.avMap[this.quality]![1];
+            } else {
                 this.videoStream = this.quality;
                 this.audioStream = null;
             }
-        }
-        else {
+        } else {
             this.videoStream = this.quality;
             this.audioStream = (this.quality < this.serverInfo.audioConfigs.length) ? this.quality : null;
         }
 
         /* Tell the streamer. */
-        this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream!, this.audioStream!,
+        this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
                               this.serverInfo.avMap.length > 0 && this.audioStream !== null);
     }
 
@@ -364,31 +383,31 @@ export class Player {
         const ewmaBuffer = this.bctrl!.getCatchUpEventEwma();
 
         const videoUnprunedBufferLength =
-            (this.video.buffered.length == 0) ? 0 :
+            (this.video.buffered.length === 0) ? 0 :
             (this.video.buffered.end(this.video.buffered.length - 1) - this.video.buffered.start(0));
         const audioUnprunedBufferLength =
-            (!this.audio || this.audio.buffered.length == 0) ? 0 :
+            (!this.audio || this.audio.buffered.length === 0) ? 0 :
             (this.audio.buffered.end(this.audio.buffered.length - 1) - this.audio.buffered.start(0));
 
         console.log(
-            'Video buffer length: ' + videoBufferLength + ' ms\n' +
-            'Audio buffer length: ' + audioBufferLength + ' ms\n' +
-            'Combined buffer length: ' + combinedBufferLength + ' ms\n' +
-            'Extra video buffer length: ' + (videoBufferLength - combinedBufferLength) + ' ms\n' +
-            'Extra audio buffer length: ' + (audioBufferLength - combinedBufferLength) + ' ms\n' +
-            'Unpruned video buffer length: ' + (videoUnprunedBufferLength * 1000) + ' ms\n' +
-            'Unpruned audio buffer length: ' + (audioUnprunedBufferLength * 1000) + ' ms\n' +
-            'Video playback rate: ' + this.video.playbackRate + '\n' +
-            'Audio playback rate: ' + (this.audio ? this.audio.playbackRate : NaN) + '\n' +
-            'AV synchronization offset: ' + (this.audio ? this.bctrl!.getSecondarySync(0) : 0) + ' ms\n' +
-            'Buffer targets: ' + minBuffer + ' ms - ' + maxBuffer + ' ms (' + ewmaBuffer + ')\n'
+            `Video buffer length: ${videoBufferLength} ms\n` +
+            `Audio buffer length: ${audioBufferLength} ms\n` +
+            `Combined buffer length: ${combinedBufferLength} ms\n` +
+            `Extra video buffer length: ${videoBufferLength - combinedBufferLength} ms\n` +
+            `Extra audio buffer length: ${audioBufferLength - combinedBufferLength} ms\n` +
+            `Unpruned video buffer length: ${videoUnprunedBufferLength * 1000} ms\n` +
+            `Unpruned audio buffer length: ${audioUnprunedBufferLength * 1000} ms\n` +
+            `Video playback rate: ${this.video.playbackRate}\n` +
+            `Audio playback rate: ${this.audio ? this.audio.playbackRate : NaN}\n` +
+            `AV synchronization offset: ${this.audio ? this.bctrl!.getSecondarySync(0) : 0} ms\n` +
+            `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms (${ewmaBuffer}\n`
         );
     }
 
     // Stuff from the constructor.
     private readonly verbose: boolean;
     private readonly video: HTMLVideoElement;
-    private readonly audio: HTMLAudioElement;
+    private readonly audio: HTMLAudioElement | null;
 
     // Worker objects.
     private stream: stream.MseWrapper | null = null;
@@ -396,10 +415,10 @@ export class Player {
     private verboseInterval: number | null = null;
 
     // Server information.
-    private serverInfo: any;
-    private angleUrls: Array<string> = new Array<string>();
-    private angleOptions: Array<string> = new Array<string>();
-    private qualityOptions: Array<[number, number]> = new Array<[number, number]>(); // Map: quality -> (width,height).
+    private serverInfo!: ServerInfo;
+    private readonly angleUrls: string[] = [];
+    private readonly angleOptions: string[] = [];
+    private readonly qualityOptions: [number, number][] = []; // Map: quality -> (width,height).
 
     // Current settings.
     private angle: number = 0;
@@ -412,5 +431,4 @@ export class Player {
 
     // State machine.
     private electiveChangeInProgress: boolean = false;
-};
-
+}

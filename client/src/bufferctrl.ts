@@ -1,5 +1,5 @@
 class Ewma {
-    constructor (halfLife: number) {
+    constructor(halfLife: number) {
         this.halfLife = halfLife;
     }
 
@@ -20,13 +20,13 @@ class Ewma {
 
     private getForTime(time: number): number {
         const halfLifes = (time - this.lastUpdate) / this.halfLife;
-        return this.value * Math.pow(2, -halfLifes);
+        return this.value * 2 ** -halfLifes;
     }
 
     private value: number = 0;
     private lastUpdate: number = 0;
-    private halfLife: number;
-};
+    private readonly halfLife: number;
+}
 
 /**
  * Control player buffer levels, and accelerate the video a bit if the buffer gets too big.
@@ -39,8 +39,8 @@ export class BufferControl {
      * @param secondaryMediaElements The secondary media elements to keep in sync with the primary media element.
      * @param verbose If true, some debug information is printed.
      */
-    constructor (primaryMediaElement: HTMLMediaElement, secondaryMediaElements: Array<HTMLMediaElement>,
-                 verbose: boolean) {
+    constructor(primaryMediaElement: HTMLMediaElement, secondaryMediaElements: HTMLMediaElement[],
+                verbose: boolean) {
         this.primaryMediaElement = primaryMediaElement;
         this.secondaryMediaElements = secondaryMediaElements;
         this.verbose = verbose;
@@ -83,7 +83,7 @@ export class BufferControl {
     getBufferLength(secondary: number | null = null): number {
         const mediaElement = (secondary === null) ? this.primaryMediaElement : this.secondaryMediaElements[secondary];
         const buffered = mediaElement!.buffered;
-        if (buffered.length == 0) {
+        if (buffered.length === 0) {
             return NaN;
         }
         return (buffered.end(buffered.length - 1) - this.primaryMediaElement.currentTime) * 1000;
@@ -147,9 +147,9 @@ export class BufferControl {
            buffer. */
         if (bufferLength > this.skipThreshold || this.primaryMediaElement.buffered.length > 1) {
             const seekRange = this.primaryMediaElement.seekable;
-            if (seekRange.length == 0) {
+            if (seekRange.length === 0) {
                 if (this.verbose) {
-                    console.warn('Cannot seek to catch up');
+                    console.warn("Cannot seek to catch up");
                 }
                 this.syncSecondaryMediaElements();
                 return;
@@ -157,7 +157,7 @@ export class BufferControl {
 
             this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
             if (this.verbose) {
-                console.log('Seek to catch up');
+                console.log("Seek to catch up");
             }
             this.syncSecondaryMediaElements();
             return;
@@ -172,7 +172,7 @@ export class BufferControl {
 
         /* If we're between the minimum length and the target length, use hysteresis: keep playing at a normal rate if
            we were already doing so. If not, then the catch-up logic in the next step will apply. */
-        if (bufferLength <= this.maxBuffer && currentRate == 1) {
+        if (bufferLength <= this.maxBuffer && currentRate === 1) {
             this.syncSecondaryMediaElements();
             return;
         }
@@ -182,7 +182,7 @@ export class BufferControl {
 
         /* Also, if we weren't already playing fast, then this is a new "buffering" event. */
         const now = Date.now().valueOf();
-        if (currentRate == 1 && this.lastCatchUpEventClusterEnd < now) {
+        if (currentRate === 1 && this.lastCatchUpEventClusterEnd < now) {
             this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
             this.catchUpEventsEwma.add(1);
         }
@@ -232,22 +232,20 @@ export class BufferControl {
             // so either by adjusting the playback rate (if possible and they're not too far out of sync), or by seeking
             // if necessary.
             if (!isNaN(adjustPlaybackRate) &&
-                Math.abs(this.secondaryMediaElementSync[i]!) < this.secondarySkipThreshold)
-            { // Adjust playback rate.
+                Math.abs(this.secondaryMediaElementSync[i]!) < this.secondarySkipThreshold) { // Adjust playback rate.
                 adjustPlaybackRate = Math.min(Math.max(adjustPlaybackRate, this.minPlaybackRate), this.maxPlaybackRate);
                 if (this.verbose) {
                     console.log(`Adjusting secondary playback rate ${i} to ${adjustPlaybackRate}`);
                 }
                 mediaElement.playbackRate = adjustPlaybackRate;
-            }
-            else { // Seek.
+            } else { // Seek.
                 if (this.verbose) {
                     console.log(`Try seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
                 }
 
                 // If there's nothing in the audio buffer, don't bother trying to seek. We'll try again later when the
                 // buffer isn't empty.
-                if (mediaElement.buffered.length == 0) {
+                if (mediaElement.buffered.length === 0) {
                     if (this.verbose) {
                         console.log(`Buffer for secondary media element ${i} is empty`);
                     }
@@ -303,7 +301,7 @@ export class BufferControl {
 
     // Constructor inputs.
     private readonly primaryMediaElement: HTMLMediaElement;
-    private readonly secondaryMediaElements: Array<HTMLMediaElement>;
+    private readonly secondaryMediaElements: HTMLMediaElement[];
     private readonly verbose: boolean;
 
     // Buffer mode.
@@ -312,7 +310,7 @@ export class BufferControl {
     private secondarySyncTolerance: number = 0;
 
     // Tracking buffering performance.
-    private catchUpEventsEwma: Ewma = new Ewma(60000);
+    private readonly catchUpEventsEwma: Ewma = new Ewma(60000);
     private lastCatchUpEventClusterEnd: number = 0;
 
     // Tracking synchronization performance.
@@ -321,4 +319,4 @@ export class BufferControl {
     // Other internal stuff.
     private interval: number | null = null;
     private readonly seekStallMap = new Map<number, number>();
-};
+}

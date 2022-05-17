@@ -1,4 +1,4 @@
-import * as debug from './debug';
+import * as debug from "./debug";
 
 export class Deinterleaver {
     constructor(onData: (data: ArrayBuffer, index: number) => void, description: string) {
@@ -20,7 +20,7 @@ export class Deinterleaver {
         for (let offset = 0; offset < buffer.length;) {
             // Handle the start of a new chunk. We might have started part way through a chunk, and might finish part
             // way through, so this condition isn't always true.
-            if (this.currentOffset == this.currentLength) {
+            if (this.currentOffset === this.currentLength) {
                 const contentId: number = buffer[offset]!;
                 const lengthWidth: number = ((): number => {
                     switch (Math.floor(contentId / 64)) {
@@ -55,7 +55,7 @@ export class Deinterleaver {
             // Copy as much chunk data as we can. Note that we might not have just decoded a chunk. We might instead be
             // resuming one we've started on.
             const chunkLength = Math.min(buffer.length - offset, this.currentLength - this.currentOffset);
-            if (chunkLength == 0 && this.currentLength != 0) {
+            if (chunkLength === 0 && this.currentLength !== 0) {
                 continue; // Don't emit a spurious empty chunk.
             }
 
@@ -70,12 +70,11 @@ export class Deinterleaver {
                 if (!this.checksums.has(this.currentIndex)) {
                     this.checksums.set(this.currentIndex, new debug.Addler32());
                 }
-                if (chunkLength == 0) {
+                if (chunkLength === 0) {
                     const checksum = this.checksums.get(this.currentIndex)!;
                     console.log(`[Deinterleave Checksum] ${this.description} ` +
                                 `checksum: ${checksum.getChecksum()}, length: ${checksum.getLength()}`);
-                }
-                else {
+                } else {
                     this.checksums.get(this.currentIndex)!.update(data);
                 }
             }

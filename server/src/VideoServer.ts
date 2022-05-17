@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-regexp-exec */
 import assert = require("assert");
 import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
@@ -50,7 +49,7 @@ class EdgeInfo {
      * Late gives positive numbers, and early gives negative numbers.
      */
     getFarEdgeDrift(segmentDuration: [number, number]): number {
-        return this.calculateDrift(segmentDuration,  Date.now(), 1);
+        return this.calculateDrift(segmentDuration, Date.now(), 1);
     }
 
     /**
@@ -81,7 +80,7 @@ class DriftInfo {
         this.drifts.push(drift);
     }
 
-    get() {
+    get(): {earliest: number, latest: number, mean: number} {
         assert(this.drifts.length > 0);
         let earliest: number = this.drifts[0]!;
         let latest: number = this.drifts[0]!;
@@ -126,8 +125,8 @@ export class VideoServer {
     private readonly log: Logger;
 
     // The duration of each segment.
-    private segmentDurationExact!: [number, number]; // In seconds.
-    private segmentDuration!: number; // In milliseconds.
+    private readonly segmentDurationExact: [number, number]; // In seconds.
+    private readonly segmentDuration: number; // In milliseconds.
 
     // The set of files this server will respond to GET requests for. This is an in-memory cache.
     private readonly serverFileStore = new ServerFileStore();
@@ -135,16 +134,19 @@ export class VideoServer {
     // Paths that are forbidden for client access.
     private readonly forbiddenPaths = new Array<RegExp>();
 
-    // How long should the CDN cache responses to GET requests that were satisfied by the `serverFileStore`, for each liveness level.
+    // How long should the CDN cache responses to GET requests that were satisfied by the `serverFileStore`, for each
+    // liveness level.
     private readonly foundCacheTimes = new Map<Liveness, number>();
 
     // How long should the CDN cache 404 responses for, for each liveness level?
     private readonly notFoundCacheTimes = new Map<Liveness, number>();
 
-    // Keeps information about when ffmpeg started uploading a file that it is currently still uploading, and what the next file in the sequence is.
+    // Keeps information about when ffmpeg started uploading a file that it is currently still uploading, and what the
+    // next file in the sequence is.
     private readonly nearEdgePaths = new Map<string, number>();
 
-    // Keeps information about what ffmpeg is expected to upload next (when it's expected to start, and what file it follows).
+    // Keeps information about what ffmpeg is expected to upload next (when it's expected to start, and what file it
+    // follows).
     private readonly farEdgePaths = new Map<string, EdgeInfo>();
 
     // Keeps information about what segment indices are available.
@@ -176,11 +178,11 @@ export class VideoServer {
             this.config.video.configs);
         this.segmentDuration = (this.segmentDurationExact[0] * 1000) / this.segmentDurationExact[1];
 
-        this.serverFileStore.on('add', (path: string): void => {
+        this.serverFileStore.on("add", (path: string): void => {
             this.onFileStoreAdd(path);
         });
 
-        this.serverFileStore.on('remove', (path: string): void => {
+        this.serverFileStore.on("remove", (path: string): void => {
             this.onFileStoreRemove(path);
         });
 
@@ -193,13 +195,15 @@ export class VideoServer {
         // this.stopStreaming();
     }
 
-    private loadCacheConfiguration() {
+    private loadCacheConfiguration(): void {
         /* Add the caching times. Note that near edge paths are by definition guaranteed to be found. Far edge paths are
            known about and their cache time is specially calculated. */
         this.foundCacheTimes.set(Liveness.none, this.config.network.nonLiveCacheTime);
-        this.foundCacheTimes.set(Liveness.live, Math.round(this.segmentDuration * (this.config.network.segmentRetentionCount + 1) / 1000));
+        this.foundCacheTimes.set(Liveness.live, Math.round(this.segmentDuration *
+                                                           (this.config.network.segmentRetentionCount + 1) / 1000));
         this.foundCacheTimes.set(Liveness.nearEdge, this.foundCacheTimes.get(Liveness.live)!);
-        this.foundCacheTimes.set(Liveness.farEdge, this.foundCacheTimes.get(Liveness.live)! + Math.round(this.config.network.preAvailabilityTime / 1000));
+        this.foundCacheTimes.set(Liveness.farEdge, this.foundCacheTimes.get(Liveness.live)! +
+                                                   Math.round(this.config.network.preAvailabilityTime / 1000));
         this.foundCacheTimes.set(Liveness.ephemeral, 1);
 
         this.notFoundCacheTimes.set(Liveness.none, this.config.network.nonLiveCacheTime);
@@ -207,27 +211,32 @@ export class VideoServer {
 
         // Calculate live 404 time under the assumption that the requested path is the next far live edge. Round up so
         // we don't get a barrage of uncacheable requests near pre-availability time.
-        this.notFoundCacheTimes.set(Liveness.live, Math.max(Math.round((this.segmentDuration - this.config.network.preAvailabilityTime) / 1000), 1));
+        this.notFoundCacheTimes.set(Liveness.live,
+                                    Math.max(Math.round((this.segmentDuration -
+                                                         this.config.network.preAvailabilityTime) / 1000), 1));
 
-        if (this.notFoundCacheTimes.get(Liveness.live) == 0) {
-            this.log.warn('Warning: Caching of 404s for paths that may become live is disabled. Consider increasing pre-availability time.');
+        if (this.notFoundCacheTimes.get(Liveness.live) === 0) {
+            this.log.warn("Warning: Caching of 404s for paths that may become live is disabled. Consider increasing " +
+                          "pre-availability time.");
         }
 
         this.log.debug("Cache times:");
         this.foundCacheTimes.forEach((value: number, key: Liveness): void => {
-            this.log.debug(`  200 ${Liveness[key]}: ${value}`);
+            this.log.debug(`  200 ${Liveness[key]!}: ${value}`);
         });
         this.notFoundCacheTimes.forEach((value: number, key: Liveness): void => {
-            this.log.debug(`  404 ${Liveness[key]}: ${value}`);
+            this.log.debug(`  404 ${Liveness[key]!}: ${value}`);
         });
 
         const manifestPattern = substituteManifestPattern(this.config.dash.manifest, this.uniqueID);
-        const livePattern = manifestPattern.replace(/[^/]*$/, ''); // Manifest path up to and including the last '/'.
-        const edgePattern = '(?<=' + livePattern + '.*-)[0-9]+(?=(?:[.][^.]+)?$)'; // The end matches '-012345.xyz' or '-012345'.
+        const livePattern = manifestPattern.replace(/[^/]*$/, ""); // Manifest path up to and including the last "/".
+        const edgePattern =
+            "(?<=" + livePattern + ".*-)[0-9]+(?=(?:[.][^.]+)?$)"; // The end matches "-012345.xyz" or "-012345".
 
         this.livePaths = new RegExp(livePattern);
         this.edgePaths = new RegExp(edgePattern);
-        this.ephemeralPaths = new RegExp('^(?:(?:' + manifestPattern + ')|(?:' + this.config.serverInfo.live + ')|(?:' + livePattern + 'drift.json))$');
+        this.ephemeralPaths = new RegExp("^(?:(?:" + manifestPattern + ")|(?:" + this.config.serverInfo.live + ")|" +
+                                         "(?:" + livePattern + "drift.json))$");
     }
 
     /**
@@ -283,13 +292,13 @@ export class VideoServer {
     /**
      * Write some configuration metadata to the virtual filesystem, so clients can ask how many cameras we have.
      */
-    private writeServerInfo() {
+    private writeServerInfo(): void {
         const manifests = new Array<any>();
         this.config.video.sources.forEach((_: string, index: number): void => {
             manifests.push({
-                name: 'Angle ' + index,
+                name: `Angle ${index}`,
                 path: substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).
-                      replace(/(?<=^.*)[/][^/]+$/, '')
+                      replace(/(?<=^.*)[/][^/]+$/, "")
             });
         });
 
@@ -313,13 +322,15 @@ export class VideoServer {
         const avMap = this.getAudioVideoMap();
 
         for (let index = 0; index < this.config.video.sources.length; index++) {
-            // Manifest path up to and including the last '/'.
-            const livePrefix = substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).replace(/[^/]*$/, '');
+            // Manifest path up to and including the last "/".
+            const livePrefix =
+                substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).replace(/[^/]*$/, "");
 
             for (const va of avMap) {
                 const videoRegex = new RegExp(`${livePrefix}chunk-stream${va[0]}-([0-9]+).[^.]+`);
                 const audioRegex = new RegExp(`${livePrefix}chunk-stream${va[1]}-([0-9]+).[^.]+`);
-                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`, [videoRegex, audioRegex]);
+                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`,
+                                                            [videoRegex, audioRegex]);
 
                 if (!this.config.dash.interleavedDirectDashSegments) {
                     this.forbiddenPaths.push(videoRegex);
@@ -330,13 +341,13 @@ export class VideoServer {
     }
 
     // Add the cache-control header appropriate for the liveness.
-    private addCacheControl(response: http.ServerResponse, liveness: Liveness, found: boolean) {
-        const maxAge = (found ? this.foundCacheTimes : this.notFoundCacheTimes).get(liveness);
-        response.setHeader('Cache-Control', (maxAge == 0) ? 'no-cache' : ('public, max-age=' + maxAge));
+    private addCacheControl(response: http.ServerResponse, liveness: Liveness, found: boolean): void {
+        const maxAge: number = (found ? this.foundCacheTimes : this.notFoundCacheTimes).get(liveness)!;
+        response.setHeader("Cache-Control", (maxAge === 0) ? "no-cache" : `public, max-age=${maxAge}`);
     }
 
     private validateSecureRequest(address: string, response: http.ServerResponse): boolean {
-        if (address == '127.0.0.1' || address == '::1') {
+        if (address === "127.0.0.1" || address === "::1") {
             return true;
         }
 
@@ -350,8 +361,8 @@ export class VideoServer {
         return http.createServer((request: http.IncomingMessage, response: http.ServerResponse): void => {
             /* Extract request information. */
             const path = request.url;
-            const address = request.socket.remoteAddress!;
-            const port = request.socket.remotePort!;
+            const address = request.socket.remoteAddress;
+            const port = request.socket.remotePort;
 
             assertNonNull(path);
             assertNonNull(address);
@@ -371,9 +382,10 @@ export class VideoServer {
                 const timeSinceNearEdgeAdded = now - this.farEdgePaths.get(path)!.nearEdgeTime;
                 const preAvailabilityDelay = this.segmentDuration - this.config.network.preAvailabilityTime;
                 timeToFarEdgePreavailability = preAvailabilityDelay - timeSinceNearEdgeAdded;
-                if (request.method == 'PUT') {
+                if (request.method === "PUT") {
                     farEdgeDrift = this.farEdgePaths.get(path)!.getFarEdgeDrift(this.segmentDurationExact);
-                    if (this.farEdgePaths.get(path)!.isFinalInitial() && this.config.dash.terminateDriftLimit != 0 && Math.abs(farEdgeDrift) > this.config.dash.terminateDriftLimit) {
+                    if (this.farEdgePaths.get(path)!.isFinalInitial() && this.config.dash.terminateDriftLimit !== 0 &&
+                        Math.abs(farEdgeDrift) > this.config.dash.terminateDriftLimit) {
                         this.log.fatal(`Live edge drifted too far (${farEdgeDrift} ms)!`);
                     }
                 }
@@ -384,22 +396,23 @@ export class VideoServer {
             }
 
             /* Print information :) */
-            let requestInfoString = `address: ${address}, port: ${port}, path: ${path}, method: ${request.method}; liveness: ${Liveness[liveness]}`;
-            if (liveness == Liveness.nearEdge) {
+            let requestInfoString = `address: ${address}, port: ${port}, path: ${path}, method: ${request.method!}; ` +
+                                    `liveness: ${Liveness[liveness]!}`;
+            if (liveness === Liveness.nearEdge) {
                 requestInfoString += ` (live for ${now - this.nearEdgePaths.get(path)!} ms)`;
-            } else if (liveness == Liveness.farEdge) {
+            } else if (liveness === Liveness.farEdge) {
                 requestInfoString += ` (pre-available in ${timeToFarEdgePreavailability} ms)`;
-                if (request.method == 'PUT') {
+                if (request.method === "PUT") {
                     requestInfoString += ` (drift: ${farEdgeDrift} ms)`;
                 }
             }
-            this.log.debug(new Date(now).toISOString() + ' - Received request: ' + requestInfoString);
+            this.log.debug(new Date(now).toISOString() + " - Received request: " + requestInfoString);
 
-            request.on('error', (e): void => {
-                this.log.error(`Error in request ${requestInfoString}: ${e}`);
+            request.on("error", (e: Error): void => {
+                this.log.error(`Error in request ${requestInfoString}: ${e.message}`);
             });
-            response.on('error', (e): void => {
-                this.log.error(`Error in response ${requestInfoString}: ${e}`);
+            response.on("error", (e: Error): void => {
+                this.log.error(`Error in response ${requestInfoString}: ${e.message}`);
             });
 
             /* Configure for low latency. */
@@ -408,21 +421,21 @@ export class VideoServer {
 
             /* Switch on method. */
             switch (request.method) {
-                case 'HEAD': {
+                case "HEAD": {
                     this.handleGet(request, response, true, liveness, timeToFarEdgePreavailability);
                 } break;
 
-                case 'GET': {
+                case "GET": {
                     this.handleGet(request, response, false, liveness, timeToFarEdgePreavailability);
                 } break;
 
-                case 'PUT': {
+                case "PUT": {
                     if (this.validateSecureRequest(address, response)) {
                         this.handlePut(request, response);
                     }
                 } break;
 
-                case 'DELETE': {
+                case "DELETE": {
                     if (this.validateSecureRequest(address, response)) {
                         this.handleDelete(request, response);
                     }
@@ -436,9 +449,6 @@ export class VideoServer {
         }).listen(this.config.network.port);
     }
 
-    // Request handlers.
-    /////////////////////////////////////////////////
-
     private handleGet(request: http.IncomingMessage,
                       response: http.ServerResponse,
                       isHead: boolean,
@@ -446,21 +456,21 @@ export class VideoServer {
                       timeToFarEdgePreavailability: number): void {
         assertNonNull(request.url);
 
-        const doHead = () => {
+        const doHead = (): void => {
             response.statusCode = HttpStatus.OK;
 
             this.addCacheControl(response, liveness, true);
             if (this.config.network.origin) {
-                response.setHeader('Access-Control-Allow-Origin', this.config.network.origin);
+                response.setHeader("Access-Control-Allow-Origin", this.config.network.origin);
             }
 
-            response.setHeader('Transfer-Encoding', 'chunked'); // Node.js takes care of the rest of this.
+            response.setHeader("Transfer-Encoding", "chunked"); // Node.js takes care of the rest of this.
             if (isHead) {
                 response.end();
             }
         };
 
-        const doTransfer = () => {
+        const doTransfer = (): void => {
             const sf = this.serverFileStore.get(request.url!);
             sf.writeWith((b: Buffer): void => {
                 response.write(b);
@@ -470,10 +480,10 @@ export class VideoServer {
                 return;
             }
 
-            sf.on('add', (b: Buffer) => {
+            sf.on("add", (b: Buffer) => {
                 response.write(b);
             });
-            sf.on('finish', () => {
+            sf.on("finish", () => {
                 response.end();
             });
         };
@@ -500,18 +510,18 @@ export class VideoServer {
             response.statusCode = HttpStatus.OK;
             this.addCacheControl(response, Liveness.ephemeral, true);
             if (this.config.network.origin) {
-                response.setHeader('Access-Control-Allow-Origin', this.config.network.origin);
+                response.setHeader("Access-Control-Allow-Origin", this.config.network.origin);
             }
             response.write(this.segmentIndexDescriptors.get(request.url)!.toJson());
             response.end();
             return;
-        } else if (liveness == Liveness.farEdge && timeToFarEdgePreavailability > 0) {
+        } else if (liveness === Liveness.farEdge && timeToFarEdgePreavailability > 0) {
             const maxAge = Math.ceil(timeToFarEdgePreavailability / 1000);
             response.statusCode = HttpStatus.NOT_FOUND;
-            response.setHeader('Cache-Control', 'public, max-age=' + maxAge);
+            response.setHeader("Cache-Control", `public, max-age=${maxAge}`);
             response.end();
             return;
-        } else if (liveness != Liveness.farEdge) {
+        } else if (liveness !== Liveness.farEdge) {
             response.statusCode = HttpStatus.NOT_FOUND;
             this.addCacheControl(response, liveness, false);
             response.end();
@@ -528,10 +538,10 @@ export class VideoServer {
         /* When the file is added, be set up to serve it. */
         const onPut = (path: string): void => {
             /* Wait for the right path. */
-            if (path != request.url) {
+            if (path !== request.url) {
                 return;
             }
-            this.serverFileStore.off('add', onPut);
+            this.serverFileStore.off("add", onPut);
 
             /* If we got an intervening delete, then the best we can do is just finish now. This is really an error
                condition though. */
@@ -544,7 +554,7 @@ export class VideoServer {
             /* Otherwise, set up the transfer. */
             doTransfer();
         };
-        this.serverFileStore.on('add', onPut);
+        this.serverFileStore.on("add", onPut);
     }
 
     private handlePut(request: http.IncomingMessage, response: http.ServerResponse): void {
@@ -555,10 +565,10 @@ export class VideoServer {
 
         /* Create a server file, and make it accept this PUT's data. */
         const sf = this.serverFileStore.add(request.url);
-        request.on('data', (b: Buffer): void => {
+        request.on("data", (b: Buffer): void => {
             sf.add(b);
         });
-        request.on('end', (): void => {
+        request.on("end", (): void => {
             sf.finish();
             response.end();
         });
@@ -587,7 +597,7 @@ export class VideoServer {
             this.farEdgePaths.delete(path);
         }
 
-        const edgeMatch = path.match(this.edgePaths);
+        const edgeMatch = this.edgePaths.exec(path);
 
         if (edgeMatch?.index !== undefined) {
             // Figure out the next path.
@@ -596,11 +606,12 @@ export class VideoServer {
             const suffix = path.substr(edgeMatch.index + indexString.length);
 
             const index = parseInt(indexString);
-            let nextIndexString = '' + (index + 1);
+            let nextIndexString = `${index + 1}`;
             if (nextIndexString.length < indexString.length) {
-                nextIndexString = nextIndexString.padStart(indexString.length, '0');
+                nextIndexString = nextIndexString.padStart(indexString.length, "0");
             } else if (nextIndexString.length > indexString.length) {
-                nextIndexString = nextIndexString.substr(nextIndexString.length - indexString.length, indexString.length);
+                nextIndexString = nextIndexString.substr(nextIndexString.length - indexString.length,
+                                                         indexString.length);
             }
             const nextPath = prefix + nextIndexString + suffix;
 
@@ -613,7 +624,7 @@ export class VideoServer {
                     edgeInfo = new EdgeInfo(index, path, farEdgeInfo.initialIndex, farEdgeInfo.initialTime);
                 }
             } else {
-                if (index != 0 && index != 1) {
+                if (index !== 0 && index !== 1) {
                     this.log.fatal(`Live-edge path ${path} added that is neither a starting index nor from far edge!`);
                 }
                 edgeInfo = new EdgeInfo(index, path, index);
@@ -640,7 +651,7 @@ export class VideoServer {
     private updateDriftFiles(): void {
         const driftMap = new Map<string, DriftInfo>();
         this.farEdgePaths.forEach((edgeInfo: EdgeInfo): void => {
-            const driftPath = edgeInfo.nearEdgePath.replace(/[^/]+$/, 'drift.json');
+            const driftPath = edgeInfo.nearEdgePath.replace(/[^/]+$/, "drift.json");
             if (!driftMap.has(driftPath)) {
                 driftMap.set(driftPath, new DriftInfo());
             }
@@ -654,7 +665,7 @@ export class VideoServer {
         });
     }
 
-    public startStreaming() {
+    public startStreaming(): void {
         this.log.info("Building ffmpeg processes...");
         this.ffmpegProcesses = this.config.video.sources.map((source: string, i: number) => {
             return ffmpeg.launchTranscoder(i, this.config, source, this.uniqueID);
@@ -665,7 +676,7 @@ export class VideoServer {
         this.log.info("All ffmpeg processes started.");
     }
 
-    public stopStreaming() {
+    public stopStreaming(): void {
         this.log.info("Shutting down ffmpeg processes...");
         this.ffmpegProcesses.map(p => p.stop(10000));
         this.log.info("All ffmepg processes have stopped.");

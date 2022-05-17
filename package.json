@@ -13,5 +13,11 @@
   "scripts": {
     "foreach": "(cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)"
   },
-  "packageManager": "yarn@3.2.0"
+  "packageManager": "yarn@3.2.0",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.23.0",
+    "@typescript-eslint/parser": "^5.23.0",
+    "eslint": "^8.15.0",
+    "typescript": "^4.6.4"
+  }
 }
