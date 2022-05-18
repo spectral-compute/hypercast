@@ -2,7 +2,7 @@ const TypescriptDeclarationPlugin = require('typescript-declaration-webpack-plug
 
 var config = {
     target: "browserslist",
-    entry: "./src/main.ts",
+    entry: "./src/Main.ts",
     output: {
         filename: "live-video-streamer-client.js",
         libraryTarget: "umd",

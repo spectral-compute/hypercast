@@ -1,5 +1,5 @@
-import * as debug from "./debug";
-import * as deinterleave from "./deinterleave";
+import * as Debug from "./Debug";
+import {Deinterleaver} from "./Deinterleave";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -157,7 +157,7 @@ class Stream {
             } else if (this.checksum) {
                 console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)!} ` +
                             `checksum: ${this.checksum.getChecksum()}, length: ${this.checksum.getLength()}`);
-                this.checksum = new debug.Addler32();
+                this.checksum = new Debug.Addler32();
                 this.checksumDescriptions.delete(this.checksumIndex);
                 this.checksumIndex++;
             }
@@ -210,7 +210,7 @@ class Stream {
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
 
-    private checksum: debug.Addler32 | null = null; // Set non-null to print checksums.
+    private checksum: Debug.Addler32 | null = null; // Set non-null to print checksums.
     private checksumIndex: number = 0;
     private readonly checksumDescriptions = new Map<number, string>();
 }
@@ -342,7 +342,7 @@ class SegmentDownloader {
     }
 
     private pump(reader: ReadableStreamDefaultReader, description: string, logicalSegmentIndex: number | null = null,
-                 deinterleaver: deinterleave.Deinterleaver | null = null): void {
+                 deinterleaver: Deinterleaver | null = null): void {
         reader.read().then(({value, done}: ReadableStreamDefaultReadResult<Uint8Array>): void => {
             /* If we're done, then the value means nothing. */
             if (done) {
@@ -367,7 +367,7 @@ class SegmentDownloader {
             /* Handle the data we just downloaded. */
             if (this.interleaved) {
                 if (!deinterleaver) {
-                    deinterleaver = new deinterleave.Deinterleaver((data: ArrayBuffer, index: number): void => {
+                    deinterleaver = new Deinterleaver((data: ArrayBuffer, index: number): void => {
                         if (this.streams.length <= index) {
                             return;
                         }
@@ -548,7 +548,7 @@ export class MseWrapper {
         this.setMediaSources((): void => {
             // New streams.
             this.videoStream = new Stream(this.videoMediaSource!, videoInit,
-                                          this.getMineForStream(manifest, this.videoStreamIndex), this.onError,
+                                          this.getMimeForStream(manifest, this.videoStreamIndex), this.onError,
                                           (): void => {
                 void this.video.play();
                 if (this.audio && !this.audio.muted) {
@@ -562,7 +562,7 @@ export class MseWrapper {
             if (audioInfo && this.interleaved) {
                 this.audioStream =
                     new Stream(this.audio ? this.audioMediaSource! : this.videoMediaSource!,
-                               audioInit!, this.getMineForStream(manifest, this.audioStreamIndex!), this.onError);
+                               audioInit!, this.getMimeForStream(manifest, this.audioStreamIndex!), this.onError);
             }
 
             // Segment downloader.
@@ -643,7 +643,7 @@ export class MseWrapper {
      * @param stream The stream index.
      * @return The mimetype to give to MSE for the given stream.
      */
-    private getMineForStream(manifest: string, stream: number): string {
+    private getMimeForStream(manifest: string, stream: number): string {
         const re = new RegExp(`<Representation id="${stream}" mimeType="([^"]*)" codecs="([^"]*)"`);
         const match = manifest.match(re);
         return `${match![1]!}; codecs="${match![2]!}"`; // TODO: Error handling.

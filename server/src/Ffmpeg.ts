@@ -5,7 +5,6 @@ import * as process from "process";
 import * as stream from "stream";
 import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern,
         VideoConfig} from "./Config";
-import {ChildProcess} from "child_process";
 import {Logger} from "./Log";
 
 /* FFMPEG Arguments. */
@@ -110,7 +109,7 @@ const vp9Args = vp8Args.concat([
 
 const av1Args = vp9Args;
 
-// Map from codec name to specific arguments.
+// Map from video codec name to specific arguments.
 const videoCodecArgs = {
     "h264": h264Args,
     "h265": h265Args,
@@ -119,7 +118,7 @@ const videoCodecArgs = {
     "av1": av1Args
 };
 
-// TODO: WTF is this, Nick?
+// Map from audio codec name to specific arguments.
 const audioCodecArgs = new Map<string, string[][]>();
 
 /* Add external audio and video reading. */
@@ -328,7 +327,7 @@ export namespace ffmpeg {
         inputStreams: stream.Writable[] = [];
         outputStreams: stream.Readable[] = [];
 
-        private process?: ChildProcess;
+        private process?: child_process.ChildProcess;
 
         // Are we currently in the process of trying to quit?
         private stopping: boolean = false;
@@ -363,7 +362,7 @@ export namespace ffmpeg {
                 let argsString = "  ffmpeg";
                 this.args.forEach((arg: string): void => {
                     argsString += " " + ((arg.includes(" ") || this.args.includes("\"")) ?
-                        ("\"" + arg.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\"") : arg);
+                                         ("\"" + arg.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\"") : arg);
                 });
 
                 this.log.debug(`Spawning FFmpeg Command:\n${argsString}`);

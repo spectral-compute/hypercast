@@ -1,4 +1,4 @@
-import * as debug from "./debug";
+import * as Debug from "./Debug";
 
 export class Deinterleaver {
     constructor(onData: (data: ArrayBuffer, index: number) => void, description: string) {
@@ -68,7 +68,7 @@ export class Deinterleaver {
             // Print checksums.
             if (this.checksums) {
                 if (!this.checksums.has(this.currentIndex)) {
-                    this.checksums.set(this.currentIndex, new debug.Addler32());
+                    this.checksums.set(this.currentIndex, new Debug.Addler32());
                 }
                 if (chunkLength === 0) {
                     const checksum = this.checksums.get(this.currentIndex)!;
@@ -89,5 +89,5 @@ export class Deinterleaver {
     private currentLength = 0; // Length of the current chunk.
     private remainderBuffer: Uint8Array | null = null;
 
-    private readonly checksums: Map<number, debug.Addler32> | null = null; // Set non-null to print checksums.
+    private readonly checksums: Map<number, Debug.Addler32> | null = null; // Set non-null to print checksums.
 }

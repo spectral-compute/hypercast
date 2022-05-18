@@ -1,5 +1,5 @@
-import * as bufferctrl from "./bufferctrl";
-import * as stream from "./stream";
+import * as BufferCtrl from "./BufferCtrl";
+import * as Stream from "./Stream";
 
 interface VideoConfig {
     codec: string,
@@ -80,7 +80,7 @@ export class Player {
             }
 
             /* Create the streamer. */
-            this.stream = new stream.MseWrapper(video, audio, this.serverInfo.segmentDuration,
+            this.stream = new Stream.MseWrapper(video, audio, this.serverInfo.segmentDuration,
                                                 this.serverInfo.segmentPreavailability, (description: string): void => {
                 if (this.onError) {
                     this.onError(description);
@@ -88,7 +88,7 @@ export class Player {
             });
 
             /* Set up buffer control for the player. */
-            this.bctrl = new bufferctrl.BufferControl(video, audio ? [audio] : [], verbose);
+            this.bctrl = new BufferCtrl.BufferControl(video, audio ? [audio] : [], verbose);
 
             /* Set up the "on new source playing" event handler. */
             this.stream.onNewStreamStart = (): void => {
@@ -364,7 +364,7 @@ export class Player {
 
         /* Tell the streamer. */
         this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
-                              this.serverInfo.avMap.length > 0 && this.audioStream !== null);
+                               this.serverInfo.avMap.length > 0 && this.audioStream !== null);
     }
 
     /**
@@ -410,8 +410,8 @@ export class Player {
     private readonly audio: HTMLAudioElement | null;
 
     // Worker objects.
-    private stream: stream.MseWrapper | null = null;
-    private bctrl: bufferctrl.BufferControl | null = null;
+    private stream: Stream.MseWrapper | null = null;
+    private bctrl: BufferCtrl.BufferControl | null = null;
     private verboseInterval: number | null = null;
 
     // Server information.

@@ -184,7 +184,7 @@ export function substituteManifestPattern(pattern: string, uniqueId: string, ind
         const numDigits = parseInt(match[1]!);
 
         const replacement = (index === undefined) ?
-            (`[0-9]{${numDigits},}`) : index.toString().padStart(numDigits, "0");
+                            (`[0-9]{${numDigits},}`) : index.toString().padStart(numDigits, "0");
         result = result.substr(0, startIdx) + replacement + result.substr(endIdx);
     }
     return result;
