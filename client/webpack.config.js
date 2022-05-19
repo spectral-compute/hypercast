@@ -1,3 +1,4 @@
+const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
 const TypescriptDeclarationPlugin = require('typescript-declaration-webpack-plugin');
 
 var config = {
@@ -27,6 +28,7 @@ var config = {
         ]
     },
     plugins: [
+        new NodePolyfillPlugin(),
         new TypescriptDeclarationPlugin({
             out: "live-video-streamer-client.d.ts",
             removeComments: false
