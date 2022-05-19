@@ -10,6 +10,7 @@
     "bundle-dev": "(cd ../client && yarn bundle-dev) && yarn webpack --mode development",
     "clean": "rm -rf build dist",
     "lint": "yarn eslint --max-warnings=0 --ext .ts .",
+    "postinstall": "rm -rf node_modules/@types/node",
     "start": "yarn bundle-dev && python -m http.server -d dist"
   },
   "dependencies": {

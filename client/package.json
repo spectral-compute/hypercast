@@ -8,10 +8,11 @@
   "types": "dist/live-video-streamer-client.d.ts",
   "version": "0.0.0",
   "scripts": {
-    "bundle": "yarn webpack --mode production",
-    "bundle-dev": "yarn webpack --mode development",
+    "bundle": "ts-patch install && yarn webpack --mode production",
+    "bundle-dev": "ts-patch install && yarn webpack --mode development",
     "clean": "rm -rf build dist",
-    "lint": "yarn eslint --max-warnings=0 --ext .ts src"
+    "lint": "yarn eslint --max-warnings=0 --ext .ts src",
+    "postinstall": "rm -rf node_modules/@types/node"
   },
   "browserslist": {
     "production": [
@@ -30,6 +31,7 @@
     "@babel/preset-env": "^7.17.10",
     "babel-loader": "^8.2.5",
     "ts-loader": "^9.3.0",
+    "ts-patch": "^2.0.1",
     "typescript": "^4.6.4",
     "typescript-declaration-webpack-plugin": "^0.2.2",
     "webpack": "^5.72.0",

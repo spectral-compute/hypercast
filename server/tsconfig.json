@@ -2,7 +2,11 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./build",
-    "module": "commonjs"
+    "module": "commonjs",
+    "plugins": [
+      { "transform": "typescript-is/lib/transform-inline/transformer" },
+      { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
+    ]
   },
   "include": ["./src/*.ts"]
 }

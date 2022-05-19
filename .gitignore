@@ -3,3 +3,5 @@
 .yarn
 */build
 */dist
+*/mode_modules
+node_modules
