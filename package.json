@@ -12,6 +12,8 @@
     "server"
   ],
   "scripts": {
+    "bundle": "(cd server && yarn bundle) && (cd client && yarn bundle) && (cd demo-client && yarn bundle)",
+    "bundle-dev": "(cd server && yarn bundle) && (cd client && yarn bundle) && (cd demo-client && yarn bundle)",
     "clean": "yarn foreach clean && rm -rf node_modules .yarn */node_modules",
     "foreach": "(cd common && yarn $@) && (cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)"
   },
