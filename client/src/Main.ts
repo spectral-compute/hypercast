@@ -1,5 +1,6 @@
 import * as BufferCtrl from "./BufferCtrl";
 import * as Stream from "./Stream";
+import {equals as typeEquals} from "@ckitching/typescript-is";
 
 interface VideoConfig {
     codec: string,
@@ -51,8 +52,11 @@ export class Player {
                 throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
             }
             return response.json();
-        }).then((serverInfo: ServerInfo): void => {
+        }).then((serverInfo): void => {
             /* Extract and parse the server info. */
+            if (!typeEquals<ServerInfo>(serverInfo)) {
+                throw Error("Info JSON is not a valid server info");
+            }
             this.serverInfo = serverInfo;
             const urlPrefix = infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, "");
 

@@ -1,5 +1,6 @@
 import * as Debug from "./Debug";
 import {Deinterleaver} from "./Deinterleave";
+import {equals as typeEquals} from "@ckitching/typescript-is";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -262,8 +263,11 @@ class SegmentDownloader {
                 return response.json();
             }).catch((): void => {
                 this.onError("Error downloading stream index descriptor");
-            }).then((newInfo: SegmentIndexDescriptor | void): void => {
-                this.setSegmentDownloadSchedule(newInfo as SegmentIndexDescriptor);
+            }).then((newInfo): void => {
+                if (!typeEquals<SegmentIndexDescriptor>(newInfo)) {
+                    throw Error("Segment index descriptor is invalid.");
+                }
+                this.setSegmentDownloadSchedule(newInfo);
             }).catch((): void => {
                 this.onError("Error updating download schedule");
             });
@@ -539,10 +543,18 @@ export class MseWrapper {
         }
     }
 
-    private setupStreams(manifest: string, videoInfo: SegmentIndexDescriptor, videoInit: ArrayBuffer,
-                         audioInfo: SegmentIndexDescriptor | null = null, audioInit: ArrayBuffer | null = null): void {
+    private setupStreams(manifest: string, videoInfo: any, videoInit: ArrayBuffer, audioInfo: any = null,
+                         audioInit: ArrayBuffer | null = null): void {
         /* Clean up whatever already existed. */
         this.cleaup();
+
+        /* Validate. */
+        if (!typeEquals<SegmentIndexDescriptor>(videoInfo)) {
+            throw Error("Video segment index descriptor is invalid.");
+        }
+        if (audioInfo !== null && !typeEquals<SegmentIndexDescriptor>(audioInfo)) {
+            throw Error("Audio segment index descriptor is invalid.");
+        }
 
         /* Create afresh. */
         this.setMediaSources((): void => {
@@ -619,11 +631,11 @@ export class MseWrapper {
      * @param baseUrl Base URL for the stream.
      * @param index Stream index.
      */
-    private getStreamInfoAndInit(index: number): Promise<[SegmentIndexDescriptor, ArrayBuffer]> {
+    private getStreamInfoAndInit(index: number): Promise<[any, ArrayBuffer]> {
         return Promise.all([
             fetch(`${this.baseUrl!}/chunk-stream${index}-index.json`),
             fetch(`${this.baseUrl!}/init-stream${index}.m4s`)
-        ]).then((responses: Response[]): Promise<[SegmentIndexDescriptor, ArrayBuffer]> => {
+        ]).then((responses: Response[]): Promise<[any, ArrayBuffer]> => {
             for (const response of responses) {
                 if (response.status !== 200) {
                     throw Error(`Fetching stream info or init gave HTTP status code ${response.status}`);

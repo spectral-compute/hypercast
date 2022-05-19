@@ -1231,6 +1231,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ckitching/typescript-is@npm:^0.1.21":
+  version: 0.1.21
+  resolution: "@ckitching/typescript-is@npm:0.1.21"
+  dependencies:
+    nested-error-stacks: ^2
+    reflect-metadata: ">=0.1.12"
+    tsutils: ^3.17.1
+  peerDependencies:
+    typescript: ">=2.9.1"
+  dependenciesMeta:
+    reflect-metadata:
+      optional: true
+  checksum: a360e4b594f17777d90ee41b5167b412572beb7c06badac581f25c923db0c95ff3829bd3ba2069ebd5f457950e3a202efc6b9d9c78e44503d5b8b8e3e034a858
+  languageName: node
+  linkType: hard
+
 "@discoveryjs/json-ext@npm:^0.5.0":
   version: 0.5.7
   resolution: "@discoveryjs/json-ext@npm:0.5.7"
@@ -3873,6 +3889,7 @@ __metadata:
   dependencies:
     "@babel/core": ^7.17.10
     "@babel/preset-env": ^7.17.10
+    "@ckitching/typescript-is": ^0.1.21
     "@typescript-eslint/eslint-plugin": ^5.23.0
     "@typescript-eslint/parser": ^5.23.0
     babel-loader: ^8.2.5
@@ -3910,6 +3927,7 @@ __metadata:
   resolution: "live-video-streamer-server@workspace:server"
   dependencies:
     "@babel/core": ^7.17.10
+    "@ckitching/typescript-is": ^0.1.21
     "@types/node": ^17.0.34
     "@typescript-eslint/eslint-plugin": ^5.23.0
     "@typescript-eslint/parser": ^5.23.0
@@ -3919,6 +3937,7 @@ __metadata:
     ts-loader: ^9.3.0
     ts-patch: ^2.0.1
     typescript: ^4.6.4
+    typescript-is: ^0.19.0
     webpack: ^5.72.1
     webpack-cli: ^4.9.2
   languageName: unknown
@@ -4253,6 +4272,13 @@ __metadata:
   version: 2.6.2
   resolution: "neo-async@npm:2.6.2"
   checksum: deac9f8d00eda7b2e5cd1b2549e26e10a0faa70adaa6fdadca701cc55f49ee9018e427f424bac0c790b7c7e2d3068db97f3093f1093975f2acb8f8818b936ed9
+  languageName: node
+  linkType: hard
+
+"nested-error-stacks@npm:^2":
+  version: 2.1.1
+  resolution: "nested-error-stacks@npm:2.1.1"
+  checksum: 5f452fad75db8480b4db584e1602894ff5977f8bf3d2822f7ba5cb7be80e89adf1fffa34dada3347ef313a4288850b4486eb0635b315c32bdfb505577e8880e3
   languageName: node
   linkType: hard
 
@@ -4697,6 +4723,13 @@ __metadata:
   dependencies:
     resolve: ^1.9.0
   checksum: 2a04aab4e28c05fcd6ee6768446bc8b859d8f108e71fc7f5bcbc5ef25e53330ce2c11d10f82a24591a2df4c49c4f61feabe1fd11f844c66feedd4cd7bb61146a
+  languageName: node
+  linkType: hard
+
+"reflect-metadata@npm:>=0.1.12":
+  version: 0.1.13
+  resolution: "reflect-metadata@npm:0.1.13"
+  checksum: 798d379a7b6f6455501145419505c97dd11cbc23857a386add2b9ef15963ccf15a48d9d15507afe01d4cd74116df8a213247200bac00320bd7c11ddeaa5e8fb4
   languageName: node
   linkType: hard
 
@@ -5394,7 +5427,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsutils@npm:^3.21.0":
+"tsutils@npm:^3.17.1, tsutils@npm:^3.21.0":
   version: 3.21.0
   resolution: "tsutils@npm:3.21.0"
   dependencies:
@@ -5432,6 +5465,22 @@ __metadata:
   version: 0.2.2
   resolution: "typescript-declaration-webpack-plugin@npm:0.2.2"
   checksum: 7417491e7555627659dfb42b51527eac24d40172f94f8e7cb90299236a27196b78f0e5109daf669fa2fce39e98c3c2dac03b890420bf041d179f8915332d7394
+  languageName: node
+  linkType: hard
+
+"typescript-is@npm:^0.19.0":
+  version: 0.19.0
+  resolution: "typescript-is@npm:0.19.0"
+  dependencies:
+    nested-error-stacks: ^2
+    reflect-metadata: ">=0.1.12"
+    tsutils: ^3.17.1
+  peerDependencies:
+    typescript: ^4.1.5
+  dependenciesMeta:
+    reflect-metadata:
+      optional: true
+  checksum: 2d600446543ecf544e3dbdae49d2ccdb0c84348971fc6906d1a70fe5c3c98a8ab8d01f6a331eeccac5a01160207974d572a02b808238f4ce2b60261f3a664a48
   languageName: node
   linkType: hard
 

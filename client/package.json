@@ -29,6 +29,7 @@
   "dependencies": {
     "@babel/core": "^7.17.10",
     "@babel/preset-env": "^7.17.10",
+    "@ckitching/typescript-is": "^0.1.21",
     "babel-loader": "^8.2.5",
     "node-polyfill-webpack-plugin": "^1.1.4",
     "ts-loader": "^9.3.0",

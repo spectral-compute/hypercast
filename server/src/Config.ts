@@ -1,4 +1,6 @@
 import {readFileSync} from "fs";
+import * as is from "typescript-is";
+import * as ckis from "@ckitching/typescript-is";
 import {assertNonNull} from "./Assertion";
 
 export type AudioCodec = "aac" | "opus";
@@ -193,5 +195,13 @@ export function substituteManifestPattern(pattern: string, uniqueId: string, ind
 export function loadConfig(path: string): Config {
     const json: string = readFileSync(path, {encoding: "utf-8"});
     const obj: unknown = JSON.parse(json);
-    return obj as Config; // TODO: Proper validation: checking for extra fields, and missing fields, and add defaults.
+    if (!ckis.equals<Config>(obj)) {
+        try {
+            is.assertEquals<Config>(obj);
+            throw new Error("Invalid configuration.");
+        } catch (e) {
+            throw new Error(`Invalid configuration: ${(e as Error).message}`);
+        }
+    }
+    return obj;
 }
