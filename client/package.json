@@ -8,8 +8,8 @@
   "types": "dist/live-video-streamer-client.d.ts",
   "version": "0.0.0",
   "scripts": {
-    "bundle": "ts-patch install && yarn webpack --mode production",
-    "bundle-dev": "ts-patch install && yarn webpack --mode development",
+    "bundle": "(cd ../common && yarn tsc) && ts-patch install && yarn webpack --mode production",
+    "bundle-dev": "(cd ../common && yarn tsc) && ts-patch install && yarn webpack --mode development",
     "clean": "rm -rf build dist",
     "lint": "yarn eslint --max-warnings=0 --ext .ts src",
     "postinstall": "rm -rf node_modules/@types/node"
@@ -31,6 +31,7 @@
     "@babel/preset-env": "^7.17.10",
     "@ckitching/typescript-is": "^0.1.21",
     "babel-loader": "^8.2.5",
+    "live-video-streamer-common": "workspace:^",
     "node-polyfill-webpack-plugin": "^1.1.4",
     "ts-loader": "^9.3.0",
     "ts-patch": "^2.0.1",

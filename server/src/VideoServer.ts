@@ -1,7 +1,7 @@
 import assert = require("assert");
 import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
-import {assertNonNull} from "./Assertion";
+import {assertNonNull} from "live-video-streamer-common";
 
 import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config";
 import {ffmpeg} from "./Ffmpeg";

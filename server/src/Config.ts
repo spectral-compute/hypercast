@@ -1,7 +1,7 @@
 import {readFileSync} from "fs";
 import * as is from "typescript-is";
 import * as ckis from "@ckitching/typescript-is";
-import {assertNonNull} from "./Assertion";
+import {assertNonNull} from "live-video-streamer-common";
 
 export type AudioCodec = "aac" | "opus";
 export type VideoCodec = "h264" | "h265" | "vp8" | "vp9" | "av1";

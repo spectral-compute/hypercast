@@ -7,11 +7,12 @@
   "private": true,
   "workspaces": [
     "client",
+    "common",
     "demo-client",
     "server"
   ],
   "scripts": {
-    "foreach": "(cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)"
+    "foreach": "(cd common && yarn $@) && (cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)"
   },
   "packageManager": "yarn@3.2.0",
   "devDependencies": {
