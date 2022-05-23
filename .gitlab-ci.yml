@@ -1,0 +1,43 @@
+stages:
+  - Build-Development
+  - Lint
+  - Test
+  - Build-Production
+
+.env:
+  image: $DOCKER_REGISTRY/spectral/build/nodejs
+
+Build:
+  extends: .env
+  stage: Build-Development
+  script:
+    - run "cd src && yarn install"
+    - run "cd src && yarn bundle-dev"
+  variables:
+    CI_PROPAGATE_WORKSPACE: 1
+
+Lint:
+  extends: .env
+  stage: Lint
+  script:
+    - run "cd src && yarn foreach lint"
+  variables:
+    GIT_STRATEGY: none
+
+Test:
+  extends: .env
+  stage: Test
+  script:
+    - run "cd src && yarn test"
+  variables:
+    GIT_STRATEGY: none
+
+Build-Production:
+  extends: .env
+  stage: Build-Production
+  script:
+    - run "cd src && yarn clean"
+    - run "cd src && yarn install"
+    - run "cd src && yarn bundle"
+  variables:
+    GIT_STRATEGY: none
