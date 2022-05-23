@@ -9,15 +9,19 @@
   "version": "0.0.0",
   "scripts": {
     "clean": "rm -rf build",
-    "lint": "yarn eslint --max-warnings=0 --ext .ts src"
+    "lint": "yarn eslint --max-warnings=0 --ext .ts src test",
+    "test": "jest --config test/jest.config.js $@"
   },
   "dependencies": {
     "@types/node": "^17.0.34",
     "typescript": "^4.6.4"
   },
   "devDependencies": {
+    "@types/jest": "^27.5.1",
     "@typescript-eslint/eslint-plugin": "^5.23.0",
     "@typescript-eslint/parser": "^5.23.0",
-    "eslint": "^8.15.0"
+    "eslint": "^8.15.0",
+    "jest": "^28.1.0",
+    "ts-jest": "^28.0.2"
   }
 }

@@ -11,8 +11,9 @@
     "bundle": "(cd ../common && yarn tsc) && ts-patch install && yarn webpack --mode production",
     "bundle-dev": "(cd ../common && yarn tsc) && ts-patch install && yarn webpack --mode development",
     "clean": "rm -rf build dist",
-    "lint": "yarn eslint --max-warnings=0 --ext .ts src",
-    "postinstall": "rm -rf node_modules/@types/node"
+    "lint": "yarn eslint --max-warnings=0 --ext .ts src test",
+    "postinstall": "rm -rf node_modules/@types/node",
+    "test": "ts-patch install && jest --config test/jest.config.js $@"
   },
   "browserslist": {
     "production": [
@@ -41,8 +42,12 @@
     "webpack-cli": "^4.9.2"
   },
   "devDependencies": {
+    "@types/jest": "^27.5.1",
     "@typescript-eslint/eslint-plugin": "^5.23.0",
     "@typescript-eslint/parser": "^5.23.0",
-    "eslint": "^8.15.0"
+    "eslint": "^8.15.0",
+    "jest": "^28.1.0",
+    "jest-environment-jsdom": "^28.1.0",
+    "ts-jest": "^28.0.2"
   }
 }

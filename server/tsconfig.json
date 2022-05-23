@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./build",
     "module": "commonjs",
+    "allowJs": true,
     "plugins": [
       { "transform": "typescript-is/lib/transform-inline/transformer" },
       { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }

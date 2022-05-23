@@ -2,6 +2,7 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./build",
+    "allowJs": true,
     "plugins": [
       { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
     ]

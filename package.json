@@ -15,7 +15,8 @@
     "bundle": "(cd server && yarn bundle) && (cd client && yarn bundle) && (cd demo-client && yarn bundle)",
     "bundle-dev": "(cd server && yarn bundle) && (cd client && yarn bundle) && (cd demo-client && yarn bundle)",
     "clean": "yarn foreach clean && rm -rf node_modules .yarn */node_modules",
-    "foreach": "(cd common && yarn $@) && (cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)"
+    "foreach": "(cd common && yarn $@) && (cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)",
+    "test": "(cd common && yarn test) && (cd server && yarn test) && (cd client && yarn test)"
   },
   "packageManager": "yarn@3.2.0",
   "devDependencies": {
