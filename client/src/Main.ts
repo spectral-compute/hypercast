@@ -132,13 +132,6 @@ export class Player {
     }
 
     /**
-     * Get the live server info JSON object that set up this player.
-     */
-    getServerInfo(): API.ServerInfo {
-        return this.serverInfo;
-    }
-
-    /**
      * Get the list of possible angle settings.
      *
      * This can change whenever the onLoaded event fires.
