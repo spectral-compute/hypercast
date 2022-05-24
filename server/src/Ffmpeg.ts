@@ -526,9 +526,8 @@ export class Subprocess {
     }
 }
 
-/* Run ffmpeg to transcode from external input to DASH in one go. */
-export function launchTranscoder(angle: number, config: Config, source: string, uniqueId: string): Subprocess {
-    const name = `Source ${angle + 1}`; // Human friendly camera label.
+/* Get the ffmpeg arguments to give to Subprocess to transcode from external input to DASH in one go. */
+export function getTranscoderArgs(angle: number, config: Config, source: string, uniqueId: string): string[] {
     const videoConfigs = config.video.configs;
     const audioConfigs = config.audio.configs;
 
@@ -573,6 +572,6 @@ export function launchTranscoder(angle: number, config: Config, source: string, 
         )
     ];
 
-    // Launch the subprocess.
-    return new Subprocess(name, args);
+    // Done :)
+    return args;
 }

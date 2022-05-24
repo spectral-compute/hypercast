@@ -668,7 +668,8 @@ export class VideoServer {
     public startStreaming(): void {
         this.log.info("Building ffmpeg processes...");
         this.ffmpegProcesses = this.config.video.sources.map((source: string, i: number) => {
-            return Ffmpeg.launchTranscoder(i, this.config, source, this.uniqueID);
+            return new Ffmpeg.Subprocess(`Source ${i + 1}`,
+                                         Ffmpeg.getTranscoderArgs(i, this.config, source, this.uniqueID));
         });
 
         this.log.info("Launching ffmpeg processes...");
