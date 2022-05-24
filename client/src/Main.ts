@@ -223,7 +223,9 @@ export class Player {
      * @return A list of strings describing each latency setting.
      */
     getLatencyOptions(): string[] {
-        return ["Up to 2s (more smooth)", "Up to 1s (less smooth)"];
+        return ["Up to 2s (more smooth)", "Up to 1s (less smooth)"].concat(
+               ((this.qualityOptions.length === 1) ? ["Up to 3s (most reliable)"] : [])
+        );
     }
 
     /**
@@ -234,7 +236,7 @@ export class Player {
      * @return True if user latency control applies to the playing video, and false otherwise.
      */
     getLatencyAvailable(): boolean {
-        return this.quality < this.qualityOptions.length - 1;
+        return this.qualityOptions.length === 1 || this.quality < this.qualityOptions.length - 1;
     }
 
     /**
@@ -321,6 +323,9 @@ export class Player {
                 break;
             case 1:
                 this.bctrl!.setUltraLowLatency();
+                break;
+            case 2:
+                this.bctrl!.setSaferLatency();
                 break;
         }
     }
