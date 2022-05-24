@@ -14,7 +14,8 @@
   "scripts": {
     "bundle": "(cd server && yarn bundle) && (cd client && yarn bundle) && (cd demo-client && yarn bundle)",
     "bundle-dev": "(cd server && yarn bundle) && (cd client && yarn bundle) && (cd demo-client && yarn bundle)",
-    "clean": "yarn foreach clean && rm -rf node_modules .yarn */node_modules",
+    "clean": "rm -rf docs/dist && yarn foreach clean && rm -rf node_modules .yarn */node_modules",
+    "docs": "rm -rf docs/dist && docs/build.sh docs/dist",
     "foreach": "(cd common && yarn $@) && (cd client && yarn $@) && (cd demo-client && yarn $@) && (cd server && yarn $@)",
     "test": "(cd common && yarn test) && (cd server && yarn test) && (cd client && yarn test)"
   },
@@ -24,6 +25,8 @@
     "@typescript-eslint/parser": "^5.23.0",
     "eslint": "^8.15.0",
     "ts-patch": "^2.0.1",
+    "typedoc": "^0.22.15",
+    "typedoc-plugin-markdown": "^3.12.1",
     "typescript": "^4.6.4"
   }
 }

@@ -3,6 +3,7 @@ stages:
   - Lint
   - Test
   - Build-Production
+  - Deploy
 
 .env:
   image: $DOCKER_REGISTRY/spectral/build/nodejs
@@ -41,3 +42,13 @@ Build-Production:
     - run "cd src && yarn bundle"
   variables:
     GIT_STRATEGY: none
+
+Manual:
+  extends: .env
+  stage: Deploy
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - run mkdir docs_inst
+    - run "cd src && docs/build.sh ../docs_inst"
+    - run publishDocs.sh docs_inst
