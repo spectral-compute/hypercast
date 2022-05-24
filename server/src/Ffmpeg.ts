@@ -3,6 +3,7 @@ import * as child_process from "child_process";
 import * as fs from "fs";
 import * as process from "process";
 import * as stream from "stream";
+import Timeout = NodeJS.Timeout;
 import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern,
         VideoConfig} from "./Config";
 import {Logger} from "./Log";
@@ -320,262 +321,258 @@ function getDashOutputArgs(segmentLengthMultiplier: number, videoConfigs: VideoC
 //     speed: number;
 // }
 
-export namespace ffmpeg {
-    import Timeout = NodeJS.Timeout;
+export class Subprocess {
+    inputStreams: stream.Writable[] = [];
+    outputStreams: stream.Readable[] = [];
 
-    export class Subprocess {
-        inputStreams: stream.Writable[] = [];
-        outputStreams: stream.Readable[] = [];
+    private process?: child_process.ChildProcess;
 
-        private process?: child_process.ChildProcess;
+    // Are we currently in the process of trying to quit?
+    private stopping: boolean = false;
 
-        // Are we currently in the process of trying to quit?
-        private stopping: boolean = false;
+    private readonly log: Logger;
 
-        private readonly log: Logger;
+    public async start(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // Launch the process.
+            this.process = child_process.spawn("ffmpeg", this.args, {stdio: [
+                // Ignore stdin, capture stout and stderr.
+                "ignore", "pipe", "pipe"
+            ]});
 
-        public async start(): Promise<void> {
-            return new Promise((resolve, reject) => {
-                // Launch the process.
-                this.process = child_process.spawn("ffmpeg", this.args, {stdio: [
-                    // Ignore stdin, capture stout and stderr.
-                    "ignore", "pipe", "pipe"
-                ]});
+            this.process.on("exit", (code: number | undefined, signal: string | undefined): void => {
+                if (code !== undefined) {
+                    this.log.info(`[${this.name}] Exited with status code ${code}`);
+                } else {
+                    this.log.info(`[${this.name}] Terminated due to signal ${signal!}`);
+                }
 
-                this.process.on("exit", (code: number | undefined, signal: string | undefined): void => {
-                    if (code !== undefined) {
-                        this.log.info(`[${this.name}] Exited with status code ${code}`);
-                    } else {
-                        this.log.info(`[${this.name}] Terminated due to signal ${signal!}`);
-                    }
-
-                    if (!this.stopping) {
-                        process.exit(1); // FFmpeg terminating unexpectedly is an error condition.
-                    }
-                });
-
-                this.process.once("error", (e: Error): void => {
-                    reject(e);
-                });
-
-                // Print the FFmpeg command
-                let argsString = "  ffmpeg";
-                this.args.forEach((arg: string): void => {
-                    argsString += " " + ((arg.includes(" ") || this.args.includes("\"")) ?
-                                         ("\"" + arg.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\"") : arg);
-                });
-
-                this.log.debug(`Spawning FFmpeg Command:\n${argsString}`);
-
-                this.process.stderr!.once("data", () => {
-                    // This presumably means it's alive...
-                    resolve();
-                });
-
-                // Hand ffmpeg's output to the logging system, if it wants it.
-                this.process.stdout!.on("data", (data: string | Buffer) => {
-                    this.printFfmpegLog(data.toString());
-                });
-                this.process.stderr!.on("data", (data: string | Buffer) => {
-                    this.handleStderr(data.toString());
-                });
+                if (!this.stopping) {
+                    process.exit(1); // FFmpeg terminating unexpectedly is an error condition.
+                }
             });
+
+            this.process.once("error", (e: Error): void => {
+                reject(e);
+            });
+
+            // Print the FFmpeg command
+            let argsString = "  ffmpeg";
+            this.args.forEach((arg: string): void => {
+                argsString += " " + ((arg.includes(" ") || this.args.includes("\"")) ?
+                                     ("\"" + arg.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\"") : arg);
+            });
+
+            this.log.debug(`Spawning FFmpeg Command:\n${argsString}`);
+
+            this.process.stderr!.once("data", () => {
+                // This presumably means it's alive...
+                resolve();
+            });
+
+            // Hand ffmpeg's output to the logging system, if it wants it.
+            this.process.stdout!.on("data", (data: string | Buffer) => {
+                this.printFfmpegLog(data.toString());
+            });
+            this.process.stderr!.on("data", (data: string | Buffer) => {
+                this.handleStderr(data.toString());
+            });
+        });
+    }
+
+    // Map ffmpeg log-lines to the right log-level in our infrastructure.
+    private printFfmpegLog(text: string): void {
+        // Parse the loglevel from the start of the line. If it's not there, assume something weird is going on and
+        // just emit it at level `warn`.
+        if (!text.startsWith("[")) {
+            this.log.warn(text);
+            return;
         }
 
-        // Map ffmpeg log-lines to the right log-level in our infrastructure.
-        private printFfmpegLog(text: string): void {
-            // Parse the loglevel from the start of the line. If it's not there, assume something weird is going on and
-            // just emit it at level `warn`.
-            if (!text.startsWith("[")) {
-                this.log.warn(text);
+        const lines = text.split("\n");
+        let currentLevel = "";
+        let currentDocument = "";
+
+        const emitDocument = (): void => {
+            currentDocument = currentDocument.replace(/\s+$/, "");
+            if (!currentDocument) {
                 return;
             }
 
-            const lines = text.split("\n");
-            let currentLevel = "";
-            let currentDocument = "";
+            switch (currentLevel) {
+                case "panic":
+                case "fatal":
+                case "error":
+                    this.log.error(currentDocument);
+                    break;
+                case "warning":
+                    this.log.warn(currentDocument);
+                    break;
+                case "info":
+                    this.log.info(currentDocument);
+                    break;
+                case "verbose":
+                case "debug":
+                case "trace":
+                    this.log.debug(currentDocument);
+                    break;
+                default:
+                    this.log.warn(currentDocument);
+            }
+        };
 
-            const emitDocument = (): void => {
-                currentDocument = currentDocument.replace(/\s+$/, "");
-                if (!currentDocument) {
-                    return;
+        for (const line of lines) {
+            // Fully-blank lines just get appended.
+            if (/^\s*$/.exec(line)) {
+                currentDocument += "\n";
+                continue;
+            }
+
+            const match = /^\s*\[([^\]]+)\](?:\s\[([^\]]+)\])?/.exec(line);
+
+            // Sometimes there's another thing in brackets first.
+            const loglevel = !match ? "warning" : (match[2] ?? match[1] ?? "warning");
+            if (loglevel !== currentLevel) {
+                emitDocument();
+
+                currentLevel = loglevel;
+                currentDocument = "";
+            }
+
+            // console.log("line: " + line);
+            // console.log("loglevel: " + loglevel);
+            const payload = line.replace(`[${loglevel}] `, "");
+            currentDocument += payload + "\n";
+        }
+
+        emitDocument();
+    }
+
+    private handleStderr(line: string): void {
+        // If it's one of the stats lines that come out every second, digest it. Otherwise, print it.
+        if (line.slice(0, 25).includes(" frame=")) {
+            // Do something with this, if you want. :D
+            // const stats = Object.fromEntries(
+            //     line.replaceAll(/=\s+/g, '=')
+            //         .split(' ')
+            //         .filter((p) => p.length > 0 && !p.endsWith('N/A'))
+            //         .slice(1, -1)
+            //         .map((s) => s.split('='))
+            // );
+            //
+            // // Sort out the numeric fields.
+            // stats.frame = Number(stats.frame);
+            // stats.fps = Number(stats.fps);
+            // stats.q = Number(stats.q);
+            // stats.drop = Number(stats.drop);
+            // stats.dup = Number(stats.dup);
+            // stats.speed = Number(stats.speed.slice(0, -1));
+            // const parsedStats = stats as FfmpegStats;
+            // console.log(parsedStats);
+        } else {
+            this.printFfmpegLog(line);
+        }
+    }
+
+    /**
+     * Send SIGTERM and wait for ffmpeg to finish its finishing-off-stuff. This should lead to nicely-formatted
+     * media files after we're stopped.
+     *
+     * @param timeoutMs After this many milliseconds, give up and send SIGKILL.
+     */
+    public async stop(timeoutMs: number | undefined): Promise<void> {
+        this.stopping = true;
+
+        // If we never started, or already stopped, then stopping is a no-op.
+        if (!this.process || this.process.exitCode !== null) {
+            return;
+        }
+
+        return new Promise((resolve): void => {
+            let murderiseCountdown: Timeout | undefined = undefined;
+            if (timeoutMs !== undefined) {
+                murderiseCountdown = setTimeout(() => {
+                    this.process!.kill("SIGKILL");
+                }, timeoutMs);
+            }
+
+            let exitHandler: ((...args: any[]) => void) | null = null;
+            let errorHandler: ((...args: any[]) => void) | null = null;
+            exitHandler = (): void => {
+                if (murderiseCountdown) {
+                    clearTimeout(murderiseCountdown);
                 }
 
-                switch (currentLevel) {
-                    case "panic":
-                    case "fatal":
-                    case "error":
-                        this.log.error(currentDocument);
-                        break;
-                    case "warning":
-                        this.log.warn(currentDocument);
-                        break;
-                    case "info":
-                        this.log.info(currentDocument);
-                        break;
-                    case "verbose":
-                    case "debug":
-                    case "trace":
-                        this.log.debug(currentDocument);
-                        break;
-                    default:
-                        this.log.warn(currentDocument);
-                }
+                this.process!.off("error", errorHandler!);
+
+                resolve();
             };
 
-            for (const line of lines) {
-                // Fully-blank lines just get appended.
-                if (/^\s*$/.exec(line)) {
-                    currentDocument += "\n";
-                    continue;
-                }
+            errorHandler = (e: Error): void => {
+                this.log.error(`[${this.name}] Error during shutdown: ${e.message}`);
+                this.process!.off("exit", exitHandler!);
+            };
 
-                const match = /^\s*\[([^\]]+)\](?:\s\[([^\]]+)\])?/.exec(line);
+            this.process!.once("exit", exitHandler);
+            this.process!.on("error", errorHandler);
 
-                // Sometimes there's another thing in brackets first.
-                const loglevel = !match ? "warning" : (match[2] ?? match[1] ?? "warning");
-                if (loglevel !== currentLevel) {
-                    emitDocument();
-
-                    currentLevel = loglevel;
-                    currentDocument = "";
-                }
-
-                // console.log("line: " + line);
-                // console.log("loglevel: " + loglevel);
-                const payload = line.replace(`[${loglevel}] `, "");
-                currentDocument += payload + "\n";
-            }
-
-            emitDocument();
-        }
-
-        private handleStderr(line: string): void {
-            // If it's one of the stats lines that come out every second, digest it. Otherwise, print it.
-            if (line.slice(0, 25).includes(" frame=")) {
-                // Do something with this, if you want. :D
-                // const stats = Object.fromEntries(
-                //     line.replaceAll(/=\s+/g, '=')
-                //         .split(' ')
-                //         .filter((p) => p.length > 0 && !p.endsWith('N/A'))
-                //         .slice(1, -1)
-                //         .map((s) => s.split('='))
-                // );
-                //
-                // // Sort out the numeric fields.
-                // stats.frame = Number(stats.frame);
-                // stats.fps = Number(stats.fps);
-                // stats.q = Number(stats.q);
-                // stats.drop = Number(stats.drop);
-                // stats.dup = Number(stats.dup);
-                // stats.speed = Number(stats.speed.slice(0, -1));
-                // const parsedStats = stats as FfmpegStats;
-                // console.log(parsedStats);
-            } else {
-                this.printFfmpegLog(line);
-            }
-        }
-
-        /**
-         * Send SIGTERM and wait for ffmpeg to finish its finishing-off-stuff. This should lead to nicely-formatted
-         * media files after we're stopped.
-         *
-         * @param timeoutMs After this many milliseconds, give up and send SIGKILL.
-         */
-        public async stop(timeoutMs: number | undefined): Promise<void> {
-            this.stopping = true;
-
-            // If we never started, or already stopped, then stopping is a no-op.
-            if (!this.process || this.process.exitCode !== null) {
-                return;
-            }
-
-            return new Promise((resolve): void => {
-                let murderiseCountdown: Timeout | undefined = undefined;
-                if (timeoutMs !== undefined) {
-                    murderiseCountdown = setTimeout(() => {
-                        this.process!.kill("SIGKILL");
-                    }, timeoutMs);
-                }
-
-                let exitHandler: ((...args: any[]) => void) | null = null;
-                let errorHandler: ((...args: any[]) => void) | null = null;
-                exitHandler = (): void => {
-                    if (murderiseCountdown) {
-                        clearTimeout(murderiseCountdown);
-                    }
-
-                    this.process!.off("error", errorHandler!);
-
-                    resolve();
-                };
-
-                errorHandler = (e: Error): void => {
-                    this.log.error(`[${this.name}] Error during shutdown: ${e.message}`);
-                    this.process!.off("exit", exitHandler!);
-                };
-
-                this.process!.once("exit", exitHandler);
-                this.process!.on("error", errorHandler);
-
-                this.process!.kill("SIGTERM");
-            });
-        }
-
-        constructor(private readonly name: string,
-                    private readonly args: string[]) {
-            this.log = new Logger("Ffmpeg " + name);
-        }
+            this.process!.kill("SIGTERM");
+        });
     }
 
-    /* Run ffmpeg to transcode from external input to DASH in one go. */
-    export function launchTranscoder(angle: number, config: Config, source: string, uniqueId: string): Subprocess {
-        const name = `Source ${angle + 1}`; // Human friendly camera label.
-        const videoConfigs = config.video.configs;
-        const audioConfigs = config.audio.configs;
-
-        let args = [
-            // Inputs
-            ...getExternalSourceArgs(source),
-
-            // Video filtering
-            ...getFilteringArgs(videoConfigs, config.video.timestamp)
-        ];
-
-        /* Output map. */
-        // Video streams from filtration.
-        videoConfigs.forEach((_config: VideoConfig, i: number): void => {
-            args.push("-map");
-            args.push(`[v${i}]`);
-        });
-
-        // Audio stream.
-        audioConfigs.forEach((): void => {
-            const streamIdx = 0;
-
-            args.push("-map");
-            args.push(`${streamIdx}:a`);
-        });
-
-        args = [
-            ...args,
-
-            // Encoder arguments.
-            ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig,
-                             config.dash.rateControlBufferLength),
-
-            // Output arguments.
-            ...getDashOutputArgs(
-                config.dash.segmentLengthMultiplier,
-                config.video.configs,
-                config.dash.targetLatency,
-                audioConfigs.length !== 0,
-                config.network.port,
-                substituteManifestPattern(config.dash.manifest, uniqueId, angle)
-            )
-        ];
-
-        // Launch the subprocess.
-        return new Subprocess(name, args);
+    constructor(private readonly name: string,
+                private readonly args: string[]) {
+        this.log = new Logger("Ffmpeg " + name);
     }
+}
+
+/* Run ffmpeg to transcode from external input to DASH in one go. */
+export function launchTranscoder(angle: number, config: Config, source: string, uniqueId: string): Subprocess {
+    const name = `Source ${angle + 1}`; // Human friendly camera label.
+    const videoConfigs = config.video.configs;
+    const audioConfigs = config.audio.configs;
+
+    let args = [
+        // Inputs
+        ...getExternalSourceArgs(source),
+
+        // Video filtering
+        ...getFilteringArgs(videoConfigs, config.video.timestamp)
+    ];
+
+    /* Output map. */
+    // Video streams from filtration.
+    videoConfigs.forEach((_config: VideoConfig, i: number): void => {
+        args.push("-map");
+        args.push(`[v${i}]`);
+    });
+
+    // Audio stream.
+    audioConfigs.forEach((): void => {
+        const streamIdx = 0;
+
+        args.push("-map");
+        args.push(`${streamIdx}:a`);
+    });
+
+    args = [
+        ...args,
+
+        // Encoder arguments.
+        ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig,
+                         config.dash.rateControlBufferLength),
+
+        // Output arguments.
+        ...getDashOutputArgs(
+            config.dash.segmentLengthMultiplier,
+            config.video.configs,
+            config.dash.targetLatency,
+            audioConfigs.length !== 0,
+            config.network.port,
+            substituteManifestPattern(config.dash.manifest, uniqueId, angle)
+        )
+    ];
+
+    // Launch the subprocess.
+    return new Subprocess(name, args);
 }
