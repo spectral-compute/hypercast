@@ -310,6 +310,56 @@ function getDashOutputArgs(segmentLengthMultiplier: number, videoConfigs: VideoC
     return args;
 }
 
+/* Get the ffmpeg arguments to give to Subprocess to transcode from external input to DASH in one go. */
+export function getTranscoderArgs(angle: number, config: Config, source: string, uniqueId: string): string[] {
+    const videoConfigs = config.video.configs;
+    const audioConfigs = config.audio.configs;
+
+    let args = [
+        // Inputs
+        ...getExternalSourceArgs(source),
+
+        // Video filtering
+        ...getFilteringArgs(videoConfigs, config.video.timestamp)
+    ];
+
+    /* Output map. */
+    // Video streams from filtration.
+    videoConfigs.forEach((_config: VideoConfig, i: number): void => {
+        args.push("-map");
+        args.push(`[v${i}]`);
+    });
+
+    // Audio stream.
+    audioConfigs.forEach((): void => {
+        const streamIdx = 0;
+
+        args.push("-map");
+        args.push(`${streamIdx}:a`);
+    });
+
+    args = [
+        ...args,
+
+        // Encoder arguments.
+        ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig,
+                         config.dash.rateControlBufferLength),
+
+        // Output arguments.
+        ...getDashOutputArgs(
+            config.dash.segmentLengthMultiplier,
+            config.video.configs,
+            config.dash.targetLatency,
+            audioConfigs.length !== 0,
+            config.network.port,
+            substituteManifestPattern(config.dash.manifest, uniqueId, angle)
+        )
+    ];
+
+    // Done :)
+    return args;
+}
+
 // A parsed Ffmpeg stats line.
 // interface FfmpegStats {
 //     frame: number;
@@ -524,54 +574,4 @@ export class Subprocess {
                 private readonly args: string[]) {
         this.log = new Logger("Ffmpeg " + name);
     }
-}
-
-/* Get the ffmpeg arguments to give to Subprocess to transcode from external input to DASH in one go. */
-export function getTranscoderArgs(angle: number, config: Config, source: string, uniqueId: string): string[] {
-    const videoConfigs = config.video.configs;
-    const audioConfigs = config.audio.configs;
-
-    let args = [
-        // Inputs
-        ...getExternalSourceArgs(source),
-
-        // Video filtering
-        ...getFilteringArgs(videoConfigs, config.video.timestamp)
-    ];
-
-    /* Output map. */
-    // Video streams from filtration.
-    videoConfigs.forEach((_config: VideoConfig, i: number): void => {
-        args.push("-map");
-        args.push(`[v${i}]`);
-    });
-
-    // Audio stream.
-    audioConfigs.forEach((): void => {
-        const streamIdx = 0;
-
-        args.push("-map");
-        args.push(`${streamIdx}:a`);
-    });
-
-    args = [
-        ...args,
-
-        // Encoder arguments.
-        ...getEncodeArgs(videoConfigs, audioConfigs, config.video.codecConfig,
-                         config.dash.rateControlBufferLength),
-
-        // Output arguments.
-        ...getDashOutputArgs(
-            config.dash.segmentLengthMultiplier,
-            config.video.configs,
-            config.dash.targetLatency,
-            audioConfigs.length !== 0,
-            config.network.port,
-            substituteManifestPattern(config.dash.manifest, uniqueId, angle)
-        )
-    ];
-
-    // Done :)
-    return args;
 }
