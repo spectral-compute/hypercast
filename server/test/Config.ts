@@ -1,5 +1,5 @@
 import {expect, test} from "@jest/globals";
-import {applyDefaultConfig} from "../src/Config";
+import {applyDefaultConfig} from "../src/Config/Config";
 
 test("Default", (): void => {
     const config = applyDefaultConfig({});

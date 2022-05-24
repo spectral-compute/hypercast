@@ -1,5 +1,5 @@
 import {expect, test} from "@jest/globals";
-import {applyDefaultConfig} from "../src/Config";
+import {applyDefaultConfig} from "../src/Config/Config";
 import {getTranscoderArgs} from "../src/Ffmpeg";
 
 test("1 video", (): void => {

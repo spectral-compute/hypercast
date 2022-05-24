@@ -3,7 +3,7 @@ import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
 import {API, assertNonNull} from "live-video-streamer-common";
 
-import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config";
+import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config/Config";
 import * as Ffmpeg from "./Ffmpeg";
 import {Logger} from "./Log";
 import {ServerFileStore} from "./ServerFileStore";

@@ -5,7 +5,7 @@ import * as process from "process";
 import * as stream from "stream";
 import Timeout = NodeJS.Timeout;
 import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern,
-        VideoConfig} from "./Config";
+        VideoConfig} from "./Config/Config";
 import {Logger} from "./Log";
 
 /* FFMPEG Arguments. */

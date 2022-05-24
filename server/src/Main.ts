@@ -1,5 +1,5 @@
 import {argv} from "process";
-import {Config, loadConfig} from "./Config";
+import {Config, loadConfig} from "./Config/Config";
 import {Logger} from "./Log";
 import {VideoServer} from "./VideoServer";
 
