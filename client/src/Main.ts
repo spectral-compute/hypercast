@@ -1,27 +1,7 @@
 import * as BufferCtrl from "./BufferCtrl";
 import * as Stream from "./Stream";
+import {API} from "live-video-streamer-common";
 import {equals as typeEquals} from "@ckitching/typescript-is";
-
-interface VideoConfig {
-    codec: string,
-    bitrate: number,
-    width: number,
-    height: number
-}
-
-interface AudioConfig {
-    codec: string,
-    bitrate: number
-}
-
-interface ServerInfo {
-    angles: {name: string, path: string}[],
-    segmentDuration: number,
-    segmentPreavailability: number,
-    videoConfigs: VideoConfig[],
-    audioConfigs: AudioConfig[],
-    avMap: [number, number][]
-}
 
 export class Player {
     /**
@@ -54,7 +34,7 @@ export class Player {
             return response.json();
         }).then((serverInfo): void => {
             /* Extract and parse the server info. */
-            if (!typeEquals<ServerInfo>(serverInfo)) {
+            if (!typeEquals<API.ServerInfo>(serverInfo)) {
                 throw Error("Info JSON is not a valid server info");
             }
             this.serverInfo = serverInfo;
@@ -67,7 +47,7 @@ export class Player {
             }
 
             // Extract quality information.
-            this.serverInfo.videoConfigs.forEach((value: VideoConfig) => {
+            this.serverInfo.videoConfigs.forEach((value: API.VideoConfig) => {
                 this.qualityOptions.push([value.width, value.height]);
             });
 
@@ -154,7 +134,7 @@ export class Player {
     /**
      * Get the live server info JSON object that set up this player.
      */
-    getServerInfo(): ServerInfo {
+    getServerInfo(): API.ServerInfo {
         return this.serverInfo;
     }
 
@@ -419,7 +399,7 @@ export class Player {
     private verboseInterval: number | null = null;
 
     // Server information.
-    private serverInfo!: ServerInfo;
+    private serverInfo!: API.ServerInfo;
     private readonly angleUrls: string[] = [];
     private readonly angleOptions: string[] = [];
     private readonly qualityOptions: [number, number][] = []; // Map: quality -> (width,height).

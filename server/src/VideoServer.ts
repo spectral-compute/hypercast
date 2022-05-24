@@ -1,7 +1,7 @@
 import assert = require("assert");
 import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
-import {assertNonNull} from "live-video-streamer-common";
+import {API, assertNonNull} from "live-video-streamer-common";
 
 import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config";
 import * as Ffmpeg from "./Ffmpeg";
@@ -108,11 +108,12 @@ class SegmentIndexDescriptor {
     }
 
     toJson(): Buffer {
-        return Buffer.from(JSON.stringify({
+        const descriptor: API.SegmentIndexDescriptor = {
             index: this.index,
             indexWidth: this.indexWidth,
             age: Math.floor(Date.now() - this.timestamp) // Age in ms.
-        }));
+        };
+        return Buffer.from(JSON.stringify(descriptor));
     }
 
     readonly index: number;
@@ -262,8 +263,8 @@ export class VideoServer {
     /**
      * Get an object for each video stream configuration.
      */
-    private getVideoStreamInfos(): any[] {
-        const result = new Array<any>();
+    private getVideoStreamInfos(): API.VideoConfig[] {
+        const result = new Array<API.VideoConfig>();
         for (const codec of this.config.video.configs) {
             result.push({
                 codec: codec.codec,
@@ -278,8 +279,8 @@ export class VideoServer {
     /**
      * Get an object for each audio stream configuration.
      */
-    private getAudioStreamInfos(): any[] {
-        const result = new Array<any>();
+    private getAudioStreamInfos(): API.AudioConfig[] {
+        const result = new Array<API.AudioConfig>();
         for (const codec of this.config.audio.configs) {
             result.push({
                 codec: codec.codec,
@@ -293,9 +294,17 @@ export class VideoServer {
      * Write some configuration metadata to the virtual filesystem, so clients can ask how many cameras we have.
      */
     private writeServerInfo(): void {
-        const manifests = new Array<any>();
+        const serverInfo: API.ServerInfo = {
+            angles: [],
+            segmentDuration: this.segmentDuration,
+            segmentPreavailability: this.config.network.preAvailabilityTime,
+            videoConfigs: this.getVideoStreamInfos(),
+            audioConfigs: this.getAudioStreamInfos(),
+            avMap: this.getAudioVideoMap()
+        };
+
         this.config.video.sources.forEach((_: string, index: number): void => {
-            manifests.push({
+            serverInfo.angles.push({
                 name: `Angle ${index}`,
                 path: substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).
                       replace(/(?<=^.*)[/][^/]+$/, "")
@@ -303,15 +312,7 @@ export class VideoServer {
         });
 
         const sf = this.serverFileStore.add(this.config.serverInfo.live);
-        sf.add(Buffer.from(JSON.stringify({
-            angles: manifests,
-            segmentDuration: this.segmentDuration,
-            segmentPreavailability: this.config.network.preAvailabilityTime,
-            videoConfigs: this.getVideoStreamInfos(),
-            audioConfigs: this.getAudioStreamInfos(),
-            avMap: this.getAudioVideoMap()
-        })));
-
+        sf.add(Buffer.from(JSON.stringify(serverInfo)));
         sf.finish();
     }
 

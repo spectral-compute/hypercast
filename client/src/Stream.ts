@@ -1,5 +1,6 @@
 import * as Debug from "./Debug";
 import {Deinterleaver} from "./Deinterleave";
+import {API} from "live-video-streamer-common";
 import {equals as typeEquals} from "@ckitching/typescript-is";
 
 /**
@@ -23,15 +24,6 @@ const PruneMinMediaSourceBufferLength = 8000;
  * Threshold of media source buffer to trigger pruning.
  */
 const PruneMaxMediaSourceBufferLength = 16000;
-
-/**
- * Stream index info objects we receive.
- */
-interface SegmentIndexDescriptor {
-    index: number;
-    indexWidth: number;
-    age: number;
-}
 
 /**
  * Manages a media source buffer, and a queue of data to go with it.
@@ -220,7 +212,7 @@ class Stream {
  * Schedules download of segments.
  */
 class SegmentDownloader {
-    constructor(info: SegmentIndexDescriptor, interleaved: boolean, streams: Stream[], streamIndex: number,
+    constructor(info: API.SegmentIndexDescriptor, interleaved: boolean, streams: Stream[], streamIndex: number,
                 baseUrl: string, segmentDuration: number, segmentPreavailability: number,
                 onError: (description: string) => void) {
         this.info = info;
@@ -252,11 +244,11 @@ class SegmentDownloader {
      *
      * @param A segment index info object that has just been downloaded.
      */
-    private setSegmentDownloadSchedule(info: SegmentIndexDescriptor): void {
+    private setSegmentDownloadSchedule(info: API.SegmentIndexDescriptor): void {
         /* Schedule periodic updates to the download scheduler. */
         this.schedulerTimeout = setTimeout((): void => {
             fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`).
-            then((response: Response): Promise<SegmentIndexDescriptor> => {
+            then((response: Response): Promise<API.SegmentIndexDescriptor> => {
                 if (response.status !== 200) {
                     throw new Error(`Fetching stream index descriptor gave HTTP status code ${response.status}`);
                 }
@@ -264,7 +256,7 @@ class SegmentDownloader {
             }).catch((): void => {
                 this.onError("Error downloading stream index descriptor");
             }).then((newInfo): void => {
-                if (!typeEquals<SegmentIndexDescriptor>(newInfo)) {
+                if (!typeEquals<API.SegmentIndexDescriptor>(newInfo)) {
                     throw Error("Segment index descriptor is invalid.");
                 }
                 this.setSegmentDownloadSchedule(newInfo);
@@ -394,7 +386,7 @@ class SegmentDownloader {
         });
     }
 
-    private readonly info: SegmentIndexDescriptor;
+    private readonly info: API.SegmentIndexDescriptor;
     private readonly interleaved: boolean;
     private readonly streams: Stream[];
     private readonly streamIndex: number;
@@ -526,7 +518,7 @@ export class MseWrapper {
         });
         if (this.audioStreamIndex === null) {
             Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex)]).
-                    then((fetched: [string, [SegmentIndexDescriptor, ArrayBuffer]]) => {
+                    then((fetched: [string, [API.SegmentIndexDescriptor, ArrayBuffer]]) => {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1]);
             }).catch((): void => {
                 this.onError("Error initializing streams");
@@ -534,8 +526,8 @@ export class MseWrapper {
         } else {
             Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex),
                          this.getStreamInfoAndInit(this.audioStreamIndex)]).
-                    then((fetched: [string, [SegmentIndexDescriptor, ArrayBuffer],
-                                    [SegmentIndexDescriptor, ArrayBuffer]]) => {
+                    then((fetched: [string, [API.SegmentIndexDescriptor, ArrayBuffer],
+                                    [API.SegmentIndexDescriptor, ArrayBuffer]]) => {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1], fetched[2][0], fetched[2][1]);
             }).catch((): void => {
                 this.onError("Error initializing streams");
@@ -549,10 +541,10 @@ export class MseWrapper {
         this.cleaup();
 
         /* Validate. */
-        if (!typeEquals<SegmentIndexDescriptor>(videoInfo)) {
+        if (!typeEquals<API.SegmentIndexDescriptor>(videoInfo)) {
             throw Error("Video segment index descriptor is invalid.");
         }
-        if (audioInfo !== null && !typeEquals<SegmentIndexDescriptor>(audioInfo)) {
+        if (audioInfo !== null && !typeEquals<API.SegmentIndexDescriptor>(audioInfo)) {
             throw Error("Audio segment index descriptor is invalid.");
         }
 
