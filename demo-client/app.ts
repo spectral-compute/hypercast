@@ -24,10 +24,7 @@ video.addEventListener("loadedmetadata", (): void => {
 });
 
 /* Create the player. */
-const player = new lvsc.Player(infoUrl, video, audio, (): void => {
-    setupUi(false);
-    player.start();
-}, true); // Omit final argument for deployment.
+const player = new lvsc.Player(infoUrl, video, audio, true); // Omit final argument for deployment.
 
 /* Error handling. */
 player.onError = (e: string): void => {
@@ -125,3 +122,11 @@ start.onclick = (): void => {
     start.hidden = true;
     player.start();
 };
+
+/* Start. */
+async function init(): Promise<void> {
+    await player.init();
+    setupUi(false);
+    player.start();
+}
+void init();

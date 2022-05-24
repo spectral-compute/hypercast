@@ -1,7 +1,7 @@
 import * as Debug from "./Debug";
 import {Deinterleaver} from "./Deinterleave";
-import {API} from "live-video-streamer-common";
-import {equals as typeEquals} from "@ckitching/typescript-is";
+import {API, assertNonNull} from "live-video-streamer-common";
+import {assertType, equals as typeEquals} from "@ckitching/typescript-is";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -246,23 +246,24 @@ class SegmentDownloader {
      */
     private setSegmentDownloadSchedule(info: API.SegmentIndexDescriptor): void {
         /* Schedule periodic updates to the download scheduler. */
-        this.schedulerTimeout = setTimeout((): void => {
-            fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`).
-            then((response: Response): Promise<API.SegmentIndexDescriptor> => {
+        const timeoutFn = async (): Promise<void> => {
+            try {
+                const response: Response = await fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`);
                 if (response.status !== 200) {
                     throw new Error(`Fetching stream index descriptor gave HTTP status code ${response.status}`);
                 }
-                return response.json();
-            }).catch((): void => {
-                this.onError("Error downloading stream index descriptor");
-            }).then((newInfo): void => {
+                const newInfo: unknown = await response.json();
                 if (!typeEquals<API.SegmentIndexDescriptor>(newInfo)) {
                     throw Error("Segment index descriptor is invalid.");
                 }
                 this.setSegmentDownloadSchedule(newInfo);
-            }).catch((): void => {
-                this.onError("Error updating download schedule");
-            });
+            } catch (e) {
+                assertType<Error>(e);
+                this.onError(`Error downloading stream index descriptor: ${e.message}`);
+            }
+        };
+        this.schedulerTimeout = setTimeout((): void => {
+            void timeoutFn();
         }, this.segmentDuration * DownloadSchedulerUpdatePeriod);
 
         /* The currently available index. */
@@ -311,23 +312,29 @@ class SegmentDownloader {
                     `${this.baseUrl}/chunk-stream${this.streamIndex}-${segmentIndexString}.m4s`;
 
         /* Download the current segment. */
-        fetch(url).then((response: Response): void => {
-            // Handle the error case.
-            if (response.status !== 200) {
-                throw Error(`Fetching chunk ${url} returnt HTTP status code ${response.status}`);
-            }
+        void (async (): Promise<void> => {
+            try {
+                const response: Response = await fetch(url);
 
-            // If this is an old segment, just cancel it. A new one should be along soon if it hasn't already arrived.
-            if (segmentIndex < this.segmentIndex - 1) {
-                void response.body!.cancel();
-                return;
-            }
+                // Handle the error case.
+                if (response.status !== 200) {
+                    throw Error(`Returned HTTP status code ${response.status}`);
+                }
 
-            // Start reading from the response.
-            this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
-        }).catch((): void => {
-            this.onError("Error downloading segment");
-        });
+                // If this is an old segment, just cancel it. A new one should be along soon if it hasn't already
+                // arrived.
+                if (segmentIndex < this.segmentIndex - 1) {
+                    void response.body!.cancel();
+                    return;
+                }
+
+                // Start reading from the response.
+                await this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
+            } catch (e) {
+                assertType<Error>(e);
+                this.onError(`Error fetching chunk ${url}: ${e.message}`);
+            }
+        })();
 
         /* Schedule the downloading of the next segment. */
         this.segmentIndex++;
@@ -337,53 +344,66 @@ class SegmentDownloader {
         this.nextSegmentStart += this.segmentDuration;
     }
 
-    private pump(reader: ReadableStreamDefaultReader, description: string, logicalSegmentIndex: number | null = null,
-                 deinterleaver: Deinterleaver | null = null): void {
-        reader.read().then(({value, done}: ReadableStreamDefaultReadResult<Uint8Array>): void => {
-            /* If we're done, then the value means nothing. */
-            if (done) {
+    private async pump(reader: ReadableStreamDefaultReader, description: string): Promise<void> {
+        try {
+            // These are set by the first iteration of the loop (unless it early aborts). They're copied in the loop
+            // because @typescript-eslint/no-loop-func can't tell that the capture is safe.
+            let logicalSegmentIndex: number | null = null;
+            let deinterleaver: Deinterleaver | null = null;
+
+            while (true) {
+                /* Try to get more data. */
+                const readResult: ReadableStreamDefaultReadResult<Uint8Array> = await reader.read();
+                const value: Uint8Array | undefined = readResult.value;
+                const done: boolean = readResult.done;
+
+                /* If we're done, then the value means nothing. */
+                if (done) {
+                    if (logicalSegmentIndex === null) {
+                        return; // Empty segment!
+                    }
+                    for (const stream of this.streams) {
+                        stream.endSegment(logicalSegmentIndex);
+                    }
+                    return;
+                }
+                assertNonNull(value);
+
+                /* Push the stream initialization before the segment. */
                 if (logicalSegmentIndex === null) {
-                    return; // Empty segment!
-                }
-                for (const stream of this.streams) {
-                    stream.endSegment(logicalSegmentIndex);
-                }
-                return;
-            }
+                    logicalSegmentIndex = this.logicalSegmentIndex;
+                    this.logicalSegmentIndex++;
 
-            /* Push the stream initialization before the segment. */
-            if (logicalSegmentIndex === null) {
-                logicalSegmentIndex = this.logicalSegmentIndex;
-                this.logicalSegmentIndex++;
-                this.streams.forEach((stream: Stream, index: number): void => {
-                    stream.startSegment(logicalSegmentIndex!, `${description}, sub-stream ${index}`);
-                });
-            }
-
-            /* Handle the data we just downloaded. */
-            if (this.interleaved) {
-                if (!deinterleaver) {
-                    deinterleaver = new Deinterleaver((data: ArrayBuffer, index: number): void => {
-                        if (this.streams.length <= index) {
-                            return;
-                        }
-                        if (data.byteLength === 0) { // End of file.
-                            this.streams[index]!.endSegment(logicalSegmentIndex!);
-                            return;
-                        }
-                        this.streams[index]!.acceptSegmentData(data, logicalSegmentIndex!);
-                    }, description);
+                    const logicalSegmentIndexCopy = logicalSegmentIndex;
+                    this.streams.forEach((stream: Stream, index: number): void => {
+                        stream.startSegment(logicalSegmentIndexCopy, `${description}, sub-stream ${index}`);
+                    });
                 }
-                deinterleaver.acceptData(value);
-            } else {
-                this.streams[0]!.acceptSegmentData(value, logicalSegmentIndex);
-            }
 
-            /* This is essentially a loop. */
-            this.pump(reader, description, logicalSegmentIndex, deinterleaver);
-        }).catch((): void => {
-            this.onError("Error downloading or playing segment");
-        });
+                /* Handle the data we just downloaded. */
+                if (this.interleaved) {
+                    if (!deinterleaver) {
+                        const logicalSegmentIndexCopy = logicalSegmentIndex;
+                        deinterleaver = new Deinterleaver((data: ArrayBuffer, index: number): void => {
+                            if (this.streams.length <= index) {
+                                return;
+                            }
+                            if (data.byteLength === 0) { // End of file.
+                                this.streams[index]!.endSegment(logicalSegmentIndexCopy);
+                                return;
+                            }
+                            this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
+                        }, description);
+                    }
+                    deinterleaver.acceptData(value);
+                } else {
+                    this.streams[0]!.acceptSegmentData(value, logicalSegmentIndex);
+                }
+            }
+        } catch (e) {
+            assertType<Error>(e);
+            this.onError(`Error downloading or playing segment: ${e.message}`);
+        }
     }
 
     private readonly info: API.SegmentIndexDescriptor;

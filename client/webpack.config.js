@@ -19,6 +19,9 @@ var config = {
                         options: {
                             presets: [
                                 "@babel/preset-env"
+                            ],
+                            plugins: [
+                                "@babel/plugin-transform-runtime"
                             ]
                         }
                     },

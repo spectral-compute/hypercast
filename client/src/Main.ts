@@ -1,44 +1,46 @@
 import * as BufferCtrl from "./BufferCtrl";
 import * as Stream from "./Stream";
 import {API} from "live-video-streamer-common";
-import {equals as typeEquals} from "@ckitching/typescript-is";
+import {assertType, equals as typeEquals} from "@ckitching/typescript-is";
 
 export class Player {
     /**
-     * Start playing video.
-     *
-     * None of the other methods of this object are valid until onInit has been called.
-     *
      * @param infoUrl The URL to the server's info JSON object.
      * @param video The video tag to play video into.
      * @param video The audio tag to play audio into. If null, the video tag will be used, but a separate audio tag
      *              allows for better buffer control.
-     * @param onInit Called when initialization is done.
      * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement | null,
-                onInit: (() => void) | null = null, verbose: boolean = false) {
-        if (verbose) {
-            console.log("Start up at " + new Date(Date.now()).toISOString());
-        }
-
-        this.verbose = verbose;
+    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement | null, verbose: boolean = false) {
+        this.infoUrl = infoUrl;
         this.video = video;
         this.audio = audio;
+        this.verbose = verbose;
+    }
 
-        /* Asynchronous stuff. Start by fetching the video server info. */
-        fetch(infoUrl).then((response: Response) => {
+    /**
+     * Start playing video.
+     *
+     * None of the other methods of this object are valid until the promise has completed.
+     */
+    async init(): Promise<void> {
+        try {
+            if (this.verbose) {
+                console.log("Start up at " + new Date(Date.now()).toISOString());
+            }
+
+            const response: Response = await fetch(this.infoUrl);
             if (response.status !== 200) {
                 throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
             }
-            return response.json();
-        }).then((serverInfo): void => {
+            const serverInfo: unknown = await response.json();
+
             /* Extract and parse the server info. */
             if (!typeEquals<API.ServerInfo>(serverInfo)) {
                 throw Error("Info JSON is not a valid server info");
             }
             this.serverInfo = serverInfo;
-            const urlPrefix = infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, "");
+            const urlPrefix = this.infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, "");
 
             // Extract angle information.
             for (const angle of this.serverInfo.angles) {
@@ -52,19 +54,19 @@ export class Player {
             });
 
             /* Start muted. This helps prevent browsers from blocking the auto-play. */
-            video.muted = true;
-            if (audio) {
-                audio.muted = true;
+            this.video.muted = true;
+            if (this.audio) {
+                this.audio.muted = true;
             }
 
             /* Make sure the video is paused (no auto-play). */
-            video.pause();
-            if (audio) {
-                audio.pause();
+            this.video.pause();
+            if (this.audio) {
+                this.audio.pause();
             }
 
             /* Create the streamer. */
-            this.stream = new Stream.MseWrapper(video, audio, this.serverInfo.segmentDuration,
+            this.stream = new Stream.MseWrapper(this.video, this.audio, this.serverInfo.segmentDuration,
                                                 this.serverInfo.segmentPreavailability, (description: string): void => {
                 if (this.onError) {
                     this.onError(description);
@@ -72,7 +74,7 @@ export class Player {
             });
 
             /* Set up buffer control for the player. */
-            this.bctrl = new BufferCtrl.BufferControl(video, audio ? [audio] : [], verbose);
+            this.bctrl = new BufferCtrl.BufferControl(this.video, this.audio ? [this.audio] : [], this.verbose);
 
             /* Set up the "on new source playing" event handler. */
             this.stream.onNewStreamStart = (): void => {
@@ -90,16 +92,14 @@ export class Player {
 
             /* Set the quality to an initial default. */
             this.updateQualityAndAngle();
-
-            /* Done :) */
-            if (onInit) {
-                onInit();
-            }
-        }).catch((e: Error): void => {
+        } catch (e) {
+            assertType<Error>(e);
             if (this.onError) {
                 this.onError(`Error initializing player: ${e.message}`);
+            } else {
+                throw e;
             }
-        });
+        }
     }
 
     /**
@@ -421,6 +421,7 @@ export class Player {
     private readonly verbose: boolean;
     private readonly video: HTMLVideoElement;
     private readonly audio: HTMLAudioElement | null;
+    private readonly infoUrl: string;
 
     // Worker objects.
     private stream: Stream.MseWrapper | null = null;
