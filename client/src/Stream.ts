@@ -540,8 +540,9 @@ export class MseWrapper {
             Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex)]).
                     then((fetched: [string, [API.SegmentIndexDescriptor, ArrayBuffer]]) => {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1]);
-            }).catch((): void => {
-                this.onError("Error initializing streams");
+            }).catch((e): void => {
+                assertType<Error>(e);
+                this.onError(`Error initializing streams: ${e.message}`);
             });
         } else {
             Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex),
@@ -549,8 +550,9 @@ export class MseWrapper {
                     then((fetched: [string, [API.SegmentIndexDescriptor, ArrayBuffer],
                                     [API.SegmentIndexDescriptor, ArrayBuffer]]) => {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1], fetched[2][0], fetched[2][1]);
-            }).catch((): void => {
-                this.onError("Error initializing streams");
+            }).catch((e): void => {
+                assertType<Error>(e);
+                this.onError(`Error initializing streams: ${e.message}`);
             });
         }
     }
