@@ -5,6 +5,8 @@ import {assertNonNull} from "live-video-streamer-common";
 
 export type AudioCodec = "aac" | "opus";
 export type VideoCodec = "h264" | "h265" | "vp8" | "vp9" | "av1";
+export type H264Preset = "ultrafast" | "superfast" | "veryfast" | "faster" | "fast" | "medium" | "slow" | "slower" |
+                         "veryslow" | "placebo";
 
 export interface AudioConfig {
     // The bitrate in kBit/s for this audio stream.
@@ -56,10 +58,10 @@ export interface CodecOptions {
     vp9Speed: number,
 
     // The preset for h264.
-    h264Preset: string,
+    h264Preset: H264Preset,
 
-    // The preset for h265.
-    h265Preset: string,
+    // The preset for h265 (same set of options as for h264).
+    h265Preset: H264Preset
 }
 
 export interface Config {

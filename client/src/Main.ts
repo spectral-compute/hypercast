@@ -251,11 +251,35 @@ export class Player {
     /**
      * Change the playing quality setting.
      *
+     * To set a specific latency profile programatically, use `setLowLatency()`, `setUltraLowLatency()`, or
+     * `setSaferLatency()`.
+     *
      * @param index The index of the new latency to use. This indexes the options returned by getLatencyOptions().
      */
     setLatency(index: number): void {
         this.latency = index;
         this.updateLatency();
+    }
+
+    /**
+     * Set the latency to "low" (up to 2s).
+     */
+    setLowLatency(): void {
+        this.bctrl!.setLowLatency();
+    }
+
+    /**
+     * Set the latency to "ultra-low" (up to 1s).
+     */
+    setUltraLowLatency(): void {
+        this.bctrl!.setUltraLowLatency();
+    }
+
+    /**
+     * Set the latency to "safer" (up to 3s).
+     */
+    setSaferLatency(): void {
+        this.bctrl!.setSaferLatency();
     }
 
     /**
