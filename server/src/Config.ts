@@ -133,6 +133,59 @@ export interface Config {
     }
 }
 
+const defaultVideoConfig = {
+    bitrate: 3000,
+    crf: 25,
+    width: 1920,
+    height: 1080,
+    framerateNumerator: 30000,
+    framerateDenominator: 1001,
+    gop: 450,
+    codec: "h264"
+};
+
+const defaultAudioConfig = {
+    bitrate: 48,
+    codec: "aac"
+};
+
+const defaultConfig = {
+    audio: {
+        configs: []
+    },
+    dash: {
+        segmentLengthMultiplier: 1,
+        rateControlBufferLength: 1000,
+        manifest: "/live/{uid}/angle-{1}/manifest.mpd",
+        targetLatency: 500,
+        terminateDriftLimit: 0,
+        interleave: true,
+        interleavedDirectDashSegments: false
+    },
+    network: {
+        nonLiveCacheTime: 600,
+        origin: "*",
+        port: 8080,
+        preAvailabilityTime: 4000,
+        segmentRetentionCount: 6
+    },
+    serverInfo: {
+        live: "/live/info.json"
+    },
+    video: {
+        codecConfig: {
+            av1Speed: 8,
+            vp8Speed: 8,
+            vp9Speed: 8,
+            h264Preset: "faster",
+            h265Preset: "faster"
+        },
+        configs: [defaultVideoConfig],
+        sources: [],
+        timestamp: false
+    }
+};
+
 export function computeSegmentDuration(segmentLengthMultiplier: number, videoConfigs: VideoConfig[]): [number, number] {
     // Some utility functions.
     const gcd = (a: number, b: number): number => {
@@ -192,16 +245,80 @@ export function substituteManifestPattern(pattern: string, uniqueId: string, ind
     return result;
 }
 
-export function loadConfig(path: string): Config {
-    const json: string = readFileSync(path, {encoding: "utf-8"});
-    const obj: unknown = JSON.parse(json);
-    if (!ckis.equals<Config>(obj)) {
+/* Apply an Object.assign(...dst, ...src) like operation, but recurse into objects. */
+function apply(dst: unknown, src: unknown): unknown {
+    if (src === undefined) {
+        return dst;
+    }
+
+    if (!(src instanceof Object) || !(dst instanceof Object) || dst instanceof Array) {
+        return src;
+    }
+
+    const keys = Object.keys(dst);
+    if (keys.length === 0) {
+        return src;
+    }
+
+    const result: unknown = {};
+    for (const key of keys) {
+        Object.defineProperty(result, key, {
+            value: apply(Object.getOwnPropertyDescriptor(dst, key)!.value,
+                         Object.getOwnPropertyDescriptor(src, key)?.value),
+            enumerable: true,
+            writable: true
+        });
+    }
+    for (const key of Object.keys(src)) {
+        if (keys.includes(key)) {
+            continue;
+        }
+        Object.defineProperty(result, key, {
+            value: Object.getOwnPropertyDescriptor(src, key)!.value as unknown,
+            enumerable: true,
+            writable: true
+        });
+    }
+    return result;
+}
+
+export function applyDefaultConfig(config: unknown): Config {
+    /* Apply defaults for the configuration. */
+    // The following apply() imposes a superset of the following keys (needed later) on the result.
+    interface ConfigPart {
+        video: {
+            configs: unknown[]
+        },
+        audio: {
+            configs: unknown[]
+        }
+    }
+
+    // Most of the configuration.
+    const result = apply(defaultConfig, config) as ConfigPart;
+
+    // Video configuration.
+    for (let i = 0; i < result.video.configs.length; i++) {
+        result.video.configs[i] = apply(defaultVideoConfig, result.video.configs[i]);
+    }
+
+    // Audio configuration.
+    for (let i = 0; i < result.audio.configs.length; i++) {
+        result.audio.configs[i] = apply(defaultAudioConfig, result.audio.configs[i]);
+    }
+
+    if (!ckis.equals<Config>(result)) {
         try {
-            is.assertEquals<Config>(obj);
+            is.assertEquals<Config>(result);
             throw new Error("Invalid configuration.");
         } catch (e) {
             throw new Error(`Invalid configuration: ${(e as Error).message}`);
         }
     }
-    return obj;
+    return result;
+}
+
+export function loadConfig(path: string): Config {
+    const json: string = readFileSync(path, {encoding: "utf-8"});
+    return applyDefaultConfig(JSON.parse(json));
 }
