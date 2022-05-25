@@ -1,7 +1,9 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./build"
+    "outDir": "./build",
+    "lib": ["ESNext", "DOM"],
+    "types": []
   },
   "include": ["*.ts"],
   "exclude": ["node_modules"]

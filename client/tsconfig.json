@@ -2,6 +2,8 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./build",
+    "lib": ["ESNext", "DOM"],
+    "types": [],
     "allowJs": true,
     "plugins": [
       { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
