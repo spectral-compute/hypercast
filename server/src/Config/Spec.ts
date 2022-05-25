@@ -20,7 +20,7 @@ export interface VideoConfig {
     crf: number,
 
     // The codec for this video stream.
-    codec: VideoCodec
+    codec: VideoCodec,
 
     // Frame rate for the next video stream, as a rational. For the smoothest playback, it's recommended that this is
     // chosen so that the camera's frame rate is an integer multiple of this. If not, then frames will be dropped or
@@ -38,8 +38,8 @@ export interface VideoConfig {
     gop: number,
 
     // The resolution for this next video stream
-    width: number;
-    height: number;
+    width: number,
+    height: number
 }
 
 export interface CodecOptions {
@@ -82,16 +82,16 @@ export interface Config {
 
         // The limit, in ms, of how far segment start times are allowed to drift before the server terminates itself.
         // Set to zero to disable.
-        terminateDriftLimit: number
+        terminateDriftLimit: number,
 
         // Whether or not to interleave the audio and video streams. This helps evict audio data from the CDN buffer.
-        interleave: boolean
+        interleave: boolean,
 
         // Whether or not to allow direct access to dash segments that are interleaved. This should be false for the
         // production server so that it doesn't have to upload video twice. This also helps the client switch audio and
         // video at the same time, without accidentally downloading mismatched audio and video segments (and therefore
         // two video streams). It is useful to be able to set this to true for development and testing.
-        interleavedDirectDashSegments: boolean;
+        interleavedDirectDashSegments: boolean
     },
     network: {
         // Time to cache responses to non-live paths.
