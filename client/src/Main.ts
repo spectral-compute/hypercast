@@ -1,7 +1,7 @@
 import * as BufferCtrl from "./BufferCtrl";
 import * as Stream from "./Stream";
 import {API} from "live-video-streamer-common";
-import {assertType, equals as typeEquals} from "@ckitching/typescript-is";
+import {assertType} from "@ckitching/typescript-is";
 
 export class Player {
     /**
@@ -36,9 +36,7 @@ export class Player {
             const serverInfo: unknown = await response.json();
 
             /* Extract and parse the server info. */
-            if (!typeEquals<API.ServerInfo>(serverInfo)) {
-                throw Error("Info JSON is not a valid server info");
-            }
+            assertType<API.ServerInfo>(serverInfo);
             this.serverInfo = serverInfo;
             const urlPrefix = this.infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, "");
 

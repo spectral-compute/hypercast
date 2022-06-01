@@ -1,7 +1,7 @@
 import * as Debug from "./Debug";
 import {Deinterleaver} from "./Deinterleave";
 import {API, assertNonNull} from "live-video-streamer-common";
-import {assertType, equals as typeEquals} from "@ckitching/typescript-is";
+import {assertType} from "@ckitching/typescript-is";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -253,9 +253,7 @@ class SegmentDownloader {
                     throw new Error(`Fetching stream index descriptor gave HTTP status code ${response.status}`);
                 }
                 const newInfo: unknown = await response.json();
-                if (!typeEquals<API.SegmentIndexDescriptor>(newInfo)) {
-                    throw Error("Segment index descriptor is invalid.");
-                }
+                assertType<API.SegmentIndexDescriptor>(newInfo);
                 this.setSegmentDownloadSchedule(newInfo);
             } catch (e) {
                 assertType<Error>(e);
@@ -563,11 +561,9 @@ export class MseWrapper {
         this.cleaup();
 
         /* Validate. */
-        if (!typeEquals<API.SegmentIndexDescriptor>(videoInfo)) {
-            throw Error("Video segment index descriptor is invalid.");
-        }
-        if (audioInfo !== null && !typeEquals<API.SegmentIndexDescriptor>(audioInfo)) {
-            throw Error("Audio segment index descriptor is invalid.");
+        assertType<API.SegmentIndexDescriptor>(videoInfo);
+        if (audioInfo !== null) {
+            assertType<API.SegmentIndexDescriptor>(audioInfo);
         }
 
         /* Create afresh. */
