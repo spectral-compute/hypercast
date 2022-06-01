@@ -90,8 +90,8 @@ export class Player {
 
             /* Set the quality to an initial default. */
             this.updateQualityAndAngle();
-        } catch (e) {
-            assertType<Error>(e);
+        } catch (ex: any) {
+            const e = ex as Error;
             if (this.onError) {
                 this.onError(`Error initializing player: ${e.message}`);
             } else {
