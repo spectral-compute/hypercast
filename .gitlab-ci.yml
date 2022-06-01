@@ -38,6 +38,7 @@ Build-Production:
   stage: Build-Production
   script:
     - run "cd src && yarn clean"
+    - run bash -c 'cd src && [[ "$(git clean -dXn | wc -l)" == "0" ]]' # Test to see if yarn clean removed everything.
     - run "cd src && yarn install"
     - run "cd src && yarn bundle"
   variables:
