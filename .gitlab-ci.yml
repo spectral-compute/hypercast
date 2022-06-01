@@ -37,9 +37,17 @@ Build-Production:
   extends: .env
   stage: Build-Production
   script:
+    # Clean the source tree (yarn insists on in-tree builds D: ), and check that the clean worked..
     - run "cd src && yarn clean"
     - run bash -c 'cd src && [[ "$(git clean -dXn | wc -l)" == "0" ]]' # Test to see if yarn clean removed everything.
-    - run "cd src && yarn install"
+
+    # Yarn has the stupid property that it needs a plugin to do a production install. Install that badly named plugin
+    # and use it to do a production install. Add the plugin here rather than in git because doing the latter would mean
+    # committing the plugin itself into git - yuck!
+    - run "cd src && yarn plugin import workspace-tools"
+    - run "cd src && yarn workspaces focus --production --all"
+
+    # Actually do the build.
     - run "cd src && yarn bundle"
   variables:
     GIT_STRATEGY: none
