@@ -322,7 +322,7 @@ class SegmentDownloader {
                 // If this is an old segment, just cancel it. A new one should be along soon if it hasn't already
                 // arrived.
                 if (segmentIndex < this.segmentIndex - 1) {
-                    void response.body!.cancel();
+                    await response.body!.cancel();
                     return;
                 }
 
