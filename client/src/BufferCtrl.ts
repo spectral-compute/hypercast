@@ -157,7 +157,7 @@ export class BufferControl {
 
             this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
             if (this.verbose) {
-                console.log("Seek to catch up");
+                console.debug("Seek to catch up");
             }
             this.syncSecondaryMediaElements();
             return;
@@ -235,19 +235,19 @@ export class BufferControl {
                 Math.abs(this.secondaryMediaElementSync[i]!) < this.secondarySkipThreshold) { // Adjust playback rate.
                 adjustPlaybackRate = Math.min(Math.max(adjustPlaybackRate, this.minPlaybackRate), this.maxPlaybackRate);
                 if (this.verbose) {
-                    console.log(`Adjusting secondary playback rate ${i} to ${adjustPlaybackRate}`);
+                    console.debug(`Adjusting secondary playback rate ${i} to ${adjustPlaybackRate}`);
                 }
                 mediaElement.playbackRate = adjustPlaybackRate;
             } else { // Seek.
                 if (this.verbose) {
-                    console.log(`Try seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
+                    console.debug(`Try seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
                 }
 
                 // If there's nothing in the audio buffer, don't bother trying to seek. We'll try again later when the
                 // buffer isn't empty.
                 if (mediaElement.buffered.length === 0) {
                     if (this.verbose) {
-                        console.log(`Buffer for secondary media element ${i} is empty`);
+                        console.debug(`Buffer for secondary media element ${i} is empty`);
                     }
                     return;
                 }
@@ -256,7 +256,7 @@ export class BufferControl {
                 // to catch up.
                 if (mediaElement.buffered.start(0) > this.primaryMediaElement.currentTime) {
                     if (this.verbose) {
-                        console.log(`Buffer for secondary media element ${i} is ahead of primary media element`);
+                        console.debug(`Buffer for secondary media element ${i} is ahead of primary media element`);
                     }
                     return;
                 }
