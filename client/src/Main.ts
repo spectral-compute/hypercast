@@ -404,7 +404,7 @@ export class Player {
             `Video playback rate: ${this.video.playbackRate}\n` +
             `Audio playback rate: ${this.audio ? this.audio.playbackRate : NaN}\n` +
             `AV synchronization offset: ${this.audio ? this.bctrl!.getSecondarySync(0) : 0} ms\n` +
-            `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms (${ewmaBuffer}\n`
+            `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms (${ewmaBuffer})\n`
         );
     }
 
