@@ -14,6 +14,7 @@ test("Default", (): void => {
             targetLatency: 500,
             terminateDriftLimit: 0,
             interleave: true,
+            interleaveTimestampInterval: 100,
             interleavedDirectDashSegments: false
         },
         network: {
@@ -69,6 +70,7 @@ test("Override", (): void => {
             targetLatency: 500,
             terminateDriftLimit: 0,
             interleave: true,
+            interleaveTimestampInterval: 100,
             interleavedDirectDashSegments: false
         },
         network: {
@@ -131,6 +133,7 @@ test("Two video configs", (): void => {
             targetLatency: 500,
             terminateDriftLimit: 0,
             interleave: true,
+            interleaveTimestampInterval: 100,
             interleavedDirectDashSegments: false
         },
         network: {

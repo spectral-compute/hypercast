@@ -1,8 +1,29 @@
 import * as Debug from "./Debug";
 
+/**
+ * Deinterleave timestamp information.
+ *
+ * This is useful for estimating network jitter. It can also be used to estimate the network delay, but only if the
+ * local clock and remote clock are both accurate.
+ */
+export interface TimestampInfo {
+    /**
+     * Timestamp encoded in the interleave in ms. This is calculated from the local clock and the number of bits of
+     * timestamp that actually got sent.
+     */
+    sentTimestamp: number,
+
+    /**
+     * Timestamp when we received the end of the chunk in ms.
+     */
+    endReceivedTimestamp: number
+}
+
 export class Deinterleaver {
-    constructor(onData: (data: ArrayBuffer, index: number) => void, description: string) {
+    constructor(onData: (data: ArrayBuffer, index: number) => void,
+                onTimestamp: (timestampInfo: TimestampInfo) => void, description: string) {
         this.onData = onData;
+        this.onTimestamp = onTimestamp;
         this.description = description;
 
         if (process.env.NODE_ENV === "development") {
@@ -35,9 +56,10 @@ export class Deinterleaver {
                     }
                     return 0; // Unreachable.
                 })();
+                const sentTimestampWidth: number = ((Math.floor(contentId / 32) % 2) === 1) ? 8 : 0;
 
                 // Handle the case where the buffer stops part way through a chunk header.
-                if (offset + lengthWidth + 1 > buffer.length) {
+                if (offset + lengthWidth + sentTimestampWidth + 1 > buffer.length) {
                     // Put the whole chunk header, up to as far as we have, into the remainder buffer.
                     this.remainderBuffer = buffer.slice(offset);
                     return;
@@ -51,9 +73,18 @@ export class Deinterleaver {
                     multiplier *= 256;
                 }
 
-                this.currentIndex = contentId % 64;
+                if (sentTimestampWidth > 0) {
+                    this.sentTimestamp = 0;
+                    multiplier = 1;
+                    for (let i = 0; i < sentTimestampWidth; i++) {
+                        this.sentTimestamp += buffer[offset + lengthWidth + i + 1]! * multiplier;
+                        multiplier *= 256;
+                    }
+                }
+
+                this.currentIndex = contentId % 32;
                 this.currentOffset = 0;
-                offset += lengthWidth + 1;
+                offset += lengthWidth + sentTimestampWidth + 1;
             }
 
             // Copy as much chunk data as we can. Note that we might not have just decoded a chunk. We might instead be
@@ -68,6 +99,15 @@ export class Deinterleaver {
             this.onData(data, this.currentIndex);
             this.currentOffset += chunkLength;
             offset += chunkLength;
+
+            // If we've just pushed the last of the data for this chunk.
+            if (this.sentTimestamp !== null) {
+                this.onTimestamp({
+                    sentTimestamp: this.sentTimestamp / 1000,
+                    endReceivedTimestamp: Date.now()
+                });
+                this.sentTimestamp = null;
+            }
 
             // Print checksums.
             if (process.env.NODE_ENV === "development") {
@@ -86,12 +126,14 @@ export class Deinterleaver {
     }
 
     private readonly onData: (data: ArrayBuffer, index: number) => void;
+    private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
     private readonly description: string;
 
     private currentIndex = 0; // Index of the current chunk's content.
     private currentOffset = 0; // Offset within the current chunk.
     private currentLength = 0; // Length of the current chunk.
     private remainderBuffer: Uint8Array | null = null;
+    private sentTimestamp: number | null = null; // Sent timestamp in µs.
 
     private readonly checksums: Map<number, Debug.Addler32> | undefined;
 }

@@ -12,7 +12,7 @@ function getFileAsBuffers(file: ReturnType<ServerFileStore["get"]>): Buffer[] {
 test("Simple", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/]);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -47,7 +47,7 @@ test("Simple", (): void => {
 test("Filename pattern", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave{1}", [/^\/a([0-9]+)$/, /^\/b([0-9]+)$/]);
+    sfs.addInterleavingPattern("/interleave{1}", [/^\/a([0-9]+)$/, /^\/b([0-9]+)$/], Infinity);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave0")).toBeFalsy();
@@ -106,7 +106,7 @@ test("Filename pattern", (): void => {
 test("Successive chunk", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/]);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -141,7 +141,7 @@ test("Successive chunk", (): void => {
 test("Early EOF", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/]);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -182,7 +182,7 @@ test("Early EOF", (): void => {
 test("16-bit chunk length", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/]);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -222,7 +222,7 @@ test("16-bit chunk length", (): void => {
 test("32-bit chunk length", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/]);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -257,4 +257,73 @@ test("32-bit chunk length", (): void => {
         Buffer.from([0x01, 0x04, 0x14, 0x15, 0x16, 0x17]), // Part B-2.
         Buffer.from([0x00, 0x00]), Buffer.from([0x01, 0x00]) // End of file for both A and B.
     ]);
+});
+
+test("Timestamps", (): void => {
+    /* Create a file store with an interleave. */
+    const sfs = new ServerFileStore();
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], 0);
+
+    /* Create the underlying files. */
+    expect(sfs.has("/interleave")).toBeFalsy();
+    const a = sfs.add("/a");
+    expect(sfs.has("/interleave")).toBeTruthy();
+    const b = sfs.add("/b");
+    const interleave = sfs.get("/interleave");
+    const now = Date.now();
+
+    /* Add data to file A. */
+    a.add(Buffer.from([0x00, 0x01, 0x02, 0x03])); // Part A-0.
+    a.add(Buffer.from([0x04, 0x05, 0x06, 0x07])); // Part A-1.
+
+    /* Finish file A. */
+    expect(interleave.isFinished()).toBeFalsy();
+    a.finish();
+    expect(interleave.isFinished()).toBeFalsy();
+
+    /* Add data to file B. */
+    b.add(Buffer.from([0x10, 0x11, 0x12, 0x13])); // Part B-0.
+    b.add(Buffer.from([0x14, 0x15, 0x16, 0x17])); // Part B-1.
+
+    /* Finish file B. */
+    expect(interleave.isFinished()).toBeFalsy();
+    b.finish();
+    expect(interleave.isFinished()).toBeTruthy();
+
+    /* Check the result. */
+    const buffers: Uint8Array[] = getFileAsBuffers(interleave);
+
+    // Set the timestamps to zero for the byte-wise test.
+    const buffersZeroTimestamp: Uint8Array[] = buffers.map((buffer: Uint8Array): Uint8Array => Buffer.from(buffer));
+    for (const buffer of buffersZeroTimestamp) {
+        if (buffer.length === 2) {
+            continue;
+        }
+        for (let i = 2; i < 10; i++) {
+            buffer[i] = 0;
+        }
+    }
+
+    // Test the buffer data.
+    expect(buffersZeroTimestamp).toStrictEqual([
+        Buffer.from([0x20, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03]), // Part A-0.
+        Buffer.from([0x20, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x05, 0x06, 0x07]), // Part A-1.
+        Buffer.from([0x00, 0x00]), // End of file A.
+        Buffer.from([0x21, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13]), // Part B-0.
+        Buffer.from([0x21, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x15, 0x16, 0x17]), // Part B-1.
+        Buffer.from([0x01, 0x00]) // End of file B.
+    ]);
+
+    // Test the timestamps.
+    for (const buffer of buffers) {
+        if (buffer.length === 2) {
+            continue;
+        }
+        let timestamp: number = 0;
+        for (let i = 0; i < 8; i++) {
+            timestamp += buffer[i + 2]! * 2 ** (i * 8);
+        }
+        expect(timestamp - now * 1000).toBeGreaterThanOrEqual(0);
+        expect(timestamp - now * 1000).toBeLessThan(4000);
+    }
 });

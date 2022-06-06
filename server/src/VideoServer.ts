@@ -189,7 +189,7 @@ export class VideoServer {
 
         this.loadCacheConfiguration();
         this.writeServerInfo();
-        this.addInterleavePatterns();
+        this.addInterleavePatterns(config.dash.interleaveTimestampInterval);
 
         this.buildServer();
         this.startStreaming();
@@ -322,7 +322,7 @@ export class VideoServer {
     /**
      * Set up file interleaving.
      */
-    private addInterleavePatterns(): void {
+    private addInterleavePatterns(timestampInterval: number): void {
         const avMap = this.getAudioVideoMap();
 
         for (let index = 0; index < this.config.video.sources.length; index++) {
@@ -336,7 +336,8 @@ export class VideoServer {
                 if (va[1] !== null) {
                     regexes.push(new RegExp(`${livePrefix}chunk-stream${va[1]}-([0-9]+).[^.]+`));
                 }
-                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`, regexes);
+                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`, regexes,
+                                                            timestampInterval);
 
                 if (!this.config.dash.interleavedDirectDashSegments) {
                     for (const regex of regexes) {

@@ -1,5 +1,5 @@
 import * as Debug from "./Debug";
-import {Deinterleaver} from "./Deinterleave";
+import {Deinterleaver, TimestampInfo} from "./Deinterleave";
 import {API, assertNonNull} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 
@@ -210,7 +210,7 @@ class Stream {
 class SegmentDownloader {
     constructor(info: API.SegmentIndexDescriptor, interleaved: boolean, streams: Stream[], streamIndex: number,
                 baseUrl: string, segmentDuration: number, segmentPreavailability: number,
-                onError: (description: string) => void) {
+                onTimestamp: (timestampInfo: TimestampInfo) => void, onError: (description: string) => void) {
         this.info = info;
         this.interleaved = interleaved;
         this.streams = streams;
@@ -218,6 +218,7 @@ class SegmentDownloader {
         this.baseUrl = baseUrl;
         this.segmentDuration = segmentDuration;
         this.segmentPreavailability = segmentPreavailability;
+        this.onTimestamp = onTimestamp;
         this.onError = onError;
 
         this.setSegmentDownloadSchedule(info);
@@ -387,7 +388,9 @@ class SegmentDownloader {
                                 return;
                             }
                             this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
-                        }, description);
+                        }, (logicalSegmentIndex === 0) ? (): void => {} : this.onTimestamp, description);
+                        // Note that the first segment is likely to be started in the middle, and therefore not good for
+                        // network timing data.
                     }
                     deinterleaver.acceptData(value);
                 } else {
@@ -407,6 +410,7 @@ class SegmentDownloader {
     private readonly baseUrl: string;
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
+    private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
     private readonly onError: (description: string) => void;
 
     private logicalSegmentIndex: number = 0;
@@ -418,11 +422,13 @@ class SegmentDownloader {
 
 export class MseWrapper {
     constructor(video: HTMLVideoElement, audio: HTMLAudioElement | null, segmentDuration: number,
-                segmentPreavailability: number, onError: (description: string) => void) {
+                segmentPreavailability: number, onTimestamp: (timestampInfo: TimestampInfo) => void,
+                onError: (description: string) => void) {
         this.video = video;
         this.audio = audio;
         this.segmentDuration = segmentDuration;
         this.segmentPreavailability = segmentPreavailability;
+        this.onTimestamp = onTimestamp;
         this.onError = onError;
     }
 
@@ -592,7 +598,8 @@ export class MseWrapper {
             }
             this.segmentDownloader =
                 new SegmentDownloader(videoInfo, this.interleaved, streams, this.videoStreamIndex,
-                                      this.baseUrl!, this.segmentDuration, this.segmentPreavailability, this.onError);
+                                      this.baseUrl!, this.segmentDuration, this.segmentPreavailability,
+                                      this.onTimestamp, this.onError);
         }, audioInfo !== null);
     }
 
@@ -673,6 +680,7 @@ export class MseWrapper {
     private readonly audio: HTMLAudioElement | null;
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
+    private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
     private readonly onError: (description: string) => void;
 
     private videoMediaSource: MediaSource | null = null;

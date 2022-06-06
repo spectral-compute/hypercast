@@ -1,17 +1,20 @@
 import {expect, test} from "@jest/globals";
-import {Deinterleaver} from "../src/Deinterleave";
+import {Deinterleaver, TimestampInfo} from "../src/Deinterleave";
 
-function getDeinterleaveAndBuffers(): [Deinterleaver, Uint8Array[][]] {
+function getDeinterleaveAndBuffers(): [Deinterleaver, Uint8Array[][], TimestampInfo[]] {
     const buffers: Uint8Array[][] = [[], []];
+    const timestampInfos: TimestampInfo[] = [];
     const deinterleaver = new Deinterleaver((data: ArrayBuffer, index: number): void => {
         expect(index === 0 || index === 1).toBeTruthy();
         buffers[index]!.push(new Uint8Array(data));
+    }, (timestampInfo: TimestampInfo): void => {
+        timestampInfos.push(timestampInfo);
     }, "");
-    return [deinterleaver, buffers];
+    return [deinterleaver, buffers, timestampInfos];
 }
 
 test("Simple", (): void => {
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     deinterleaver.acceptData(Uint8Array.from([
         0x00, 0x04, 0x00, 0x01, 0x02, 0x03, // Part A-0.
         0x01, 0x04, 0x10, 0x11, 0x12, 0x13, // Part B-0.
@@ -32,10 +35,11 @@ test("Simple", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
 });
 
 test("Byte at a time", (): void => {
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     for (const n of [
         0x00, 0x04, 0x00, 0x01, 0x02, 0x03, // Part A-0.
         0x01, 0x04, 0x10, 0x11, 0x12, 0x13, // Part B-0.
@@ -70,10 +74,11 @@ test("Byte at a time", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
 });
 
 test("Exact chunks", (): void => {
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     deinterleaver.acceptData(Uint8Array.from([0x00, 0x04, 0x00, 0x01, 0x02, 0x03])); // Part A-0.
     deinterleaver.acceptData(Uint8Array.from([0x01, 0x04, 0x10, 0x11, 0x12, 0x13])); // Part B-0.
     deinterleaver.acceptData(Uint8Array.from([0x00, 0x04, 0x04, 0x05, 0x06, 0x07])); // Part A-1.
@@ -93,10 +98,11 @@ test("Exact chunks", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
 });
 
 test("Straddle chunks", (): void => {
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     deinterleaver.acceptData(Uint8Array.from([0x00, 0x04, 0x00, 0x01, 0x02, 0x03, 0x01, 0x04]));
     deinterleaver.acceptData(Uint8Array.from([0x10, 0x11, 0x12, 0x13, 0x00]));
     deinterleaver.acceptData(Uint8Array.from([0x04, 0x04, 0x05, 0x06, 0x07, 0x01, 0x04, 0x14]));
@@ -115,10 +121,11 @@ test("Straddle chunks", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
 });
 
 test("Early EOF", (): void => {
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     deinterleaver.acceptData(Uint8Array.from([
         0x00, 0x04, 0x00, 0x01, 0x02, 0x03, // Part A-0.
         0x01, 0x04, 0x10, 0x11, 0x12, 0x13, // Part B-0.
@@ -140,6 +147,7 @@ test("Early EOF", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
 });
 
 test("16-bit chunk length", (): void => {
@@ -148,7 +156,7 @@ test("16-bit chunk length", (): void => {
         a1Data[i] = (i * 7) % 256;
     }
 
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     deinterleaver.acceptData(Uint8Array.from([
         0x00, 0x04, 0x00, 0x01, 0x02, 0x03, // Part A-0.
         0x40, 0x10, 0x27 // Part A-1.
@@ -172,6 +180,7 @@ test("16-bit chunk length", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
 });
 
 test("32-bit chunk length", (): void => {
@@ -180,7 +189,7 @@ test("32-bit chunk length", (): void => {
         b1Data[i] = (i * 17) % 256;
     }
 
-    const [deinterleaver, buffers] = getDeinterleaveAndBuffers();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
     deinterleaver.acceptData(Uint8Array.from([
         0x00, 0x04, 0x00, 0x01, 0x02, 0x03, // Part A-0.
         0x01, 0x04, 0x10, 0x11, 0x12, 0x13, // Part B-0.
@@ -204,4 +213,38 @@ test("32-bit chunk length", (): void => {
             Uint8Array.from([]) // Part B EOF.
         ]
     ]);
+    expect(timestampInfos.length).toStrictEqual(0);
+});
+
+test("Timestamps", (): void => {
+    const now: number = Date.now();
+    const [deinterleaver, buffers, timestampInfos] = getDeinterleaveAndBuffers();
+    deinterleaver.acceptData(Uint8Array.from([0x20, 0x04, 0x12, 0x34, 0x56, 0x78, 0x9a]));
+    deinterleaver.acceptData(Uint8Array.from([0xbc, 0xde, 0xf0, 0x00, 0x01, 0x02, 0x03, 0x01, 0x04]));
+    deinterleaver.acceptData(Uint8Array.from([0x10, 0x11, 0x12, 0x13, 0x00]));
+    deinterleaver.acceptData(Uint8Array.from([0x04, 0x04, 0x05, 0x06, 0x07, 0x21, 0x04, 0x0f, 0xed]));
+    deinterleaver.acceptData(Uint8Array.from([0xcb, 0xa9, 0x87, 0x65, 0x43, 0x21, 0x14, 0x15]));
+    deinterleaver.acceptData(Uint8Array.from([0x16, 0x17, 0x00, 0x00, 0x01, 0x00]));
+
+    expect(buffers).toStrictEqual([
+        [
+            Uint8Array.from([0x00, 0x01, 0x02, 0x03]), // Part A-0.
+            Uint8Array.from([0x04, 0x05, 0x06, 0x07]), // Part A-1.
+            Uint8Array.from([]) // Part A EOF.
+        ],
+        [
+            Uint8Array.from([0x10, 0x11, 0x12, 0x13]), // Part B-0.
+            Uint8Array.from([0x14, 0x15]), // Part B-1.
+            Uint8Array.from([0x16, 0x17]),
+            Uint8Array.from([]) // Part B EOF.
+        ]
+    ]);
+
+    expect(timestampInfos.length).toStrictEqual(2);
+    expect(timestampInfos[0]!.sentTimestamp).toStrictEqual(1.7356517385562372e+16);
+    expect(timestampInfos[1]!.sentTimestamp).toStrictEqual(2.3968710600349405e+15);
+    for (const timestampInfo of timestampInfos) {
+        expect(timestampInfo.endReceivedTimestamp - now).toBeGreaterThanOrEqual(0);
+        expect(timestampInfo.endReceivedTimestamp - now).toBeLessThan(4);
+    }
 });

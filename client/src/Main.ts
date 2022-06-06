@@ -1,4 +1,5 @@
 import * as BufferCtrl from "./BufferCtrl";
+import {TimestampInfo} from "./Deinterleave";
 import * as Stream from "./Stream";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
@@ -65,7 +66,11 @@ export class Player {
 
             /* Create the streamer. */
             this.stream = new Stream.MseWrapper(this.video, this.audio, this.serverInfo.segmentDuration,
-                                                this.serverInfo.segmentPreavailability, (description: string): void => {
+                                                this.serverInfo.segmentPreavailability,
+            (timestampInfo: TimestampInfo): void => {
+                this.bctrl!.onTimestamp(timestampInfo);
+            },
+            (description: string): void => {
                 if (this.onError) {
                     this.onError(description);
                 }
@@ -396,6 +401,8 @@ export class Player {
             (!this.audio || this.audio.buffered.length === 0) ? 0 :
             (this.audio.buffered.end(this.audio.buffered.length - 1) - this.audio.buffered.start(0));
 
+        const netStats = this.bctrl!.getNetworkTimingStats();
+
         console.log(
             `Video buffer length: ${videoBufferLength} ms\n` +
             `Audio buffer length: ${audioBufferLength} ms\n` +
@@ -407,6 +414,20 @@ export class Player {
             `Video playback rate: ${this.video.playbackRate}\n` +
             `Audio playback rate: ${this.audio ? this.audio.playbackRate : NaN}\n` +
             `AV synchronization offset: ${this.audio ? this.bctrl!.getSecondarySync(0) : 0} ms\n` +
+            `Network delay history length: count = ${netStats.historyLength}\n` +
+            `                              time  = ${netStats.historyAge / 1000} s\n` +
+            `Delay normal: µ = ${netStats.delayMean} ms\n` +
+            `              σ = ${netStats.delayStdDev} ms\n` +
+            `Delay deciles: min             = ${netStats.delayMin} ms\n` +
+            `               10th percentile = ${netStats.delayPercentile10} ms\n` +
+            `               median          = ${netStats.delayMedian} ms\n` +
+            `               90th percentile = ${netStats.delayPercentile90} ms\n` +
+            `               max             = ${netStats.delayMax} ms\n` +
+            `Jitter normal: µ = ${netStats.delayMean - netStats.delayMin} ms\n` +
+            `Jitter deciles: 10th percentile = ${netStats.delayPercentile10 - netStats.delayMin} ms\n` +
+            `                median          = ${netStats.delayMedian - netStats.delayMin} ms\n` +
+            `                90th percentile = ${netStats.delayPercentile90 - netStats.delayMin} ms\n` +
+            `                max             = ${netStats.delayMax - netStats.delayMin} ms\n` +
             `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms (${ewmaBuffer})\n`
         );
     }

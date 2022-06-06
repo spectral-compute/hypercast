@@ -25,7 +25,8 @@ export const defaultConfig = {
         targetLatency: 500,
         terminateDriftLimit: 0,
         interleave: true,
-        interleavedDirectDashSegments: false
+        interleavedDirectDashSegments: false,
+        interleaveTimestampInterval: 100
     },
     network: {
         nonLiveCacheTime: 600,

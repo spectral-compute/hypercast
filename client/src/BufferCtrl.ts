@@ -1,3 +1,17 @@
+import {TimestampInfo} from "./Deinterleave";
+
+export interface NetworkTimingStats {
+    delayMean: number,
+    delayMedian: number,
+    delayMin: number,
+    delayMax: number,
+    delayPercentile10: number,
+    delayPercentile90: number,
+    delayStdDev: number,
+    historyLength: number,
+    historyAge: number
+}
+
 class Ewma {
     constructor(halfLife: number) {
         this.halfLife = halfLife;
@@ -74,6 +88,19 @@ export class BufferControl {
     }
 
     /**
+     * To be called when the deinterleaver generates a timestamp information object.
+     *
+     * @param timestampInfo The timestamp information object from the deinterleaver.
+     */
+    onTimestamp(timestampInfo: TimestampInfo): void {
+        const sliceStart: number = this.timestampInfos.findIndex((e: TimestampInfo): boolean => {
+            return e.sentTimestamp >= timestampInfo.sentTimestamp - this.timestampInfoMaxAge; // Keep those new enough.
+        });
+        this.timestampInfos = (sliceStart < 0) ? [] : this.timestampInfos.slice(sliceStart, this.timestampInfos.length);
+        this.timestampInfos.push(timestampInfo);
+    }
+
+    /**
      * Get the length, in milliseconds, of the buffer in one of the media elements.
      *
      * @param secondary The secondary media element index to get the buffer length for. If null (the default), the
@@ -137,6 +164,36 @@ export class BufferControl {
      */
     getCatchUpEventEwma(): number {
         return this.catchUpEventsEwma.get();
+    }
+
+    /**
+     * Get network timing statistics.
+     */
+    getNetworkTimingStats(): NetworkTimingStats {
+        const delays: number[] =
+            this.timestampInfos.map((info: TimestampInfo): number => info.endReceivedTimestamp - info.sentTimestamp);
+        if (delays.length === 0) {
+            delays.push(NaN);
+        }
+        delays.sort((a: number, b: number): number => a - b);
+
+        const mean: number = delays.reduce((a: number, b: number): number => a + b) / delays.length;
+        const variance: number = delays.map((e: number): number => (mean - e) ** 2).
+                                        reduce((a: number, b: number): number => a + b) / delays.length;
+
+        return {
+            delayMean: mean,
+            delayMedian: delays[Math.floor(delays.length / 2)]!,
+            delayMin: delays[0]!,
+            delayMax: delays[delays.length - 1]!,
+            delayPercentile10: delays[Math.floor(delays.length / 10)]!,
+            delayPercentile90: delays[Math.floor(delays.length * 9 / 10)]!,
+            delayStdDev: Math.sqrt(variance),
+            historyLength: this.timestampInfos.length,
+            historyAge: ((this.timestampInfos.length < 2) ? 0 :
+                        (this.timestampInfos[this.timestampInfos.length - 1]!.sentTimestamp -
+                         this.timestampInfos[0]!.sentTimestamp))
+        };
     }
 
     private bufferControlTick(): void {
@@ -290,6 +347,7 @@ export class BufferControl {
     }
 
     // Settings.
+    private readonly timestampInfoMaxAge = 120000; // 2 minutes.
     private readonly syncClockPeriod = 100;
     private readonly minPlaybackRate = 0.5;
     private readonly maxPlaybackRate = 2;
@@ -308,6 +366,9 @@ export class BufferControl {
     private minBuffer: number = 0;
     private maxBuffer: number = 0;
     private secondarySyncTolerance: number = 0;
+
+    // Network timing data.
+    private timestampInfos: TimestampInfo[] = [];
 
     // Tracking buffering performance.
     private readonly catchUpEventsEwma: Ewma = new Ewma(60000);

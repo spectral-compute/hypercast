@@ -4,10 +4,12 @@ import {Logger} from "./Log";
 const log = new Logger("Server File Store");
 
 class InterleavedFile {
-    constructor(fileStore: ServerFileStore, namePattern: string, captureGroups: string[], interleaveTotal: number) {
+    constructor(fileStore: ServerFileStore, namePattern: string, captureGroups: string[], interleaveTotal: number,
+                timestampInterval: number) {
         this.fileStore = fileStore;
         this.captureGroups = captureGroups;
         this.interleaveTotal = interleaveTotal;
+        this.timestampInterval = timestampInterval;
 
         /* Figure out what the path for the interleaved file is. */
         let substitutedPattern: string = namePattern;
@@ -110,7 +112,21 @@ class InterleavedFile {
             lengthBuffer = getValueAsBuffer(b.length, 8);
         }
 
-        this.serverFile.add(Buffer.concat([getValueAsBuffer(contentId, 1), lengthBuffer, b]));
+        const now: number = Date.now();
+        if (this.startTimestamp === 0) {
+            this.startTimestamp = now;
+        }
+
+        let timestampBuffer: Buffer;
+        if (now - this.startTimestamp >= this.timestampCount * this.timestampInterval && b.length !== 0) {
+            this.timestampCount++;
+            timestampBuffer = getValueAsBuffer(Math.round(now * 1000), 8); // Timestamp in µs.
+            contentId += 32;
+        } else {
+            timestampBuffer = Buffer.alloc(0);
+        }
+
+        this.serverFile.add(Buffer.concat([getValueAsBuffer(contentId, 1), lengthBuffer, timestampBuffer, b]));
     }
 
     private onSourceFinish(path: string): void {
@@ -136,6 +152,9 @@ class InterleavedFile {
     private readonly fileStore: ServerFileStore;
     private readonly captureGroups: string[];
     private readonly interleaveTotal: number; // The number of files to interleave.
+    private readonly timestampInterval: number; // Period between timestamps in the interleave.
+    private startTimestamp: number = 0; // The time of the first chunk in the interleave. Zero if none.
+    private timestampCount: number = 0; // The number of timestamps inserted into the interleave.
 
     private interleaveCount: number = 0; // The number of files interleaved so far.
     private readonly interleavedPath: string; // The name of the interleaved file.
@@ -149,7 +168,7 @@ class InterleavedFile {
 }
 
 class InterleavePattern {
-    constructor(fileStore: ServerFileStore, namePattern: string, patterns: RegExp[]) {
+    constructor(fileStore: ServerFileStore, namePattern: string, patterns: RegExp[], timestampInterval: number) {
         log.debug(`Creating interleave pattern: ${namePattern}`);
         for (const pattern of patterns) {
             log.debug(`    "${pattern.source}"`);
@@ -158,6 +177,7 @@ class InterleavePattern {
         this.fileStore = fileStore;
         this.namePattern = namePattern;
         this.patterns = patterns;
+        this.timestampInterval = timestampInterval;
 
         fileStore.on("add", (path: string): void => {
             this.onServerAddPath(path);
@@ -182,7 +202,7 @@ class InterleavePattern {
             }
         }
         const interleavedFile = new InterleavedFile(this.fileStore, this.namePattern, captureGroups,
-                                                    this.patterns.length);
+                                                    this.patterns.length, this.timestampInterval);
         interleavedFile.addFileAtIndex(path, patternIndex);
         this.interleavedFiles.push(interleavedFile);
     }
@@ -190,6 +210,7 @@ class InterleavePattern {
     private readonly fileStore: ServerFileStore;
     private readonly namePattern: string;
     private readonly patterns: RegExp[];
+    private readonly timestampInterval: number;
     private readonly interleavedFiles = new Array<InterleavedFile>();
 }
 
@@ -264,9 +285,10 @@ export class ServerFileStore extends EventEmitter {
      * @param patterns A list of patterns to interleave. The capture groups will be used as a key so that only files
      *                 with matching capture groups are interleaved. Therefore, each pattern must have the same number
      *                 of capture groups.
+     * @param timestampInterval Average period between timestamps in the interleave.
      */
-    addInterleavingPattern(namePattern: string, patterns: RegExp[]): void {
-        new InterleavePattern(this, namePattern, patterns);
+    addInterleavingPattern(namePattern: string, patterns: RegExp[], timestampInterval: number): void {
+        new InterleavePattern(this, namePattern, patterns, timestampInterval);
     }
 
     add(path: string): ServerFile {

@@ -184,7 +184,14 @@ export interface Config {
          * video segments (and therefore two video streams). It is useful to be able to set this to true for development
          * and testing.
          */
-        interleavedDirectDashSegments: boolean
+        interleavedDirectDashSegments: boolean,
+
+        /**
+         * Average period between timestamps that are interleaved into the same interleave.
+         *
+         * The timestamps are used for buffer control.
+         */
+        interleaveTimestampInterval: number
     },
 
     /**
