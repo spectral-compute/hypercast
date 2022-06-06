@@ -87,7 +87,10 @@ class InterleavedFile {
     private addChunk(index: number, b: Buffer): void {
         const getValueAsBuffer = (value: number, length: number): Buffer => {
             const vb = Buffer.alloc(length);
-            vb.writeUIntLE(value, 0, length);
+            for (let i = 0; i < length; i += 4) {
+                vb.writeUIntLE(Math.floor(value) % (2 ** 32), i, Math.min(length - i, 4));
+                value = Math.floor(value / (2 ** 32));
+            }
             return vb;
         };
 
