@@ -371,7 +371,7 @@ export class Player {
 
         /* Tell the streamer. */
         this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
-                               this.serverInfo.avMap.length > 0 && this.audioStream !== null);
+                               this.quality < this.serverInfo.avMap.length);
     }
 
     /**

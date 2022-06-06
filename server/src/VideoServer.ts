@@ -245,7 +245,7 @@ export class VideoServer {
      *
      * Video qualities without audio are not included in the map.
      */
-    private getAudioVideoMap(): [number, number][] {
+    private getAudioVideoMap(): [number, number | null][] {
         if (!this.config.dash.interleave) {
             return [];
         }
@@ -253,9 +253,12 @@ export class VideoServer {
         const videoConfigCount = this.config.video.configs.length;
         const audioConfigCount = this.config.audio.configs.length;
 
-        const result = new Array<[number, number]>();
+        const result = new Array<[number, number | null]>();
         for (let i = 0; i < videoConfigCount && i < audioConfigCount; i++) {
             result.push([i, i + videoConfigCount]);
+        }
+        for (let i = audioConfigCount; i < videoConfigCount; i++) {
+            result.push([i, null]);
         }
         return result;
     }
@@ -328,14 +331,17 @@ export class VideoServer {
                 substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).replace(/[^/]*$/, "");
 
             for (const va of avMap) {
-                const videoRegex = new RegExp(`${livePrefix}chunk-stream${va[0]}-([0-9]+).[^.]+`);
-                const audioRegex = new RegExp(`${livePrefix}chunk-stream${va[1]}-([0-9]+).[^.]+`);
-                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`,
-                                                            [videoRegex, audioRegex]);
+                const regexes: RegExp[] = [];
+                regexes.push(new RegExp(`${livePrefix}chunk-stream${va[0]}-([0-9]+).[^.]+`));
+                if (va[1] !== null) {
+                    regexes.push(new RegExp(`${livePrefix}chunk-stream${va[1]}-([0-9]+).[^.]+`));
+                }
+                this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`, regexes);
 
                 if (!this.config.dash.interleavedDirectDashSegments) {
-                    this.forbiddenPaths.push(videoRegex);
-                    this.forbiddenPaths.push(audioRegex);
+                    for (const regex of regexes) {
+                        this.forbiddenPaths.push(regex);
+                    }
                 }
             }
         }

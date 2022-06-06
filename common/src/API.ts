@@ -48,6 +48,6 @@ export namespace API {
         segmentPreavailability: number,
         videoConfigs: VideoConfig[],
         audioConfigs: AudioConfig[],
-        avMap: [number, number][]
+        avMap: [number, number | null][]
     }
 }
