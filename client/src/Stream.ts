@@ -16,23 +16,14 @@ const PreavailabilityMargin = 1500;
 const DownloadSchedulerUpdatePeriod = 16;
 
 /**
- * Length of media source buffer to keep after pruning.
- */
-const PruneMinMediaSourceBufferLength = 8000;
-
-/**
- * Threshold of media source buffer to trigger pruning.
- */
-const PruneMaxMediaSourceBufferLength = 16000;
-
-/**
  * Manages a media source buffer, and a queue of data to go with it.
  */
 class Stream {
-    constructor(mediaSource: MediaSource, init: ArrayBuffer, mimeType: string,
+    constructor(mediaSource: MediaSource, init: ArrayBuffer, mimeType: string, segmentDuration: number,
                 onError: (description: string) => void, onStart: (() => void) | null = null) {
         this.mediaSource = mediaSource;
         this.init = init;
+        this.segmentDuration = segmentDuration / 1000;
         this.onError = onError;
         this.onStart = onStart;
 
@@ -170,12 +161,12 @@ class Stream {
         /* Figure out if we have so much buffered that we're going to do a prune operation. */
         const start = buffered.start(0);
         const end = buffered.end(buffered.length - 1);
-        if (end - PruneMaxMediaSourceBufferLength / 1000 <= start) {
+        if (end - this.segmentDuration * 3 <= start) {
             return;
         }
 
         /* Prune :) */
-        this.sourceBuffer.remove(start, end - PruneMinMediaSourceBufferLength / 1000);
+        this.sourceBuffer.remove(start, end - this.segmentDuration * 2);
     }
 
     /**
@@ -193,6 +184,7 @@ class Stream {
 
     private readonly mediaSource: MediaSource;
     private readonly init: ArrayBuffer;
+    private readonly segmentDuration: number; // Segment duration in seconds.
     private readonly onError: (description: string) => void;
     private readonly onStart: (() => void) | null;
 
@@ -570,7 +562,8 @@ export class MseWrapper {
         this.setMediaSources((): void => {
             // New streams.
             this.videoStream = new Stream(this.videoMediaSource!, videoInit,
-                                          this.getMimeForStream(manifest, this.videoStreamIndex), this.onError,
+                                          this.getMimeForStream(manifest, this.videoStreamIndex), this.segmentDuration,
+                                          this.onError,
                                           (): void => {
                 void this.video.play();
                 if (this.audio && !this.audio.muted) {
@@ -583,8 +576,9 @@ export class MseWrapper {
             });
             if (audioInfo && this.interleaved) {
                 this.audioStream =
-                    new Stream(this.audio ? this.audioMediaSource! : this.videoMediaSource!,
-                               audioInit!, this.getMimeForStream(manifest, this.audioStreamIndex!), this.onError);
+                    new Stream(this.audio ? this.audioMediaSource! : this.videoMediaSource!, audioInit!,
+                               this.getMimeForStream(manifest, this.audioStreamIndex!), this.segmentDuration,
+                               this.onError);
             }
 
             // Segment downloader.
