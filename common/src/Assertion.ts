@@ -1,5 +1,3 @@
-import {env} from "process";
-
 /**
  * Type representing failures of `assertNonNull()`. This makes it convenient to catch
  * such failures.
@@ -10,7 +8,7 @@ export class NullityAssertionError extends Error {}
  * Asserts that the given object is non-null, narrowing an object to a non-null type.
  */
 export function assertNonNull<T>(x: T, message?: string): asserts x is NonNullable<T> {
-    if (env["NODE_ENV"] === "production") {
+    if (process.env["NODE_ENV"] === "production") {
         return;
     }
 
