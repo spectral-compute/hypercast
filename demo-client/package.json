@@ -6,8 +6,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "bundle": "(cd ../client && yarn bundle) && yarn webpack --mode production",
-    "bundle-dev": "(cd ../client && yarn bundle-dev) && yarn webpack --mode development",
+    "bundle": "(cd ../client && yarn bundle \"$@\") && yarn webpack --mode production \"$@\"",
+    "bundle-dev": "(cd ../client && yarn bundle-dev \"$@\") && yarn webpack --mode development \"$@\"",
     "clean": "rm -rf build dist",
     "lint": "yarn eslint --max-warnings=0 --ext .ts .",
     "postinstall": "rm -rf node_modules/@types/node",
