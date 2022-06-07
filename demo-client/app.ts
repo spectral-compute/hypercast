@@ -1,7 +1,13 @@
 import * as lvsc from "live-video-streamer-client";
 
+declare namespace process {
+    let env: {
+        INFO_URL: string
+    };
+}
+
 /* Configuration :) */
-const infoUrl = "http://localhost:8080/live/info.json";
+const infoUrl = process.env.INFO_URL;
 
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLVideoElement;

@@ -1,3 +1,4 @@
+const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 var config = {
@@ -33,5 +34,13 @@ module.exports = (env, argv) => {
     if (argv.mode === "development") {
         config.devtool = "source-map";
     }
+
+    const defEnv = (name, def) => {
+        return JSON.stringify((env[name] === undefined) ? def : env[name]);
+    };
+    config.plugins.push(new webpack.DefinePlugin({
+        "process.env.INFO_URL": defEnv("INFO_URL", "http://localhost:8080/live/info.json")
+    }));
+
     return config;
 };
