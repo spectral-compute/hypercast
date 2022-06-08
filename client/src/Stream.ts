@@ -27,6 +27,10 @@ class Stream {
         this.onError = onError;
         this.onStart = onStart;
 
+        if (process.env.NODE_ENV === "development") {
+            this.checksum = new Debug.Addler32();
+        }
+
         this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
         this.sourceBuffer.addEventListener("onabort", (): void => {
             this.onError("SourceBuffer aborted");
@@ -49,7 +53,7 @@ class Stream {
         if (segment === 0 && this.onStart) {
             this.onStart();
         }
-        if (this.checksum) {
+        if (process.env.NODE_ENV === "development") {
             this.checksumDescriptions.set(segment, description);
         }
         this.acceptSegmentData(this.init, segment);
@@ -135,12 +139,12 @@ class Stream {
             const data = this.queue.shift();
             if (data !== null) {
                 this.sourceBuffer.appendBuffer(data!);
-                if (this.checksum) {
-                    this.checksum.update(data!);
+                if (process.env.NODE_ENV === "development") {
+                    this.checksum!.update(data!);
                 }
-            } else if (this.checksum) {
+            } else if (process.env.NODE_ENV === "development") {
                 console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)!} ` +
-                            `checksum: ${this.checksum.getChecksum()}, length: ${this.checksum.getLength()}`);
+                            `checksum: ${this.checksum!.getChecksum()}, length: ${this.checksum!.getLength()}`);
                 this.checksum = new Debug.Addler32();
                 this.checksumDescriptions.delete(this.checksumIndex);
                 this.checksumIndex++;
@@ -195,7 +199,7 @@ class Stream {
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
 
-    private checksum: Debug.Addler32 | null = null; // Set non-null to print checksums.
+    private checksum: Debug.Addler32 | undefined;
     private checksumIndex: number = 0;
     private readonly checksumDescriptions = new Map<number, string>();
 }

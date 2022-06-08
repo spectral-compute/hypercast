@@ -4,6 +4,10 @@ export class Deinterleaver {
     constructor(onData: (data: ArrayBuffer, index: number) => void, description: string) {
         this.onData = onData;
         this.description = description;
+
+        if (process.env.NODE_ENV === "development") {
+            this.checksums = new Map<number, Debug.Addler32>();
+        }
     }
 
     acceptData(newBuffer: Uint8Array): void {
@@ -66,16 +70,16 @@ export class Deinterleaver {
             offset += chunkLength;
 
             // Print checksums.
-            if (this.checksums) {
-                if (!this.checksums.has(this.currentIndex)) {
-                    this.checksums.set(this.currentIndex, new Debug.Addler32());
+            if (process.env.NODE_ENV === "development") {
+                if (!this.checksums!.has(this.currentIndex)) {
+                    this.checksums!.set(this.currentIndex, new Debug.Addler32());
                 }
                 if (chunkLength === 0) {
-                    const checksum = this.checksums.get(this.currentIndex)!;
+                    const checksum = this.checksums!.get(this.currentIndex)!;
                     console.log(`[Deinterleave Checksum] ${this.description} ` +
                                 `checksum: ${checksum.getChecksum()}, length: ${checksum.getLength()}`);
                 } else {
-                    this.checksums.get(this.currentIndex)!.update(data);
+                    this.checksums!.get(this.currentIndex)!.update(data);
                 }
             }
         }
@@ -89,5 +93,5 @@ export class Deinterleaver {
     private currentLength = 0; // Length of the current chunk.
     private remainderBuffer: Uint8Array | null = null;
 
-    private readonly checksums: Map<number, Debug.Addler32> | null = null; // Set non-null to print checksums.
+    private readonly checksums: Map<number, Debug.Addler32> | undefined;
 }
