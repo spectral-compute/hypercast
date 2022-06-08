@@ -3,6 +3,7 @@ import * as lvsc from "live-video-streamer-client";
 declare namespace process {
     let env: {
         INFO_URL: string
+        NODE_ENV: string
     };
 }
 
@@ -30,7 +31,7 @@ video.addEventListener("loadedmetadata", (): void => {
 });
 
 /* Create the player. */
-const player = new lvsc.Player(infoUrl, video, audio, true); // Omit final argument for deployment.
+const player = new lvsc.Player(infoUrl, video, audio, process.env.NODE_ENV === "development");
 
 /* Error handling. */
 player.onError = (e: string): void => {

@@ -156,7 +156,7 @@ export class BufferControl {
             }
 
             this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
-            if (this.verbose) {
+            if (this.verbose && process.env.NODE_ENV === "development") {
                 console.debug("Seek to catch up");
             }
             this.syncSecondaryMediaElements();
@@ -234,19 +234,19 @@ export class BufferControl {
             if (!isNaN(adjustPlaybackRate) &&
                 Math.abs(this.secondaryMediaElementSync[i]!) < this.secondarySkipThreshold) { // Adjust playback rate.
                 adjustPlaybackRate = Math.min(Math.max(adjustPlaybackRate, this.minPlaybackRate), this.maxPlaybackRate);
-                if (this.verbose) {
+                if (this.verbose && process.env.NODE_ENV === "development") {
                     console.debug(`Adjusting secondary playback rate ${i} to ${adjustPlaybackRate}`);
                 }
                 mediaElement.playbackRate = adjustPlaybackRate;
             } else { // Seek.
-                if (this.verbose) {
+                if (this.verbose && process.env.NODE_ENV === "development") {
                     console.debug(`Try seeking secondary media element ${i} by ${-this.secondaryMediaElementSync[i]!}`);
                 }
 
                 // If there's nothing in the audio buffer, don't bother trying to seek. We'll try again later when the
                 // buffer isn't empty.
                 if (mediaElement.buffered.length === 0) {
-                    if (this.verbose) {
+                    if (this.verbose && process.env.NODE_ENV === "development") {
                         console.debug(`Buffer for secondary media element ${i} is empty`);
                     }
                     return;
@@ -255,7 +255,7 @@ export class BufferControl {
                 // If the start of the audio buffer has progressed beyond the video, then we need to wait for the video
                 // to catch up.
                 if (mediaElement.buffered.start(0) > this.primaryMediaElement.currentTime) {
-                    if (this.verbose) {
+                    if (this.verbose && process.env.NODE_ENV === "development") {
                         console.debug(`Buffer for secondary media element ${i} is ahead of primary media element`);
                     }
                     return;
