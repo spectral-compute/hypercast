@@ -150,7 +150,7 @@ function getTimestampFilteringArgs(enabled: boolean, width: number): string {
     if (!enabled) {
         return "";
     }
-    return ",drawtext=text='%{gmtime}':" +
+    return ",drawtext=text='%{gmtime} UTC':" +
            `x=${width / 40}:y=${width / 40}:fontsize=${width / 30}:borderw=${width / 480}:` +
            "fontfile=/usr/share/fonts/TTF/DejaVuSansMono.ttf:" +
            "fontcolor=#ffffff:bordercolor=#000000";
