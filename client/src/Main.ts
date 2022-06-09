@@ -256,6 +256,7 @@ export class Player {
      * Set the latency to "low" (up to 2s).
      */
     setLowLatency(): void {
+        this.latency = 0;
         this.bctrl!.setLowLatency();
     }
 
@@ -263,6 +264,7 @@ export class Player {
      * Set the latency to "ultra-low" (up to 1s).
      */
     setUltraLowLatency(): void {
+        this.latency = 1;
         this.bctrl!.setUltraLowLatency();
     }
 
@@ -270,6 +272,7 @@ export class Player {
      * Set the latency to "safer" (up to 3s).
      */
     setSaferLatency(): void {
+        this.latency = 2;
         this.bctrl!.setSaferLatency();
     }
 
