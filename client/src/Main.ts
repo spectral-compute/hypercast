@@ -219,9 +219,7 @@ export class Player {
      * @return A list of strings describing each latency setting.
      */
     getLatencyOptions(): string[] {
-        return ["Up to 2s (more smooth)", "Up to 1s (less smooth)"].concat(
-               ((this.qualityOptions.length === 1) ? ["Up to 3s (most reliable)"] : [])
-        );
+        return ["Auto", "Up to 2s (more smooth)", "Up to 1s (less smooth)", "Up to 3s (most reliable)"];
     }
 
     /**
@@ -232,7 +230,7 @@ export class Player {
      * @return True if user latency control applies to the playing video, and false otherwise.
      */
     getLatencyAvailable(): boolean {
-        return this.qualityOptions.length === 1 || this.quality < this.qualityOptions.length - 1;
+        return true;
     }
 
     /**
@@ -258,10 +256,18 @@ export class Player {
     }
 
     /**
+     * Set the latency to automatic control.
+     */
+    setAutoLatency(): void {
+        this.latency = 0;
+        this.bctrl!.setLowLatency();
+    }
+
+    /**
      * Set the latency to "low" (up to 2s).
      */
     setLowLatency(): void {
-        this.latency = 0;
+        this.latency = 1;
         this.bctrl!.setLowLatency();
     }
 
@@ -269,7 +275,7 @@ export class Player {
      * Set the latency to "ultra-low" (up to 1s).
      */
     setUltraLowLatency(): void {
-        this.latency = 1;
+        this.latency = 2;
         this.bctrl!.setUltraLowLatency();
     }
 
@@ -277,7 +283,7 @@ export class Player {
      * Set the latency to "safer" (up to 3s).
      */
     setSaferLatency(): void {
-        this.latency = 2;
+        this.latency = 3;
         this.bctrl!.setSaferLatency();
     }
 
@@ -337,17 +343,20 @@ export class Player {
      */
     private updateLatency(): void {
         if (!this.getLatencyAvailable()) {
-            this.bctrl!.setSaferLatency();
+            this.bctrl!.setAutoLatency();
             return;
         }
         switch (this.latency) {
             case 0:
-                this.bctrl!.setLowLatency();
+                this.bctrl!.setAutoLatency();
                 break;
             case 1:
-                this.bctrl!.setUltraLowLatency();
+                this.bctrl!.setLowLatency();
                 break;
             case 2:
+                this.bctrl!.setUltraLowLatency();
+                break;
+            case 3:
                 this.bctrl!.setSaferLatency();
                 break;
         }

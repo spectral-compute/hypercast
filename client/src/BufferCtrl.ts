@@ -125,8 +125,17 @@ export class BufferControl {
         return this.secondaryMediaElementSync[secondary]!;
     }
 
+    // Automatically determine buffering.
+    setAutoLatency(): void {
+        this.autoBuffer = true;
+        this.secondarySyncTolerance = 100;
+        this.catchUpEventsEwma.reset();
+        this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+    }
+
     // Should get 3 seconds overall. Intended for the minimum quality to cope with poor connections/CDN buffering.
     setSaferLatency(): void {
+        this.autoBuffer = false;
         this.minBuffer = 750;
         this.maxBuffer = 1750;
         this.secondarySyncTolerance = 100;
@@ -136,6 +145,7 @@ export class BufferControl {
 
     // Should get 2 seconds overall.
     setLowLatency(): void {
+        this.autoBuffer = false;
         this.minBuffer = 500;
         this.maxBuffer = 1000;
         this.secondarySyncTolerance = 100;
@@ -145,6 +155,7 @@ export class BufferControl {
 
     // Should get 1 second overall.
     setUltraLowLatency(): void {
+        this.autoBuffer = false;
         this.minBuffer = 50;
         this.maxBuffer = 100;
         this.secondarySyncTolerance = 500; // It shouldn't, but audio needs more tolerance than video.
@@ -170,12 +181,10 @@ export class BufferControl {
      * Get network timing statistics.
      */
     getNetworkTimingStats(): NetworkTimingStats {
-        const delays: number[] =
-            this.timestampInfos.map((info: TimestampInfo): number => info.endReceivedTimestamp - info.sentTimestamp);
+        const delays: number[] = this.getSortedTimestampDelays();
         if (delays.length === 0) {
             delays.push(NaN);
         }
-        delays.sort((a: number, b: number): number => a - b);
 
         const mean: number = delays.reduce((a: number, b: number): number => a + b) / delays.length;
         const variance: number = delays.map((e: number): number => (mean - e) ** 2).
@@ -218,6 +227,24 @@ export class BufferControl {
             }
             this.syncSecondaryMediaElements();
             return;
+        }
+
+        /* Figure out the target buffer size. */
+        if (this.autoBuffer) {
+            const delays: number[] = this.getSortedTimestampDelays();
+            if (delays.length < 100) {
+                this.minBuffer = 500;
+                this.maxBuffer = 1000;
+            } else {
+                this.minBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMin)]! - delays[0]!;
+                this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]!;
+                const minDiff = this.timestampAutoBufferMinMaxMinExtraDiff + this.syncClockPeriod;
+                if (this.maxBuffer - this.minBuffer < minDiff) {
+                    this.maxBuffer = this.minBuffer + minDiff;
+                }
+                this.minBuffer += this.timestampAutoBufferExtra;
+                this.maxBuffer += this.timestampAutoBufferExtra;
+            }
         }
 
         /* If we have less buffer than the minimum set, then no fast play. */
@@ -346,8 +373,22 @@ export class BufferControl {
         return neededProgress / this.syncClockPeriod;
     }
 
+    /**
+     * Get a sorted array of delays.
+     */
+    private getSortedTimestampDelays(): number[] {
+        const result: number[] =
+            this.timestampInfos.map((info: TimestampInfo): number => info.endReceivedTimestamp - info.sentTimestamp);
+        result.sort((a: number, b: number): number => a - b);
+        return result;
+    }
+
     // Settings.
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.
+    private readonly timestampAutoBufferMax = 0.995;
+    private readonly timestampAutoBufferMin = 0.99;
+    private readonly timestampAutoBufferMinMaxMinExtraDiff = 100; // Extra, on top of the sync clock period.
+    private readonly timestampAutoBufferExtra = 100;
     private readonly syncClockPeriod = 100;
     private readonly minPlaybackRate = 0.5;
     private readonly maxPlaybackRate = 2;
@@ -363,6 +404,7 @@ export class BufferControl {
     private readonly verbose: boolean;
 
     // Buffer mode.
+    private autoBuffer: boolean = true;
     private minBuffer: number = 0;
     private maxBuffer: number = 0;
     private secondarySyncTolerance: number = 0;
