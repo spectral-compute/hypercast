@@ -401,7 +401,7 @@ export class Player {
         const combinedBufferLength = this.audio ? Math.min(videoBufferLength, audioBufferLength) : videoBufferLength;
 
         const [minBuffer, maxBuffer] = this.bctrl!.getBufferTargets();
-        const ewmaBuffer = this.bctrl!.getCatchUpEventEwma();
+        const catchUpStats = this.bctrl!.getCatchUpStats();
 
         const videoUnprunedBufferLength =
             (this.video.buffered.length === 0) ? 0 :
@@ -437,7 +437,9 @@ export class Player {
             `                median          = ${netStats.delayMedian - netStats.delayMin} ms\n` +
             `                90th percentile = ${netStats.delayPercentile90 - netStats.delayMin} ms\n` +
             `                max             = ${netStats.delayMax - netStats.delayMin} ms\n` +
-            `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms (${ewmaBuffer})\n`
+            `Catch up events: n = ${catchUpStats.eventCount}\n` +
+            `                 µ = ${catchUpStats.averageTimeBetweenEvents / 1000} s\n` +
+            `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms\n`
         );
     }
 

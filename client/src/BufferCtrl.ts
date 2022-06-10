@@ -12,34 +12,9 @@ export interface NetworkTimingStats {
     historyAge: number
 }
 
-class Ewma {
-    constructor(halfLife: number) {
-        this.halfLife = halfLife;
-    }
-
-    reset(): void {
-        this.value = 0;
-    }
-
-    get(): number {
-        return this.getForTime(Date.now().valueOf());
-    }
-
-    add(value: number): number {
-        const time = Date.now().valueOf();
-        this.value = this.getForTime(time) + value;
-        this.lastUpdate = time;
-        return this.value;
-    }
-
-    private getForTime(time: number): number {
-        const halfLifes = (time - this.lastUpdate) / this.halfLife;
-        return this.value * 2 ** -halfLifes;
-    }
-
-    private value: number = 0;
-    private lastUpdate: number = 0;
-    private readonly halfLife: number;
+export interface CatchUpStats {
+    eventCount: number,
+    averageTimeBetweenEvents: number
 }
 
 /**
@@ -70,7 +45,8 @@ export class BufferControl {
      * Start the buffer control.
      */
     start(): void {
-        this.catchUpEventsEwma.reset();
+        this.catchUpEvents = 0;
+        this.catchUpEventsStart = Date.now();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
 
         this.interval = setInterval((): void => {
@@ -129,7 +105,8 @@ export class BufferControl {
     setAutoLatency(): void {
         this.autoBuffer = true;
         this.secondarySyncTolerance = 100;
-        this.catchUpEventsEwma.reset();
+        this.catchUpEvents = 0;
+        this.catchUpEventsStart = Date.now();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
     }
 
@@ -139,7 +116,8 @@ export class BufferControl {
         this.minBuffer = 750;
         this.maxBuffer = 1750;
         this.secondarySyncTolerance = 100;
-        this.catchUpEventsEwma.reset();
+        this.catchUpEvents = 0;
+        this.catchUpEventsStart = Date.now();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
     }
 
@@ -149,7 +127,8 @@ export class BufferControl {
         this.minBuffer = 500;
         this.maxBuffer = 1000;
         this.secondarySyncTolerance = 100;
-        this.catchUpEventsEwma.reset();
+        this.catchUpEvents = 0;
+        this.catchUpEventsStart = Date.now();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
     }
 
@@ -159,7 +138,8 @@ export class BufferControl {
         this.minBuffer = 50;
         this.maxBuffer = 100;
         this.secondarySyncTolerance = 500; // It shouldn't, but audio needs more tolerance than video.
-        this.catchUpEventsEwma.reset();
+        this.catchUpEvents = 0;
+        this.catchUpEventsStart = Date.now();
         this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
     }
 
@@ -171,10 +151,13 @@ export class BufferControl {
     }
 
     /**
-     * Get the catch up event exponentially weighted moving average.
+     * Get the catch up event statistics.
      */
-    getCatchUpEventEwma(): number {
-        return this.catchUpEventsEwma.get();
+    getCatchUpStats(): CatchUpStats {
+        return {
+            eventCount: this.catchUpEvents,
+            averageTimeBetweenEvents: (Date.now() - this.catchUpEventsStart) / this.catchUpEvents
+        };
     }
 
     /**
@@ -268,7 +251,7 @@ export class BufferControl {
         const now = Date.now().valueOf();
         if (currentRate === 1 && this.lastCatchUpEventClusterEnd < now) {
             this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
-            this.catchUpEventsEwma.add(1);
+            this.catchUpEvents++;
         }
     }
 
@@ -413,7 +396,8 @@ export class BufferControl {
     private timestampInfos: TimestampInfo[] = [];
 
     // Tracking buffering performance.
-    private readonly catchUpEventsEwma: Ewma = new Ewma(60000);
+    private catchUpEvents: number = 0;
+    private catchUpEventsStart: number = 0;
     private lastCatchUpEventClusterEnd: number = 0;
 
     // Tracking synchronization performance.
