@@ -9,6 +9,6 @@
       { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
     ]
   },
-  "include": ["./src/**/*.ts"],
+  "include": ["./src/**/*.ts", "./typings/globals.d.ts"],
   "exclude": ["node_modules"]
 }
