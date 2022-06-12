@@ -12,7 +12,7 @@
     "clean": "rm -rf build dist",
     "lint": "yarn eslint --max-warnings=0 --ext .ts src test",
     "start": "yarn bundle-dev && yarn node dist/live-video-streamer-server.js \"$@\"",
-    "test": "ts-patch install && jest --config test/jest.config.js \"$@\""
+    "test": "yarn jest --clearCache && ts-patch install && jest --config test/jest.config.js \"$@\""
   },
   "dependencies": {
     "@babel/core": "^7.17.10",

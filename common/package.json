@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "rm -rf build",
     "lint": "yarn eslint --max-warnings=0 --ext .ts src test",
-    "test": "jest --config test/jest.config.js \"$@\""
+    "test": "yarn jest --clearCache && jest --config test/jest.config.js \"$@\""
   },
   "dependencies": {
     "@types/node": "^17.0.34",
