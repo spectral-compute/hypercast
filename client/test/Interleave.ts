@@ -247,4 +247,8 @@ test("Timestamps", (): void => {
         expect(timestampInfo.endReceivedTimestamp - now).toBeGreaterThanOrEqual(0);
         expect(timestampInfo.endReceivedTimestamp - now).toBeLessThan(4);
     }
+    expect(timestampInfos[0]!.firstForInterleave).toBeTruthy();
+    for (let i = 1; i < timestampInfos.length; i++) {
+        expect(timestampInfos[i]!.firstForInterleave).toBeFalsy();
+    }
 });

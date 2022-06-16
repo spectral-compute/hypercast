@@ -163,9 +163,10 @@ export class BufferControl {
     /**
      * Get network timing statistics.
      */
-    getNetworkTimingStats(): NetworkTimingStats {
-        const delays: number[] = this.getSortedTimestampDelays();
-        if (delays.length === 0) {
+    getNetworkTimingStats(firstForInterleaveOnly: boolean = false): NetworkTimingStats {
+        const delays: number[] = this.getSortedTimestampDelays(firstForInterleaveOnly);
+        const length = delays.length;
+        if (length === 0) {
             delays.push(NaN);
         }
 
@@ -181,7 +182,7 @@ export class BufferControl {
             delayPercentile10: delays[Math.floor(delays.length / 10)]!,
             delayPercentile90: delays[Math.floor(delays.length * 9 / 10)]!,
             delayStdDev: Math.sqrt(variance),
-            historyLength: this.timestampInfos.length,
+            historyLength: length,
             historyAge: ((this.timestampInfos.length < 2) ? 0 :
                         (this.timestampInfos[this.timestampInfos.length - 1]!.sentTimestamp -
                          this.timestampInfos[0]!.sentTimestamp))
@@ -359,9 +360,12 @@ export class BufferControl {
     /**
      * Get a sorted array of delays.
      */
-    private getSortedTimestampDelays(): number[] {
+    private getSortedTimestampDelays(firstForInterleaveOnly: boolean = false): number[] {
+        const filteredInfos = firstForInterleaveOnly ?
+                              this.timestampInfos.filter((info: TimestampInfo): boolean => info.firstForInterleave) :
+                              this.timestampInfos;
         const result: number[] =
-            this.timestampInfos.map((info: TimestampInfo): number => info.endReceivedTimestamp - info.sentTimestamp);
+            filteredInfos.map((info: TimestampInfo): number => info.endReceivedTimestamp - info.sentTimestamp);
         result.sort((a: number, b: number): number => a - b);
         return result;
     }

@@ -16,7 +16,12 @@ export interface TimestampInfo {
     /**
      * Timestamp when we received the end of the chunk in ms.
      */
-    endReceivedTimestamp: number
+    endReceivedTimestamp: number,
+
+    /**
+     * Whether or not this is the first chunk of data in an interleave.
+     */
+    firstForInterleave: boolean
 }
 
 export class Deinterleaver {
@@ -104,9 +109,11 @@ export class Deinterleaver {
             if (this.sentTimestamp !== null) {
                 this.onTimestamp({
                     sentTimestamp: this.sentTimestamp / 1000,
-                    endReceivedTimestamp: Date.now()
+                    endReceivedTimestamp: Date.now(),
+                    firstForInterleave: this.firstTimestamp
                 });
                 this.sentTimestamp = null;
+                this.firstTimestamp = false;
             }
 
             // Print checksums.
@@ -134,6 +141,7 @@ export class Deinterleaver {
     private currentLength = 0; // Length of the current chunk.
     private remainderBuffer: Uint8Array | null = null;
     private sentTimestamp: number | null = null; // Sent timestamp in µs.
+    private firstTimestamp: boolean = true;
 
     private readonly checksums: Map<number, Debug.Addler32> | undefined;
 }

@@ -411,6 +411,7 @@ export class Player {
             (this.audio.buffered.end(this.audio.buffered.length - 1) - this.audio.buffered.start(0));
 
         const netStats = this.bctrl!.getNetworkTimingStats();
+        const sNetStats = this.bctrl!.getNetworkTimingStats(true);
 
         console.log(
             `Video buffer length: ${videoBufferLength} ms\n` +
@@ -423,20 +424,25 @@ export class Player {
             `Video playback rate: ${this.video.playbackRate}\n` +
             `Audio playback rate: ${this.audio ? this.audio.playbackRate : NaN}\n` +
             `AV synchronization offset: ${this.audio ? this.bctrl!.getSecondarySync(0) : 0} ms\n` +
-            `Network delay history length: count = ${netStats.historyLength}\n` +
+            `Network delay history length: count = ${netStats.historyLength} (${sNetStats.historyLength})\n` +
             `                              time  = ${netStats.historyAge / 1000} s\n` +
-            `Delay normal: µ = ${netStats.delayMean} ms\n` +
-            `              σ = ${netStats.delayStdDev} ms\n` +
-            `Delay deciles: min             = ${netStats.delayMin} ms\n` +
-            `               10th percentile = ${netStats.delayPercentile10} ms\n` +
-            `               median          = ${netStats.delayMedian} ms\n` +
-            `               90th percentile = ${netStats.delayPercentile90} ms\n` +
-            `               max             = ${netStats.delayMax} ms\n` +
-            `Jitter normal: µ = ${netStats.delayMean - netStats.delayMin} ms\n` +
-            `Jitter deciles: 10th percentile = ${netStats.delayPercentile10 - netStats.delayMin} ms\n` +
-            `                median          = ${netStats.delayMedian - netStats.delayMin} ms\n` +
-            `                90th percentile = ${netStats.delayPercentile90 - netStats.delayMin} ms\n` +
-            `                max             = ${netStats.delayMax - netStats.delayMin} ms\n` +
+            `Delay normal: µ = ${netStats.delayMean} ms (${sNetStats.delayMean} ms)\n` +
+            `              σ = ${netStats.delayStdDev} ms (${sNetStats.delayStdDev} ms)\n` +
+            `Delay deciles: min             = ${netStats.delayMin} ms (${sNetStats.delayMin} ms)\n` +
+            `               10th percentile = ${netStats.delayPercentile10} ms (${sNetStats.delayPercentile10} ms)\n` +
+            `               median          = ${netStats.delayMedian} ms (${sNetStats.delayMedian} ms)\n` +
+            `               90th percentile = ${netStats.delayPercentile90} ms (${sNetStats.delayPercentile90} ms)\n` +
+            `               max             = ${netStats.delayMax} ms (${sNetStats.delayMax} ms)\n` +
+            `Jitter normal: µ = ${netStats.delayMean - netStats.delayMin} ms` +
+                              ` (${sNetStats.delayMean - sNetStats.delayMin} ms)\n` +
+            `Jitter deciles: 10th percentile = ${netStats.delayPercentile10 - netStats.delayMin} ms` +
+                                             ` (${sNetStats.delayPercentile10 - sNetStats.delayMin} ms)\n` +
+            `                median          = ${netStats.delayMedian - netStats.delayMin} ms` +
+                                             ` (${sNetStats.delayMedian - sNetStats.delayMin} ms)\n` +
+            `                90th percentile = ${netStats.delayPercentile90 - netStats.delayMin} ms` +
+                                             ` (${sNetStats.delayPercentile90 - sNetStats.delayMin} ms)\n` +
+            `                max             = ${netStats.delayMax - netStats.delayMin} ms` +
+                                             ` (${sNetStats.delayMax - sNetStats.delayMin} ms)\n` +
             `Catch up events: n = ${catchUpStats.eventCount}\n` +
             `                 µ = ${catchUpStats.averageTimeBetweenEvents / 1000} s\n` +
             `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms\n`
