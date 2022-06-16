@@ -47,6 +47,7 @@ export const defaultConfig = {
             h265Preset: "faster"
         },
         configs: [defaultVideoConfig],
+        loop: false,
         sources: [],
         timestamp: false
     }

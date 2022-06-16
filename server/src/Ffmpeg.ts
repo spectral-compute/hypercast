@@ -123,7 +123,7 @@ const videoCodecArgs = {
 const audioCodecArgs = new Map<string, string[][]>();
 
 /* Add external audio and video reading. */
-function getExternalSourceArgs(src: string): string[] {
+function getExternalSourceArgs(src: string, config: Config): string[] {
     let args: string[] = globalArgs;
 
     if (src.startsWith("pipe:")) {
@@ -134,6 +134,9 @@ function getExternalSourceArgs(src: string): string[] {
         args = [...args, ...realtimeInputArgs]; // This is a guess, but the intended use of this system is realtime.
     } else if (fs.statSync(src).isFile()) {
         args = [...args, ...fileInputArgs];
+        if (config.video.loop) {
+            args = args.concat(["-stream_loop", "-1"]);
+        }
     } else if (fs.statSync(src).isFIFO()) {
         args = [...args, ...pipeInputArgs]; // This is just a pipe that is named in the filesystem.
     } else {
@@ -317,7 +320,7 @@ export function getTranscoderArgs(angle: number, config: Config, source: string,
 
     let args = [
         // Inputs
-        ...getExternalSourceArgs(source),
+        ...getExternalSourceArgs(source, config),
 
         // Video filtering
         ...getFilteringArgs(videoConfigs, config.video.timestamp)

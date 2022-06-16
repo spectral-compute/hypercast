@@ -253,6 +253,11 @@ export interface Config {
         configs: VideoConfig[],
 
         /**
+         * Whether or not to loop sources indefinitely if possible.
+         */
+        loop: boolean,
+
+        /**
          * List of video angle sources (as RTSP streams).
          */
         sources: string[],

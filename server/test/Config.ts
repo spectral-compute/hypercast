@@ -47,6 +47,7 @@ test("Default", (): void => {
                     codec: "h264"
                 }
             ],
+            loop: false,
             sources: [],
             timestamp: false
         }
@@ -103,6 +104,7 @@ test("Override", (): void => {
                     codec: "h264"
                 }
             ],
+            loop: false,
             sources: [],
             timestamp: false
         }
@@ -176,6 +178,7 @@ test("Two video configs", (): void => {
                     codec: "h264"
                 }
             ],
+            loop: false,
             sources: [],
             timestamp: false
         }
