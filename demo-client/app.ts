@@ -2,10 +2,10 @@ import * as lvsc from "live-video-streamer-client";
 
 declare namespace process {
     let env: {
-        INFO_URL: string
-        NODE_ENV: string
-        SECONDARY_AUDIO: boolean
-        SECONDARY_VIDEO: boolean
+        INFO_URL: string;
+        NODE_ENV: string;
+        SECONDARY_AUDIO: boolean;
+        SECONDARY_VIDEO: boolean;
     };
 }
 
