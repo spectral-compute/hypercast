@@ -17,6 +17,10 @@ test("Default", (): void => {
             interleaveTimestampInterval: 100,
             interleavedDirectDashSegments: false
         },
+        filesystem: {
+            directories: [],
+            mimetypes: {}
+        },
         network: {
             nonLiveCacheTime: 600,
             origin: "*",
@@ -73,6 +77,87 @@ test("Override", (): void => {
             interleave: true,
             interleaveTimestampInterval: 100,
             interleavedDirectDashSegments: false
+        },
+        filesystem: {
+            directories: [],
+            mimetypes: {}
+        },
+        network: {
+            nonLiveCacheTime: 600,
+            origin: "*",
+            port: 8080,
+            preAvailabilityTime: 4000,
+            segmentRetentionCount: 6
+        },
+        serverInfo: {
+            live: "/live/live.json"
+        },
+        video: {
+            codecConfig: {
+                av1Speed: 8,
+                vp8Speed: 8,
+                vp9Speed: 8,
+                h264Preset: "faster",
+                h265Preset: "faster"
+            },
+            configs: [
+                {
+                    bitrate: 3000,
+                    crf: 25,
+                    width: 1920,
+                    height: 1080,
+                    framerateNumerator: 30000,
+                    framerateDenominator: 1001,
+                    gop: 450,
+                    codec: "h264"
+                }
+            ],
+            loop: false,
+            sources: [],
+            timestamp: false
+        }
+    });
+});
+
+test("Filesystem", (): void => {
+    const config = applyDefaultConfig({
+        filesystem: {
+            directories: [
+                {
+                    path: "/tmp",
+                    secure: true
+                }
+            ]
+        },
+        serverInfo: {
+            live: "/live/live.json"
+        }
+    });
+    expect(config).toStrictEqual({
+        audio: {
+            configs: []
+        },
+        dash: {
+            segmentLengthMultiplier: 1,
+            rateControlBufferLength: 1000,
+            manifest: "/live/{uid}/angle-{1}/manifest.mpd",
+            targetLatency: 500,
+            terminateDriftLimit: 0,
+            interleave: true,
+            interleaveTimestampInterval: 100,
+            interleavedDirectDashSegments: false
+        },
+        filesystem: {
+            directories: [
+                {
+                    urlPrefix: "/",
+                    path: "/tmp",
+                    index: "",
+                    secure: true,
+                    ephemeral: false
+                }
+            ],
+            mimetypes: {}
         },
         network: {
             nonLiveCacheTime: 600,
@@ -137,6 +222,10 @@ test("Two video configs", (): void => {
             interleave: true,
             interleaveTimestampInterval: 100,
             interleavedDirectDashSegments: false
+        },
+        filesystem: {
+            directories: [],
+            mimetypes: {}
         },
         network: {
             nonLiveCacheTime: 600,

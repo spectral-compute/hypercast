@@ -3,12 +3,25 @@ import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
 import {API, assertNonNull} from "live-video-streamer-common";
 
-import {Config, computeSegmentDuration, substituteManifestPattern} from "./Config/Config";
+import {Config, computeSegmentDuration, substituteManifestPattern, FilesystemDirectoryConfig} from "./Config/Config";
 import * as Ffmpeg from "./Ffmpeg";
 import {Logger} from "./Log";
 import {ServerFileStore} from "./ServerFileStore";
+import {DirectoryFileStore, FilesystemFileStore, FilesystemFileStoreResult} from "./FilesystemFileStore";
+import {ServerResponse} from "http";
 
-enum Liveness {
+const builtinMimetypes: Record<string, string> = {
+    css: "text/css",
+    html: "text/html",
+    jpg: "image/jpeg",
+    js: "text/javascript",
+    json: "application/json",
+    png: "image/png",
+    svg: "image/svg+xml",
+    webp: "image/webp"
+};
+
+export enum Liveness {
     // Nothing to do with the live stream.
     none,
 
@@ -132,6 +145,9 @@ export class VideoServer {
     // The set of files this server will respond to GET requests for. This is an in-memory cache.
     private readonly serverFileStore = new ServerFileStore();
 
+    // Stuff to serve from the filesystem.
+    private readonly filesystemFileStore: FilesystemFileStore = new FilesystemFileStore();
+
     // Paths that are forbidden for client access.
     private readonly forbiddenPaths = new Array<RegExp>();
 
@@ -190,6 +206,7 @@ export class VideoServer {
         this.loadCacheConfiguration();
         this.writeServerInfo();
         this.addInterleavePatterns(config.dash.interleaveTimestampInterval);
+        this.addFilesystemPaths(config.filesystem.directories);
 
         this.buildServer();
         this.startStreaming();
@@ -348,6 +365,15 @@ export class VideoServer {
         }
     }
 
+    private addFilesystemPaths(fsDirectoryConfigs: FilesystemDirectoryConfig[]): void {
+        for (const dir of fsDirectoryConfigs) {
+            this.filesystemFileStore.add(dir.urlPrefix,
+                                         new DirectoryFileStore(dir.path,
+                                                                dir.ephemeral ? Liveness.ephemeral : Liveness.none,
+                                                                dir.secure, dir.index));
+        }
+    }
+
     // Add the cache-control header appropriate for the liveness.
     private addCacheControl(response: http.ServerResponse, liveness: Liveness, found: boolean): void {
         const maxAge: number = (found ? this.foundCacheTimes : this.notFoundCacheTimes).get(liveness)!;
@@ -462,6 +488,8 @@ export class VideoServer {
                       isHead: boolean,
                       liveness: Liveness,
                       timeToFarEdgePreavailability: number): void {
+        assertNonNull(request.socket);
+        assertNonNull(request.socket.remoteAddress);
         assertNonNull(request.url);
 
         const doHead = (): void => {
@@ -532,9 +560,56 @@ export class VideoServer {
             response.end();
             return;
         } else if (liveness !== Liveness.farEdge) {
-            response.statusCode = HttpStatus.NOT_FOUND;
-            this.addCacheControl(response, liveness, false);
-            response.end();
+            // Don't allow "../" style attacks.
+            if (request.url.includes("..")) {
+                response.statusCode = HttpStatus.NOT_FOUND;
+                this.addCacheControl(response, liveness, false);
+                response.end();
+                return;
+            }
+
+            // Search the filesystem for the requested URL.
+            void (async (url: string, address: string, resp: ServerResponse): Promise<void> => {
+                // Try to find the resource.
+                const result: FilesystemFileStoreResult | null = await this.filesystemFileStore.get(url);
+
+                // If the resource was not found, 404.
+                if (result === null) {
+                    resp.statusCode = HttpStatus.NOT_FOUND;
+                    this.addCacheControl(resp, liveness, false);
+                    resp.end();
+                    return;
+                }
+
+                // If the resource is secure, and the requester is not, 403.
+                if (result.secure && !this.validateSecureRequest(address, resp)) {
+                    return;
+                }
+
+                // Found!
+                resp.statusCode = HttpStatus.OK;
+
+                // Set cache control.
+                this.addCacheControl(resp, result.liveness, true);
+
+                // Set the Content-Type header.
+                let mimetype: string | null | undefined = this.config.filesystem.mimetypes[result.filenameExtension];
+                if (mimetype === undefined) {
+                    // Try builtin mimetypes if there's no entry in the configuration. This lookup does not happen if
+                    // the mimetype is in the map, but is null.
+                    mimetype = builtinMimetypes[result.filenameExtension];
+                }
+                if (mimetype !== undefined && mimetype !== null) {
+                    // Set the Content-Type header if a mimetype is found (and not set to null).
+                    resp.setHeader("Content-Type", mimetype);
+                }
+
+                // Write the file and finish.
+                if (!isHead) {
+                    resp.write(result.buffer);
+                }
+                resp.end();
+            })(request.url, request.socket.remoteAddress, response);
             return;
         }
 

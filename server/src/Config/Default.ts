@@ -14,6 +14,13 @@ export const defaultAudioConfig = {
     codec: "aac"
 };
 
+export const defaultFilesystemDirectoryConfig = {
+    urlPrefix: "/",
+    index: "",
+    secure: false,
+    ephemeral: false
+};
+
 export const defaultConfig = {
     audio: {
         configs: []
@@ -27,6 +34,10 @@ export const defaultConfig = {
         interleave: true,
         interleavedDirectDashSegments: false,
         interleaveTimestampInterval: 100
+    },
+    filesystem: {
+        directories: [],
+        mimetypes: {}
     },
     network: {
         nonLiveCacheTime: 600,

@@ -120,6 +120,36 @@ export interface CodecOptions {
 }
 
 /**
+ * Configuration to serve a directory from the filesystem.
+ */
+export interface FilesystemDirectoryConfig {
+    /**
+     * The URL prefix to match.
+     */
+    urlPrefix: string,
+
+    /**
+     * The path in the filesystem to serve from.
+     */
+    path: string,
+
+    /**
+     * The filename to use if none is given in the request.
+     */
+    index: string,
+
+    /**
+     * Whether or not this directory should be accessible only in secure contexts (e.g: localhost.)
+     */
+    secure: boolean,
+
+    /**
+     * Whether or not the cache control should be ephemeral.
+     */
+    ephemeral: boolean
+}
+
+/**
  * Server configuration.
  */
 export interface Config {
@@ -192,6 +222,21 @@ export interface Config {
          * The timestamps are used for buffer control.
          */
         interleaveTimestampInterval: number
+    },
+
+    /**
+     * Configuration for serving from the filesystem.
+     */
+    filesystem: {
+        /**
+         * A list of directory configurations to serve.
+         */
+        directories: FilesystemDirectoryConfig[],
+
+        /**
+         * A map of mimetypes. Use null to remove a builtin mimetype.
+         */
+        mimetypes: Record<string, string | null>
     },
 
     /**

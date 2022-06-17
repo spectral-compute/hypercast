@@ -4,7 +4,7 @@ import * as ckis from "@ckitching/typescript-is";
 import {assertNonNull} from "live-video-streamer-common";
 
 import {Config, VideoConfig} from "./Spec";
-import {defaultConfig, defaultVideoConfig, defaultAudioConfig} from "./Default";
+import {defaultConfig, defaultVideoConfig, defaultAudioConfig, defaultFilesystemDirectoryConfig} from "./Default";
 export * from "./Spec";
 
 export function computeSegmentDuration(segmentLengthMultiplier: number,
@@ -113,6 +113,9 @@ export function applyDefaultConfig(config: unknown): Config {
         },
         audio: {
             configs: unknown[]
+        },
+        filesystem: {
+            directories: unknown[]
         }
     }
 
@@ -127,6 +130,11 @@ export function applyDefaultConfig(config: unknown): Config {
     // Audio configuration.
     for (let i = 0; i < result.audio.configs.length; i++) {
         result.audio.configs[i] = apply(defaultAudioConfig, result.audio.configs[i]);
+    }
+
+    // Filesystem configuration.
+    for (let i = 0; i < result.filesystem.directories.length; i++) {
+        result.filesystem.directories[i] = apply(defaultFilesystemDirectoryConfig, result.filesystem.directories[i]);
     }
 
     if (!ckis.equals<Config>(result)) {
