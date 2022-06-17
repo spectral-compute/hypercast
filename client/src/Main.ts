@@ -116,6 +116,7 @@ export class Player {
         if (!this.verbose) {
             return;
         }
+        this.startTime = Date.now();
         this.verboseInterval = setInterval((): void => {
             this.printVerboseInvervalInfo();
         }, 1000);
@@ -414,6 +415,7 @@ export class Player {
         const sNetStats = this.bctrl!.getNetworkTimingStats(true);
 
         console.log(
+            `Run time: ${(Date.now() - this.startTime!) / 1000} s\n` +
             `Video buffer length: ${videoBufferLength} ms\n` +
             `Audio buffer length: ${audioBufferLength} ms\n` +
             `Combined buffer length: ${combinedBufferLength} ms\n` +
@@ -477,4 +479,7 @@ export class Player {
 
     // State machine.
     private electiveChangeInProgress: boolean = false;
+
+    // Debug/performance tracking related stuff.
+    private startTime: number | null = null;
 }
