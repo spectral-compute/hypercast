@@ -520,7 +520,9 @@ export class VideoServer {
             if (this.config.network.origin) {
                 response.setHeader("Access-Control-Allow-Origin", this.config.network.origin);
             }
-            response.write(this.segmentIndexDescriptors.get(request.url)!.toJson());
+            if (!isHead) {
+                response.write(this.segmentIndexDescriptors.get(request.url)!.toJson());
+            }
             response.end();
             return;
         } else if (liveness === Liveness.farEdge && timeToFarEdgePreavailability > 0) {
