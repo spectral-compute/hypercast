@@ -374,8 +374,8 @@ export class BufferControl {
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.
     private readonly timestampAutoBufferMax = 0.995;
     private readonly timestampAutoBufferMin = 0.99;
-    private readonly timestampAutoBufferMinMaxMinExtraDiff = 100; // Extra, on top of the sync clock period.
-    private readonly timestampAutoBufferExtra = 100;
+    private readonly timestampAutoBufferMinMaxMinExtraDiff = 250; // Extra, on top of the sync clock period.
+    private readonly timestampAutoBufferExtra = 180; // 3x maximum opus frame size.
     private readonly syncClockPeriod = 100;
     private readonly minPlaybackRate = 0.5;
     private readonly maxPlaybackRate = 2;
