@@ -41,6 +41,9 @@ module.exports = (env, argv) => {
     config.plugins.push(new webpack.DefinePlugin({
         "process.env.INFO_URL": defEnv("INFO_URL", "http://localhost:8080/live/info.json")
     }));
+    config.plugins.push(new webpack.DefinePlugin({
+        "process.env.SECONDARY_VIDEO": defEnv("SECONDARY_VIDEO", false)
+    }));
 
     return config;
 };

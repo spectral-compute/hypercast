@@ -4,6 +4,7 @@ declare namespace process {
     let env: {
         INFO_URL: string
         NODE_ENV: string
+        SECONDARY_VIDEO: boolean
     };
 }
 
@@ -21,14 +22,18 @@ audio.addEventListener("error", (): void => {
 });
 
 /* Attach secondary view. */
-video.addEventListener("loadedmetadata", (): void => {
-    const secondaryVideo = document.getElementById("secondaryVideo") as HTMLVideoElement;
-    secondaryVideo.muted = true;
-    /* eslint "@typescript-eslint/no-unsafe-assignment": "off", "@typescript-eslint/no-unsafe-member-access": "off",
-              "@typescript-eslint/no-unsafe-call": "off" */
-    secondaryVideo.srcObject = (video as any).captureStream(); // Capture stream isn't in TypeScript's types.
-    void secondaryVideo.play();
-});
+const secondaryVideo = document.getElementById("secondaryVideo") as HTMLVideoElement;
+if (process.env.SECONDARY_VIDEO) {
+    video.addEventListener("loadedmetadata", (): void => {
+        secondaryVideo.muted = true;
+        /* eslint "@typescript-eslint/no-unsafe-assignment": "off", "@typescript-eslint/no-unsafe-member-access": "off",
+                  "@typescript-eslint/no-unsafe-call": "off" */
+        secondaryVideo.srcObject = (video as any).captureStream(); // Capture stream isn't in TypeScript's types.
+        void secondaryVideo.play();
+    });
+} else {
+    secondaryVideo.hidden = true;
+}
 
 /* Create the player. */
 const player = new lvsc.Player(infoUrl, video, audio, process.env.NODE_ENV === "development");
