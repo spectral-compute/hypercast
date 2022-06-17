@@ -4,6 +4,7 @@ declare namespace process {
     let env: {
         INFO_URL: string
         NODE_ENV: string
+        SECONDARY_AUDIO: boolean
         SECONDARY_VIDEO: boolean
     };
 }
@@ -36,7 +37,8 @@ if (process.env.SECONDARY_VIDEO) {
 }
 
 /* Create the player. */
-const player = new lvsc.Player(infoUrl, video, audio, process.env.NODE_ENV === "development");
+const player = new lvsc.Player(infoUrl, video, process.env.SECONDARY_AUDIO ? audio : null,
+                               process.env.NODE_ENV === "development");
 
 /* Error handling. */
 player.onError = (e: string): void => {
