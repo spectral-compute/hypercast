@@ -401,7 +401,7 @@ export class Player {
         const audioBufferLength = this.audio ? this.bctrl!.getBufferLength(0) : NaN;
         const combinedBufferLength = this.audio ? Math.min(videoBufferLength, audioBufferLength) : videoBufferLength;
 
-        const [minBuffer, maxBuffer] = this.bctrl!.getBufferTargets();
+        const maxBuffer = this.bctrl!.getBufferTarget();
         const catchUpStats = this.bctrl!.getCatchUpStats();
 
         const videoUnprunedBufferLength =
@@ -447,7 +447,7 @@ export class Player {
                                              ` (${sNetStats.delayMax - sNetStats.delayMin} ms)\n` +
             `Catch up events: n = ${catchUpStats.eventCount}\n` +
             `                 µ = ${catchUpStats.averageTimeBetweenEvents / 1000} s\n` +
-            `Buffer targets: ${minBuffer} ms - ${maxBuffer} ms\n`
+            `Buffer target: ${maxBuffer} ms\n`
         );
     }
 

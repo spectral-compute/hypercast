@@ -47,7 +47,7 @@ export class BufferControl {
     start(): void {
         this.catchUpEvents = 0;
         this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+        this.lastCatchUpEventClusterEnd = 0;
 
         this.interval = setInterval((): void => {
             this.bufferControlTick();
@@ -107,47 +107,44 @@ export class BufferControl {
         this.secondarySyncTolerance = 100;
         this.catchUpEvents = 0;
         this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+        this.lastCatchUpEventClusterEnd = 0;
     }
 
     // Should get 3 seconds overall. Intended for the minimum quality to cope with poor connections/CDN buffering.
     setSaferLatency(): void {
         this.autoBuffer = false;
-        this.minBuffer = 750;
         this.maxBuffer = 1750;
         this.secondarySyncTolerance = 100;
         this.catchUpEvents = 0;
         this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+        this.lastCatchUpEventClusterEnd = 0;
     }
 
     // Should get 2 seconds overall.
     setLowLatency(): void {
         this.autoBuffer = false;
-        this.minBuffer = 500;
         this.maxBuffer = 1000;
         this.secondarySyncTolerance = 100;
         this.catchUpEvents = 0;
         this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+        this.lastCatchUpEventClusterEnd = 0;
     }
 
     // Should get 1 second overall.
     setUltraLowLatency(): void {
         this.autoBuffer = false;
-        this.minBuffer = 50;
         this.maxBuffer = 100;
         this.secondarySyncTolerance = 500; // It shouldn't, but audio needs more tolerance than video.
         this.catchUpEvents = 0;
         this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+        this.lastCatchUpEventClusterEnd = 0;
     }
 
     /**
      * Get the current buffer targets.
      */
-    getBufferTargets(): [number, number] {
-        return [this.minBuffer, this.maxBuffer];
+    getBufferTarget(): number {
+        return this.maxBuffer;
     }
 
     /**
@@ -190,26 +187,24 @@ export class BufferControl {
     }
 
     private bufferControlTick(): void {
-        const currentRate = this.primaryMediaElement.playbackRate;
+        const now = Date.now().valueOf();
         const bufferLength = this.getBufferLength();
 
-        /* If we've fallen too far behind, or if there's a gap we need to seek over, use a seek to get to the end of the
-           buffer. */
-        if (bufferLength > this.skipThreshold || this.primaryMediaElement.buffered.length > 1) {
+        /* When we first start playing, we need to seek to the end of the buffer. We also do this if the buffer gets
+           so far out of sync the less aggressive sync operation below doesn't work (for some reason). */
+        if (this.lastCatchUpEventClusterEnd <= now && bufferLength > this.skipThreshold) {
             const seekRange = this.primaryMediaElement.seekable;
             if (seekRange.length === 0) {
-                if (this.verbose) {
-                    console.warn("Cannot seek to catch up");
-                }
-                this.syncSecondaryMediaElements();
                 return;
             }
-
-            this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
-            if (this.verbose && process.env.NODE_ENV === "development") {
-                console.debug("Seek to catch up");
+            if (this.lastCatchUpEventClusterEnd !== 0) {
+                if (this.verbose && process.env.NODE_ENV === "development") {
+                    console.debug("Aggressive seek to catch up");
+                }
+                this.catchUpEvents++;
             }
-            this.syncSecondaryMediaElements();
+            this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
+            this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
             return;
         }
 
@@ -217,43 +212,38 @@ export class BufferControl {
         if (this.autoBuffer) {
             const delays: number[] = this.getSortedTimestampDelays();
             if (delays.length < 100) {
-                this.minBuffer = 500;
                 this.maxBuffer = 1000;
             } else {
-                this.minBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMin)]! - delays[0]!;
-                this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]!;
-                const minDiff = this.timestampAutoBufferMinMaxMinExtraDiff + this.syncClockPeriod;
-                if (this.maxBuffer - this.minBuffer < minDiff) {
-                    this.maxBuffer = this.minBuffer + minDiff;
-                }
-                this.minBuffer += this.timestampAutoBufferExtra;
-                this.maxBuffer += this.timestampAutoBufferExtra;
+                this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
+                                 this.timestampAutoBufferExtra;
             }
         }
 
-        /* If we have less buffer than the minimum set, then no fast play. */
-        if (bufferLength <= this.minBuffer && currentRate > 1) {
-            this.primaryMediaElement.playbackRate = 1;
+        /* If we have sufficiently little buffer that we don't need to skip, then just ensure the secondary media
+           element is in sync.*/
+        if (bufferLength <= this.maxBuffer) {
             this.syncSecondaryMediaElements();
             return;
         }
 
-        /* If we're between the minimum length and the target length, use hysteresis: keep playing at a normal rate if
-           we were already doing so. If not, then the catch-up logic in the next step will apply. */
-        if (bufferLength <= this.maxBuffer && currentRate === 1) {
+        /* Give the seeking a chance to catch up if we've *just* done a seek. */
+        if (this.lastCatchUpEventClusterEnd >= now) {
             this.syncSecondaryMediaElements();
             return;
         }
-
-        /* Otherwise, apply a sped-up rate. */
-        this.primaryMediaElement.playbackRate = this.maxPlaybackRate;
 
         /* Also, if we weren't already playing fast, then this is a new "buffering" event. */
-        const now = Date.now().valueOf();
-        if (currentRate === 1 && this.lastCatchUpEventClusterEnd < now) {
-            this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
-            this.catchUpEvents++;
+        const seekRange = this.primaryMediaElement.seekable;
+        if (seekRange.length === 0) {
+            if (this.verbose) {
+                console.warn("Cannot seek to catch up");
+            }
+            this.syncSecondaryMediaElements();
+            return;
         }
+        this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
+        this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
+        this.catchUpEvents++;
     }
 
     /**
@@ -373,8 +363,6 @@ export class BufferControl {
     // Settings.
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.
     private readonly timestampAutoBufferMax = 0.995;
-    private readonly timestampAutoBufferMin = 0.99;
-    private readonly timestampAutoBufferMinMaxMinExtraDiff = 250; // Extra, on top of the sync clock period.
     private readonly timestampAutoBufferExtra = 180; // 3x maximum opus frame size.
     private readonly syncClockPeriod = 100;
     private readonly minPlaybackRate = 0.5;
@@ -392,7 +380,6 @@ export class BufferControl {
 
     // Buffer mode.
     private autoBuffer: boolean = true;
-    private minBuffer: number = 0;
     private maxBuffer: number = 0;
     private secondarySyncTolerance: number = 0;
 
