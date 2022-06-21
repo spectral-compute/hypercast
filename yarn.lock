@@ -5713,9 +5713,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "live-video-streamer@workspace:."
   dependencies:
-    "@typescript-eslint/eslint-plugin": ^5.23.0
-    "@typescript-eslint/parser": ^5.23.0
-    eslint: ^8.15.0
     ts-patch: ^2.0.1
     typedoc: ^0.22.15
     typedoc-plugin-markdown: ^3.12.1
