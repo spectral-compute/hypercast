@@ -5666,9 +5666,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"live-video-streamer-demo-client@workspace:demo-client":
+"live-video-streamer-dev-client@workspace:dev-client":
   version: 0.0.0-use.local
-  resolution: "live-video-streamer-demo-client@workspace:demo-client"
+  resolution: "live-video-streamer-dev-client@workspace:dev-client"
   dependencies:
     "@babel/core": ^7.17.10
     "@typescript-eslint/eslint-plugin": ^5.23.0

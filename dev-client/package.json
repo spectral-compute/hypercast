@@ -1,6 +1,6 @@
 {
-  "name": "live-video-streamer-demo-client",
-  "description": "Demo client for ultra low-latency live video streaming over CDN",
+  "name": "live-video-streamer-dev-client",
+  "description": "Development client for ultra low-latency live video streaming over CDN",
   "author": "Spectral Compute",
   "license": "Custom",
   "private": true,

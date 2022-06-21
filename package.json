@@ -8,15 +8,15 @@
   "workspaces": [
     "client",
     "common",
-    "demo-client",
+    "dev-client",
     "server"
   ],
   "scripts": {
-    "bundle": "(cd server && yarn bundle \"$@\") && (cd client && yarn bundle \"$@\") && (cd demo-client && yarn bundle \"$@\")",
-    "bundle-dev": "(cd server && yarn bundle-dev \"$@\") && (cd client && yarn bundle-dev \"$@\") && (cd demo-client && yarn bundle-dev \"$@\")",
+    "bundle": "(cd server && yarn bundle \"$@\") && (cd client && yarn bundle \"$@\") && (cd dev-client && yarn bundle \"$@\")",
+    "bundle-dev": "(cd server && yarn bundle-dev \"$@\") && (cd client && yarn bundle-dev \"$@\") && (cd dev-client && yarn bundle-dev \"$@\")",
     "clean": "rm -rf docs/dist && yarn foreach clean && rm -rf node_modules .yarn */node_modules",
     "docs": "rm -rf docs/dist && docs/build.sh docs/dist",
-    "foreach": "(cd common && yarn \"$@\") && (cd client && yarn \"$@\") && (cd demo-client && yarn \"$@\") && (cd server && yarn \"$@\")",
+    "foreach": "(cd common && yarn \"$@\") && (cd client && yarn \"$@\") && (cd dev-client && yarn \"$@\") && (cd server && yarn \"$@\")",
     "test": "(cd common && yarn test) && (cd server && yarn test) && (cd client && yarn test)"
   },
   "packageManager": "yarn@3.2.0",
