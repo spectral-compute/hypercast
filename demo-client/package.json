@@ -1,0 +1,38 @@
+{
+  "name": "live-video-streamer-demo-client",
+  "description": "Demo client for ultra low-latency live video streaming over CDN",
+  "author": "Spectral Compute",
+  "license": "Custom",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "bundle": "../cra-build-helper.sh build \"$@\"",
+    "bundle-dev": "../cra-build-helper.sh build \"$@\"",
+    "clean": "rm -rf build",
+    "lint": "node node_modules/eslint/bin/eslint.js --max-warnings=0 --ext .ts --ext .tsx .",
+    "start": "../cra-build-helper.sh start \"$@\""
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "dependencies": {
+    "@types/node": "^17.0.34",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "dotenv": "^16.0.1",
+    "react": "^18.2.0",
+    "react-app-rewired": "^2.2.1",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "typescript": "^4.6.4"
+  }
+}
