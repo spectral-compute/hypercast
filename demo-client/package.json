@@ -6,11 +6,11 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "bundle": "../cra-build-helper.sh build \"$@\"",
-    "bundle-dev": "../cra-build-helper.sh build \"$@\"",
+    "bundle": "(cd ../client && yarn bundle \"$@\") && ../cra-build-helper.sh build \"$@\"",
+    "bundle-dev": "(cd ../client && yarn bundle-dev \"$@\") && ../cra-build-helper.sh build \"$@\"",
     "clean": "rm -rf build",
     "lint": "node node_modules/eslint/bin/eslint.js --max-warnings=0 --ext .ts --ext .tsx .",
-    "start": "../cra-build-helper.sh start \"$@\""
+    "start": "(cd ../client && yarn bundle-dev \"$@\") && ../cra-build-helper.sh start \"$@\""
   },
   "browserslist": {
     "production": [
@@ -29,6 +29,7 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "dotenv": "^16.0.1",
+    "live-video-streamer-client": "workspace:^",
     "react": "^18.2.0",
     "react-app-rewired": "^2.2.1",
     "react-dom": "^18.2.0",
