@@ -8,6 +8,7 @@ export class NullityAssertionError extends Error {}
  * Asserts that the given object is non-null, narrowing an object to a non-null type.
  */
 export function assertNonNull<T>(x: T, message?: string): asserts x is NonNullable<T> {
+    // eslint-disable-next-line @typescript-eslint/dot-notation
     if (process.env["NODE_ENV"] === "production") {
         return;
     }
