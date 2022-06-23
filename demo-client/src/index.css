@@ -5,3 +5,19 @@ video {
     width: 1600px;
     height: 900px;
 }
+
+a {
+    color: #0000cf;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #7f7fff;
+}
+
+.timeis {
+    font-size: 36px;
+    text-align: right;
+    width: 525px;
+}
+
