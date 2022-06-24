@@ -12,7 +12,8 @@ export class Player {
      *              allows for better buffer control.
      * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement | null, verbose: boolean = false) {
+    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement | null = null,
+                verbose: boolean = false) {
         this.infoUrl = infoUrl;
         this.video = video;
         this.audio = audio;
