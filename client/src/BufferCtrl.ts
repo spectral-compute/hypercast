@@ -190,24 +190,6 @@ export class BufferControl {
         const now = Date.now().valueOf();
         const bufferLength = this.getBufferLength();
 
-        /* When we first start playing, we need to seek to the end of the buffer. We also do this if the buffer gets
-           so far out of sync the less aggressive sync operation below doesn't work (for some reason). */
-        if (this.lastCatchUpEventClusterEnd <= now && bufferLength > this.skipThreshold) {
-            const seekRange = this.primaryMediaElement.seekable;
-            if (seekRange.length === 0) {
-                return;
-            }
-            if (this.lastCatchUpEventClusterEnd !== 0) {
-                if (this.verbose && process.env.NODE_ENV === "development") {
-                    console.debug("Aggressive seek to catch up");
-                }
-                this.catchUpEvents++;
-            }
-            this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
-            this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpEventDuration;
-            return;
-        }
-
         /* Figure out the target buffer size. */
         if (this.autoBuffer) {
             const delays: number[] = this.getSortedTimestampDelays();
@@ -232,7 +214,7 @@ export class BufferControl {
             return;
         }
 
-        /* Also, if we weren't already playing fast, then this is a new "buffering" event. */
+        /* We're far enough behind to want to skip ahead. */
         const seekRange = this.primaryMediaElement.seekable;
         if (seekRange.length === 0) {
             if (this.verbose) {
@@ -243,7 +225,9 @@ export class BufferControl {
         }
         this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
         this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
-        this.catchUpEvents++;
+        if (this.lastCatchUpEventClusterEnd !== 0) {
+            this.catchUpEvents++; // Not just the initial seek that always has to happen.
+        }
     }
 
     /**
@@ -367,7 +351,6 @@ export class BufferControl {
     private readonly syncClockPeriod = 100;
     private readonly minPlaybackRate = 0.5;
     private readonly maxPlaybackRate = 2;
-    private readonly skipThreshold = 4000;
     private readonly secondarySkipThreshold = 500;
     private readonly catchUpEventDuration = 2000;
     private readonly secondarySeekTimeout = 10; // If we were seeking for too long (in ticks), we probably got stuck.
