@@ -2,6 +2,11 @@
 <html>
     <head>
         <style>
+            .timeis {
+                font-size: 36px;
+                text-align: right;
+                width: 525px;
+            }
             .ui {
                 margin-bottom: 2px;
             }
@@ -22,6 +27,14 @@
         <link rel="icon" href="data:," />
     </head>
     <body>
+        <div class="timeis">
+            <a href="https://time.is/UTC" id="time_is_link" target="_blank"
+               rel="external nofollow noopener noreferrer">The time in UTC is</a>
+            <span id="UTC_za00"></span>
+            <br />
+        </div>
+        <script src="//widget.time.is/t.js"></script>
+        <script>time_is_widget.init({UTC_za00:{}});</script>
         <video id="video" class="primary"></video>
         <video id="secondaryVideo" class="secondary"></video>
         <audio id="audio"></audio>
