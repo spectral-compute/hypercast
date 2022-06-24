@@ -204,7 +204,7 @@ export class BufferControl {
                 this.catchUpEvents++;
             }
             this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
-            this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpInitDuration;
+            this.lastCatchUpEventClusterEnd = Date.now().valueOf() + this.catchUpEventDuration;
             return;
         }
 
@@ -370,7 +370,6 @@ export class BufferControl {
     private readonly skipThreshold = 4000;
     private readonly secondarySkipThreshold = 500;
     private readonly catchUpEventDuration = 2000;
-    private readonly catchUpInitDuration = 10000;
     private readonly secondarySeekTimeout = 10; // If we were seeking for too long (in ticks), we probably got stuck.
 
     // Constructor inputs.
