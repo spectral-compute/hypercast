@@ -1,6 +1,7 @@
 import * as BufferCtrl from "./BufferCtrl";
 import {TimestampInfo} from "./Deinterleave";
 import * as Stream from "./Stream";
+import {DebugHandler} from "./Debug"
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 
@@ -78,7 +79,8 @@ export class Player {
             });
 
             /* Set up buffer control for the player. */
-            this.bctrl = new BufferCtrl.BufferControl(this.video, this.audio ? [this.audio] : [], this.verbose);
+            this.bctrl = new BufferCtrl.BufferControl(this.video, this.audio ? [this.audio] : [], this.verbose,
+                                                      this.debugHandler);
 
             /* Set up the "on new source playing" event handler. */
             this.stream.onNewStreamStart = (): void => {
@@ -317,6 +319,18 @@ export class Player {
     }
 
     /**
+     * @internal
+     *
+     * Set the handler to receive the performance and debugging information the player can generate.
+     */
+    setDebugHandler(debugHandler: DebugHandler): void {
+        if (process.env.NODE_ENV !== "development") {
+            throw Error("Player.setDebugHandler is for development only.");
+        }
+        this.debugHandler = debugHandler;
+    }
+
+    /**
      * Called whenever the media source changes (i.e: change of quality or change of angle).
      *
      * Note that a call to setAngle() or setQuality() will always call this event to fire, even if no actual change
@@ -483,4 +497,5 @@ export class Player {
 
     // Debug/performance tracking related stuff.
     private startTime: number | null = null;
+    private debugHandler: DebugHandler | null = null;
 }

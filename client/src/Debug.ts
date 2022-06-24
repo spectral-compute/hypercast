@@ -1,3 +1,6 @@
+import {BufferControl} from "./BufferCtrl";
+import {TimestampInfo} from "./Deinterleave";
+
 /**
  * Addler32 checksum for debugging.
  *
@@ -25,4 +28,59 @@ export class Addler32 {
     private s1: number = 1;
     private s2: number = 0;
     private length: number = 0;
+}
+
+/**
+ * Information about the buffer control status at the start of a buffer control
+ * tick.
+ *
+ * This can capture useful information about the tick, but it is especially
+ * meant to capture information that would be difficult to get via other buffer
+ * control interfaces, such as the initial buffer length (which might change
+ * during the time processing takes).
+ */
+export interface BufferControlTickInfo
+{
+    /**
+     * When the tick happened.
+     */
+    timestamp: number;
+
+    /**
+     * The length of the primary media element's buffer at the start of the
+     * tick.
+     */
+    primaryBufferLength: number;
+
+    /**
+     * Whether a catch-up event happened.
+     */
+    catchUp: boolean;
+}
+
+/**
+ * Interface for debugging the player.
+ */
+export interface DebugHandler
+{
+    /**
+     * Called once the player has created the buffer control object.
+     *
+     * @param bctrl The created buffer control object. This is useful for
+     *              getting information about the current state of buffer
+     *              control.
+     */
+    setBufferControl(bctrl: BufferControl): void;
+
+    /**
+     * Called after a buffer control tick happens.
+     */
+    onBufferControlTick(tickInfo: BufferControlTickInfo): void;
+
+    /**
+     * Called when a new timestamp information object is available.
+     *
+     * @param timestampInfo The new timestamp information object.
+     */
+    onTimestamp(timestampInfo: TimestampInfo): void;
 }

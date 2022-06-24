@@ -1,4 +1,5 @@
 import {TimestampInfo} from "./Deinterleave";
+import {BufferControlTickInfo, DebugHandler} from "./Debug"
 
 export interface NetworkTimingStats {
     delayMean: number,
@@ -27,12 +28,19 @@ export class BufferControl {
      * @param primaryMediaElement The HTML media element to control the buffer level of.
      * @param secondaryMediaElements The secondary media elements to keep in sync with the primary media element.
      * @param verbose If true, some debug information is printed.
+     * @param debugHandler The object to handle performance and debugging information.
      */
     constructor(primaryMediaElement: HTMLMediaElement, secondaryMediaElements: HTMLMediaElement[],
-                verbose: boolean) {
+                verbose: boolean, debugHandler: DebugHandler | null = null) {
         this.primaryMediaElement = primaryMediaElement;
         this.secondaryMediaElements = secondaryMediaElements;
         this.verbose = verbose;
+        if (process.env.NODE_ENV === "development") {
+            if (debugHandler !== null) {
+                debugHandler.setBufferControl(this);
+                this.debugHandler = debugHandler;
+            }
+        }
 
         for (let i = 0; i < secondaryMediaElements.length; i++) {
             this.secondaryMediaElementSync.push(0);
@@ -74,6 +82,12 @@ export class BufferControl {
         });
         this.timestampInfos = (sliceStart < 0) ? [] : this.timestampInfos.slice(sliceStart, this.timestampInfos.length);
         this.timestampInfos.push(timestampInfo);
+
+        if (process.env.NODE_ENV === "development") {
+            if (this.debugHandler !== null) {
+                this.debugHandler.onTimestamp(timestampInfo);
+            }
+        }
     }
 
     /**
@@ -189,6 +203,11 @@ export class BufferControl {
     private bufferControlTick(): void {
         const now = Date.now().valueOf();
         const bufferLength = this.getBufferLength();
+        let tickInfo: BufferControlTickInfo = {
+            timestamp: now,
+            primaryBufferLength: bufferLength,
+            catchUp: false
+        };
 
         /* Figure out the target buffer size. */
         if (this.autoBuffer) {
@@ -205,12 +224,14 @@ export class BufferControl {
            element is in sync.*/
         if (bufferLength <= this.maxBuffer) {
             this.syncSecondaryMediaElements();
+            this.debugBufferControlTick(tickInfo);
             return;
         }
 
         /* Give the seeking a chance to catch up if we've *just* done a seek. */
         if (this.lastCatchUpEventClusterEnd >= now) {
             this.syncSecondaryMediaElements();
+            this.debugBufferControlTick(tickInfo);
             return;
         }
 
@@ -221,13 +242,28 @@ export class BufferControl {
                 console.warn("Cannot seek to catch up");
             }
             this.syncSecondaryMediaElements();
+            this.debugBufferControlTick(tickInfo);
             return;
         }
         this.primaryMediaElement.currentTime = seekRange.end(seekRange.length - 1);
         this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
         if (this.lastCatchUpEventClusterEnd !== 0) {
             this.catchUpEvents++; // Not just the initial seek that always has to happen.
+            tickInfo.catchUp = true;
         }
+
+        this.debugBufferControlTick(tickInfo);
+        return;
+    }
+
+    private debugBufferControlTick(tickInfo: BufferControlTickInfo): void {
+        if (process.env.NODE_ENV !== "development") {
+            return;
+        }
+        if (this.debugHandler === null) {
+            return;
+        }
+        this.debugHandler.onBufferControlTick(tickInfo);
     }
 
     /**
@@ -379,4 +415,7 @@ export class BufferControl {
     // Other internal stuff.
     private interval: number | null = null;
     private readonly seekStallMap = new Map<number, number>();
+
+    // Debugging.
+    private debugHandler: DebugHandler | null = null;
 }
