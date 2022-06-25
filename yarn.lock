@@ -5504,6 +5504,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chart.js@npm:^3.8.0":
+  version: 3.8.0
+  resolution: "chart.js@npm:3.8.0"
+  checksum: 0360212bf5d534effc8475a1aa705ba7257a315af368b5e8eecf476f0bd57a6bb80ad740e870d552f2d11e134dd1497ccef02950d7e626c21a400ff00ecf59af
+  languageName: node
+  linkType: hard
+
 "check-types@npm:^11.1.1":
   version: 11.1.2
   resolution: "check-types@npm:11.1.2"
@@ -10425,6 +10432,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "live-video-streamer@workspace:."
   dependencies:
+    chart.js: ^3.8.0
     ts-patch: ^2.0.1
     typedoc: ^0.22.15
     typedoc-plugin-markdown: ^3.12.1

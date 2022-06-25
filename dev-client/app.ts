@@ -1,4 +1,5 @@
 import * as lvsc from "live-video-streamer-client";
+import {AppDebugHandler} from "./debug";
 
 /* Configuration :) */
 const infoUrl = process.env.INFO_URL;
@@ -30,6 +31,11 @@ if (process.env.SECONDARY_VIDEO) {
 /* Create the player. */
 const player = new lvsc.Player(infoUrl, video, process.env.SECONDARY_AUDIO ? audio : null,
                                process.env.NODE_ENV === "development");
+
+/* Performance/debug event handling. */
+if (process.env.NODE_ENV === "development") {
+    player.setDebugHandler(new AppDebugHandler());
+}
 
 /* Error handling. */
 player.onError = (e: string): void => {
