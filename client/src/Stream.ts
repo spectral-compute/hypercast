@@ -15,6 +15,12 @@ const PreavailabilityMargin = 1500;
  */
 const DownloadSchedulerUpdatePeriod = 16;
 
+export interface ReceivedInfo {
+    streamIndex: number,
+    timestamp: number,
+    length: number
+}
+
 /**
  * Manages a media source buffer, and a queue of data to go with it.
  */
@@ -210,7 +216,8 @@ class Stream {
 class SegmentDownloader {
     constructor(info: API.SegmentIndexDescriptor, interleaved: boolean, streams: Stream[], streamIndex: number,
                 baseUrl: string, segmentDuration: number, segmentPreavailability: number,
-                onTimestamp: (timestampInfo: TimestampInfo) => void, onError: (description: string) => void) {
+                onTimestamp: (timestampInfo: TimestampInfo) => void, onReceived: (receivedInfo: ReceivedInfo) => void,
+                onError: (description: string) => void) {
         this.info = info;
         this.interleaved = interleaved;
         this.streams = streams;
@@ -219,6 +226,7 @@ class SegmentDownloader {
         this.segmentDuration = segmentDuration;
         this.segmentPreavailability = segmentPreavailability;
         this.onTimestamp = onTimestamp;
+        this.onReceived = onReceived;
         this.onError = onError;
 
         this.setSegmentDownloadSchedule(info);
@@ -364,6 +372,13 @@ class SegmentDownloader {
                 }
                 assertNonNull(value);
 
+                /* Notify the buffer control that we've received new data. */
+                this.onReceived({
+                    streamIndex: this.streamIndex,
+                    timestamp: Date.now(),
+                    length: value.length
+                });
+
                 /* Push the stream initialization before the segment. */
                 if (logicalSegmentIndex === null) {
                     logicalSegmentIndex = this.logicalSegmentIndex;
@@ -411,6 +426,7 @@ class SegmentDownloader {
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
     private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
+    private readonly onReceived: (receivedInfo: ReceivedInfo) => void;
     private readonly onError: (description: string) => void;
 
     private logicalSegmentIndex: number = 0;
@@ -423,12 +439,13 @@ class SegmentDownloader {
 export class MseWrapper {
     constructor(video: HTMLVideoElement, audio: HTMLAudioElement | null, segmentDuration: number,
                 segmentPreavailability: number, onTimestamp: (timestampInfo: TimestampInfo) => void,
-                onError: (description: string) => void) {
+                onReceived: (receivedInfo: ReceivedInfo) => void, onError: (description: string) => void) {
         this.video = video;
         this.audio = audio;
         this.segmentDuration = segmentDuration;
         this.segmentPreavailability = segmentPreavailability;
         this.onTimestamp = onTimestamp;
+        this.onReceived = onReceived;
         this.onError = onError;
     }
 
@@ -599,7 +616,7 @@ export class MseWrapper {
             this.segmentDownloader =
                 new SegmentDownloader(videoInfo, this.interleaved, streams, this.videoStreamIndex,
                                       this.baseUrl!, this.segmentDuration, this.segmentPreavailability,
-                                      this.onTimestamp, this.onError);
+                                      this.onTimestamp, this.onReceived, this.onError);
         }, audioInfo !== null);
     }
 
@@ -681,6 +698,7 @@ export class MseWrapper {
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
     private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
+    private readonly onReceived: (receivedInfo: ReceivedInfo) => void;
     private readonly onError: (description: string) => void;
 
     private videoMediaSource: MediaSource | null = null;

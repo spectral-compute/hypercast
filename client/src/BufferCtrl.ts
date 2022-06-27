@@ -1,4 +1,5 @@
 import {TimestampInfo} from "./Deinterleave";
+import {ReceivedInfo} from "./Stream";
 import {BufferControlTickInfo, DebugHandler} from "./Debug"
 
 export interface NetworkTimingStats {
@@ -88,6 +89,15 @@ export class BufferControl {
                 this.debugHandler.onTimestamp(timestampInfo);
             }
         }
+    }
+
+    /**
+     * To be called when new data is received from the stream.
+     *
+     * @param receivedInfo Information about the received data.
+     */
+    onRecieved(receivedInfo: ReceivedInfo) {
+        void receivedInfo;
     }
 
     /**

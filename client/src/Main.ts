@@ -1,5 +1,6 @@
 import * as BufferCtrl from "./BufferCtrl";
 import {TimestampInfo} from "./Deinterleave";
+import {ReceivedInfo} from "./Stream";
 import * as Stream from "./Stream";
 import {DebugHandler} from "./Debug"
 import {API} from "live-video-streamer-common";
@@ -71,6 +72,9 @@ export class Player {
                                                 this.serverInfo.segmentPreavailability,
             (timestampInfo: TimestampInfo): void => {
                 this.bctrl!.onTimestamp(timestampInfo);
+            },
+            (recievedInfo: ReceivedInfo): void => {
+                this.bctrl!.onRecieved(recievedInfo);
             },
             (description: string): void => {
                 if (this.onError) {
