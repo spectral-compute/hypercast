@@ -3,6 +3,7 @@ import {AppDebugHandler} from "./debug";
 
 /* Configuration :) */
 const infoUrl = process.env.INFO_URL;
+(document.getElementById("info_url")! as HTMLSpanElement).innerText = infoUrl;
 
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLVideoElement;
