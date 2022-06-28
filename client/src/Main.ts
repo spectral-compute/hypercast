@@ -42,7 +42,7 @@ export class Player {
             /* Extract and parse the server info. */
             assertType<API.ServerInfo>(serverInfo);
             this.serverInfo = serverInfo;
-            const urlPrefix = this.infoUrl.replace(/(?<=^([^:]+:[/]{2})[^/]+)[/].*$/, "");
+            const urlPrefix = this.infoUrl.replace(/^((?:([^:]+:[/]{2})[^/]+)?)[/].*$/, "$1");
 
             // Extract angle information.
             for (const angle of this.serverInfo.angles) {
