@@ -97,7 +97,11 @@ export class BufferControl {
      * @param receivedInfo Information about the received data.
      */
     onRecieved(receivedInfo: ReceivedInfo) {
-        void receivedInfo;
+        if (process.env.NODE_ENV === "development") {
+            if (this.debugHandler !== null) {
+                this.debugHandler.onReceived(receivedInfo);
+            }
+        }
     }
 
     /**

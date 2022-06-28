@@ -1,5 +1,6 @@
 import {BufferControl} from "./BufferCtrl";
 import {TimestampInfo} from "./Deinterleave";
+import {ReceivedInfo} from "./Stream";
 
 /**
  * Addler32 checksum for debugging.
@@ -83,4 +84,11 @@ export interface DebugHandler
      * @param timestampInfo The new timestamp information object.
      */
     onTimestamp(timestampInfo: TimestampInfo): void;
+
+    /**
+     * Called when new data is recived from the stream.
+     *
+     * @param receivedInfo Describes the received data.
+     */
+    onReceived(receivedInfo: ReceivedInfo): void;
 }
