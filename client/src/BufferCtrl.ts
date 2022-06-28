@@ -231,6 +231,7 @@ export class BufferControl {
             } else {
                 this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
                                  this.timestampAutoBufferExtra;
+                this.maxBuffer = Math.max(this.maxBuffer, this.timestampAutoMinTarget);
             }
         }
 
@@ -406,6 +407,7 @@ export class BufferControl {
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.
     private readonly timestampAutoBufferMax = 0.995;
     private readonly timestampAutoBufferExtra = 180; // 3x maximum opus frame size.
+    private readonly timestampAutoMinTarget = 500; // Minimum buffer target in ms to browsers that take time to seek.
     private readonly syncClockPeriod = 100;
     private readonly bufferExceedTickCounts = 3; // Number of buffer control ticks "grace period" for catch ups.
     private readonly minPlaybackRate = 0.5;
