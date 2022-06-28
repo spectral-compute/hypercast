@@ -238,6 +238,7 @@ export class BufferControl {
            element is in sync.*/
         if (bufferLength <= this.maxBuffer) {
             this.syncSecondaryMediaElements();
+            this.bufferExceededCount = 0;
             this.debugBufferControlTick(tickInfo);
             return;
         }
@@ -245,11 +246,18 @@ export class BufferControl {
         /* Give the seeking a chance to catch up if we've *just* done a seek. */
         if (this.lastCatchUpEventClusterEnd >= now) {
             this.syncSecondaryMediaElements();
+            this.bufferExceededCount = 0;
             this.debugBufferControlTick(tickInfo);
             return;
         }
 
         /* We're far enough behind to want to skip ahead. */
+        if (this.bufferExceededCount < this.bufferExceedTickCounts) {
+            this.bufferExceededCount++;
+            return;
+        }
+        this.bufferExceededCount = 0;
+
         const seekRange = this.primaryMediaElement.seekable;
         if (seekRange.length === 0) {
             if (this.verbose) {
@@ -399,6 +407,7 @@ export class BufferControl {
     private readonly timestampAutoBufferMax = 0.995;
     private readonly timestampAutoBufferExtra = 180; // 3x maximum opus frame size.
     private readonly syncClockPeriod = 100;
+    private readonly bufferExceedTickCounts = 3; // Number of buffer control ticks "grace period" for catch ups.
     private readonly minPlaybackRate = 0.5;
     private readonly maxPlaybackRate = 2;
     private readonly secondarySkipThreshold = 500;
@@ -417,6 +426,9 @@ export class BufferControl {
 
     // Network timing data.
     private timestampInfos: TimestampInfo[] = [];
+
+    // Buffer control state machine.
+    private bufferExceededCount: number = 0;
 
     // Tracking buffering performance.
     private catchUpEvents: number = 0;
