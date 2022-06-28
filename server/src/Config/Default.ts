@@ -1,5 +1,6 @@
 export const defaultVideoConfig = {
     bitrate: 3000,
+    minBitrate: null,
     crf: 25,
     width: 1920,
     height: 1080,

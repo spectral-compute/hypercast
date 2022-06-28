@@ -226,6 +226,20 @@ function getEncodeArgs(videoConfigs: VideoConfig[], audioConfigs: AudioConfig[],
             `-force_key_frames:v:${index}`, `expr:eq(mod(n, ${config.gop}), 0)`
         ]);
 
+        // Minimum bitrate.
+        if (config.codec === "h264" || config.codec === "h265") {
+            let minBitRate: number | null = config.minBitrate;
+            if (minBitRate === null) {
+                minBitRate = config.bitrate / 3; // Starting point for the calculation.
+                minBitRate = Math.min(minBitRate, 2048); // Never exceed 2 Mib/s (32 kB in 125 ms).
+                minBitRate = Math.max(minBitRate, 512); // Try to be at least 0.5 Mib/s (32 kB 500 ms).
+                minBitRate = Math.min(minBitRate, config.bitrate * 0.75); // Never be more than 75% of the max rate.
+            }
+            if (minBitRate !== 0) {
+                args = args.concat([`-minrate:v:${index}`, `${Math.floor(minBitRate)}k`]);
+            }
+        }
+
         // Special codec-specific options.
         switch (config.codec) {
             case "h264":

@@ -42,6 +42,7 @@ test("Default", (): void => {
             configs: [
                 {
                     bitrate: 3000,
+                    minBitrate: null,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -103,6 +104,7 @@ test("Override", (): void => {
             configs: [
                 {
                     bitrate: 3000,
+                    minBitrate: null,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -180,6 +182,7 @@ test("Filesystem", (): void => {
             configs: [
                 {
                     bitrate: 3000,
+                    minBitrate: null,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -248,6 +251,7 @@ test("Two video configs", (): void => {
             configs: [
                 {
                     bitrate: 2000,
+                    minBitrate: null,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -258,6 +262,7 @@ test("Two video configs", (): void => {
                 },
                 {
                     bitrate: 1000,
+                    minBitrate: null,
                     crf: 25,
                     width: 1920,
                     height: 1080,

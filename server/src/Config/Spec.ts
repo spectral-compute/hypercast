@@ -40,6 +40,17 @@ export interface VideoConfig {
     bitrate: number,
 
     /**
+     * The minimum bitrate in kBit/s for this video stream.
+     *
+     * This is useful for force-purging CDN buffers. There are trade-offs between bandwidth required, and latency in the
+     * presence of buffers. The default attempts to choose an appropriate value, but you may want to do the trade-off
+     * differently. This feature can be disabled entirely by setting to 0.
+     *
+     * Not all codecs support this. Currently, only h264 and h265 do.
+     */
+    minBitrate: number | null,
+
+    /**
      * Constant rate factor.
      *
      * For h264, see the [CRF section of the Ffmpeg h264 encoding guide](https://trac.ffmpeg.org/wiki/Encode/H.264#crf).
