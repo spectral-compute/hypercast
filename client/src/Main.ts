@@ -211,80 +211,6 @@ export class Player {
     }
 
     /**
-     * Get the list of possible latency settings.
-     *
-     * @return A list of strings describing each latency setting.
-     */
-    getLatencyOptions(): string[] {
-        return ["Auto", "Up to 2s (more smooth)", "Up to 1s (less smooth)", "Up to 3s (most reliable)"];
-    }
-
-    /**
-     * Determine whether or not user latency control is available.
-     *
-     * This can change whenever the onStartPlaying event fires.
-     *
-     * @return True if user latency control applies to the playing video, and false otherwise.
-     */
-    getLatencyAvailable(): boolean {
-        return true;
-    }
-
-    /**
-     * Get the index of the current quality.
-     *
-     * @return The index of the current latency setting. This indexes the options returned by getLatencyOptions().
-     */
-    getLatency(): number {
-        return this.latency;
-    }
-
-    /**
-     * Change the playing quality setting.
-     *
-     * To set a specific latency profile programatically, use `setLowLatency()`, `setUltraLowLatency()`, or
-     * `setSaferLatency()`.
-     *
-     * @param index The index of the new latency to use. This indexes the options returned by getLatencyOptions().
-     */
-    setLatency(index: number): void {
-        this.latency = index;
-        this.updateLatency();
-    }
-
-    /**
-     * Set the latency to automatic control.
-     */
-    setAutoLatency(): void {
-        this.latency = 0;
-        this.bctrl!.setLowLatency();
-    }
-
-    /**
-     * Set the latency to "low" (up to 2s).
-     */
-    setLowLatency(): void {
-        this.latency = 1;
-        this.bctrl!.setLowLatency();
-    }
-
-    /**
-     * Set the latency to "ultra-low" (up to 1s).
-     */
-    setUltraLowLatency(): void {
-        this.latency = 2;
-        this.bctrl!.setUltraLowLatency();
-    }
-
-    /**
-     * Set the latency to "safer" (up to 3s).
-     */
-    setSaferLatency(): void {
-        this.latency = 3;
-        this.bctrl!.setSaferLatency();
-    }
-
-    /**
      * Determine whether or not the currently playing video has audio.
      *
      * This can change whenever the onStartPlaying event fires.
@@ -348,36 +274,9 @@ export class Player {
     }
 
     /**
-     * This must be called whenever latency setting changes.
-     */
-    private updateLatency(): void {
-        if (!this.getLatencyAvailable()) {
-            this.bctrl!.setAutoLatency();
-            return;
-        }
-        switch (this.latency) {
-            case 0:
-                this.bctrl!.setAutoLatency();
-                break;
-            case 1:
-                this.bctrl!.setLowLatency();
-                break;
-            case 2:
-                this.bctrl!.setUltraLowLatency();
-                break;
-            case 3:
-                this.bctrl!.setSaferLatency();
-                break;
-        }
-    }
-
-    /**
      * This must be called whenever the current quality or angle changes.
      */
     private updateQualityAndAngle(): void {
-        /* We, in fact, also need to update the buffer control settings. */
-        this.updateLatency();
-
         /* Figure out which streams the quality corresponds to. */
         if (this.serverInfo.avMap.length > 0) {
             if (this.quality < this.serverInfo.avMap.length) {
@@ -465,7 +364,6 @@ export class Player {
     // Current settings.
     private angle: number = 0;
     private quality: number = 0;
-    private latency: number = 0;
 
     // Derived settings.
     private videoStream: number | null = null;

@@ -66,7 +66,6 @@ function setupUi(elective: boolean): void {
     /* Update the selectors. */
     setupSelector("angle", player.getAngleOptions(), player.getAngle());
     setupSelector("quality", getQualityOptionNames(player.getQualityOptions()), player.getQuality());
-    setupSelector("latency", player.getLatencyOptions(), player.getLatency(), player.getLatencyAvailable());
 
     /* Update the mute button. */
     document.getElementById("mute")!.hidden = !player.hasAudio() || player.getMuted();
@@ -97,10 +96,6 @@ angle.onchange = (): void => {
 const quality = document.getElementById("quality")! as HTMLSelectElement;
 quality.onchange = (): void => {
     player.setQuality(parseInt(quality.value));
-};
-const latency = document.getElementById("latency")! as HTMLSelectElement;
-latency.onchange = (): void => {
-    player.setLatency(parseInt(latency.value));
 };
 
 const mute = document.getElementById("mute")!;

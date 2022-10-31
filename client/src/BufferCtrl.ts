@@ -39,8 +39,6 @@ export class BufferControl {
                 this.debugHandler = debugHandler;
             }
         }
-
-        this.setLowLatency();
     }
 
     /**
@@ -111,41 +109,6 @@ export class BufferControl {
         return (buffered.end(buffered.length - 1) - this.mediaElement.currentTime) * 1000;
     }
 
-    // Automatically determine buffering.
-    setAutoLatency(): void {
-        this.autoBuffer = true;
-        this.catchUpEvents = 0;
-        this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = 0;
-    }
-
-    // Should get 3 seconds overall. Intended for the minimum quality to cope with poor connections/CDN buffering.
-    setSaferLatency(): void {
-        this.autoBuffer = false;
-        this.maxBuffer = 1750;
-        this.catchUpEvents = 0;
-        this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = 0;
-    }
-
-    // Should get 2 seconds overall.
-    setLowLatency(): void {
-        this.autoBuffer = false;
-        this.maxBuffer = 1000;
-        this.catchUpEvents = 0;
-        this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = 0;
-    }
-
-    // Should get 1 second overall.
-    setUltraLowLatency(): void {
-        this.autoBuffer = false;
-        this.maxBuffer = 100;
-        this.catchUpEvents = 0;
-        this.catchUpEventsStart = Date.now();
-        this.lastCatchUpEventClusterEnd = 0;
-    }
-
     /**
      * Get the current buffer targets.
      */
@@ -202,15 +165,13 @@ export class BufferControl {
         };
 
         /* Figure out the target buffer size. */
-        if (this.autoBuffer) {
-            const delays: number[] = this.getSortedTimestampDelays();
-            if (delays.length < 100) {
-                this.maxBuffer = 1000;
-            } else {
-                this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
-                                 this.timestampAutoBufferExtra;
-                this.maxBuffer = Math.max(this.maxBuffer, this.timestampAutoMinTarget);
-            }
+        const delays: number[] = this.getSortedTimestampDelays();
+        if (delays.length < 100) {
+            this.maxBuffer = 1000;
+        } else {
+            this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
+                             this.timestampAutoBufferExtra;
+            this.maxBuffer = Math.max(this.maxBuffer, this.timestampAutoMinTarget);
         }
 
         /* If we have sufficiently little buffer that we don't need to skip. */
@@ -290,7 +251,6 @@ export class BufferControl {
     private readonly verbose: boolean;
 
     // Buffer mode.
-    private autoBuffer: boolean = true;
     private maxBuffer: number = 0;
 
     // Network timing data.
