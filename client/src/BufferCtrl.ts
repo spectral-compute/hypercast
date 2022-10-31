@@ -30,8 +30,10 @@ export class BufferControl {
      * @param verbose If true, some debug information is printed.
      * @param debugHandler The object to handle performance and debugging information.
      */
-    constructor(mediaElement: HTMLMediaElement, verbose: boolean, debugHandler: DebugHandler | null = null) {
+    constructor(mediaElement: HTMLMediaElement, verbose: boolean, onRecommendDowngrade: (() => void),
+                debugHandler: DebugHandler | null = null) {
         this.mediaElement = mediaElement;
+        this.onRecommendDowngrade = onRecommendDowngrade;
         this.verbose = verbose;
         if (process.env.NODE_ENV === "development") {
             if (debugHandler !== null) {
@@ -93,6 +95,19 @@ export class BufferControl {
                 this.debugHandler.onReceived(receivedInfo);
             }
         }
+    }
+
+    /**
+     * to be called whenever a new stream starts being received by the streamer.
+     */
+    onNewStreamStart(): void {
+        // Now that we got a new stream (downgrade or otherwise), the buffering might be different.
+        this.timestampInfos = [];
+        this.catchUpEventsStart = Date.now();
+        this.lastCatchUpEventClusterEnd = 0;
+
+        // If we asked for a downgrade, we might have gotten it now, so stop waiting for it.
+        this.waitingForNewStream = false;
     }
 
     /**
@@ -174,6 +189,12 @@ export class BufferControl {
             this.maxBuffer = Math.max(this.maxBuffer, this.timestampAutoMinTarget);
         }
 
+        /* If the above algorithm is asking for this much buffer, then probably the network can't cope. */
+        if (this.maxBuffer >= this.timestampAutoBufferDowngrade && !this.waitingForNewStream) {
+            this.waitingForNewStream = true;
+            this.onRecommendDowngrade();
+        }
+
         /* If we have sufficiently little buffer that we don't need to skip. */
         if (bufferLength <= this.maxBuffer) {
             this.bufferExceededCount = 0;
@@ -242,16 +263,19 @@ export class BufferControl {
     private readonly timestampAutoBufferMax = 0.995;
     private readonly timestampAutoBufferExtra = 180; // 3x maximum opus frame size.
     private readonly timestampAutoMinTarget = 500; // Minimum buffer target in ms to browsers that take time to seek.
+    private readonly timestampAutoBufferDowngrade = 4000; // If data is this delayed, network is probably overloaded.
     private readonly syncClockPeriod = 100;
     private readonly bufferExceedTickCounts = 3; // Number of buffer control ticks "grace period" for catch ups.
     private readonly catchUpEventDuration = 2000;
 
     // Constructor inputs.
     private readonly mediaElement: HTMLMediaElement;
+    private readonly onRecommendDowngrade: (() => void); // Called when a quality downgrade is recommended.
     private readonly verbose: boolean;
 
     // Buffer mode.
     private maxBuffer: number = 0;
+    private waitingForNewStream: boolean = false;
 
     // Network timing data.
     private timestampInfos: TimestampInfo[] = [];

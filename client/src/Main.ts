@@ -73,20 +73,18 @@ export class Player {
             });
 
             /* Set up buffer control for the player. */
-            this.bctrl = new BufferCtrl.BufferControl(this.video, this.verbose, this.debugHandler);
-
-            /* Set up the "on new source playing" event handler. */
-            this.stream.onNewStreamStart = (): void => {
-                this.callOnStartPlaying(this.electiveChangeInProgress);
-                this.electiveChangeInProgress = false;
-            };
-
-            /* Set up stream downgrading. */
-            this.stream.onRecommendDowngrade = (): void => {
+            this.bctrl = new BufferCtrl.BufferControl(this.video, this.verbose, (): void => {
                 if (this.quality < this.qualityOptions.length - 1) {
                     this.quality++; // Quality is actually reversed.
                 }
                 this.updateQualityAndAngle();
+            }, this.debugHandler);
+
+            /* Set up the "on new source playing" event handler. */
+            this.stream.onNewStreamStart = (): void => {
+                this.bctrl!.onNewStreamStart();
+                this.callOnStartPlaying(this.electiveChangeInProgress);
+                this.electiveChangeInProgress = false;
             };
 
             /* Set the quality to an initial default. */

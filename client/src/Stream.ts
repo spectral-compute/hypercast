@@ -562,11 +562,6 @@ export class MseWrapper {
      */
     onNewStreamStart: (() => void) | null = null;
 
-    /**
-     * Called when a quality downgrade is recommended.
-     */
-    onRecommendDowngrade: (() => void) | null = null;
-
     private cleaup(): void {
         if (this.segmentDownloader) {
             this.segmentDownloader.stop();
