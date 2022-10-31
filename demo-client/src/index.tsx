@@ -15,7 +15,7 @@ declare namespace process {
 
 /* Create the player object. */
 const player: lvsc.Player = new lvsc.Player(process.env.REACT_APP_INFO_URL,
-                                            document.getElementById("video")! as HTMLVideoElement, null);
+                                            document.getElementById("video")! as HTMLVideoElement);
 
 /* Start. */
 async function init(): Promise<void> {

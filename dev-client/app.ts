@@ -7,12 +7,8 @@ const infoUrl = process.env.INFO_URL;
 
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLVideoElement;
-const audio = document.getElementById("audio")! as HTMLAudioElement;
 video.addEventListener("error", (): void => {
     document.getElementById("change")!.innerText = "Video error: " + video.error!.message;
-});
-audio.addEventListener("error", (): void => {
-    document.getElementById("change")!.innerText = "Audio error: " + audio.error!.message;
 });
 
 /* Attach secondary view. */
@@ -30,8 +26,7 @@ if (process.env.SECONDARY_VIDEO) {
 }
 
 /* Create the player. */
-const player = new lvsc.Player(infoUrl, video, process.env.SECONDARY_AUDIO ? audio : null,
-                               process.env.NODE_ENV === "development");
+const player = new lvsc.Player(infoUrl, video, process.env.NODE_ENV === "development");
 
 /* Performance/debug event handling. */
 if (process.env.NODE_ENV === "development") {

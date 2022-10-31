@@ -10,15 +10,11 @@ export class Player {
     /**
      * @param infoUrl The URL to the server's info JSON object.
      * @param video The video tag to play video into.
-     * @param video The audio tag to play audio into. If null, the video tag will be used, but a separate audio tag
-     *              allows for better buffer control.
      * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string, video: HTMLVideoElement, audio: HTMLAudioElement | null = null,
-                verbose: boolean = false) {
+    constructor(infoUrl: string, video: HTMLVideoElement, verbose: boolean = false) {
         this.infoUrl = infoUrl;
         this.video = video;
-        this.audio = audio;
         this.verbose = verbose;
     }
 
@@ -57,18 +53,12 @@ export class Player {
 
             /* Start muted. This helps prevent browsers from blocking the auto-play. */
             this.video.muted = true;
-            if (this.audio) {
-                this.audio.muted = true;
-            }
 
             /* Make sure the video is paused (no auto-play). */
             this.video.pause();
-            if (this.audio) {
-                this.audio.pause();
-            }
 
             /* Create the streamer. */
-            this.stream = new Stream.MseWrapper(this.video, this.audio, this.serverInfo.segmentDuration,
+            this.stream = new Stream.MseWrapper(this.video, this.serverInfo.segmentDuration,
                                                 this.serverInfo.segmentPreavailability,
             (timestampInfo: TimestampInfo): void => {
                 this.bctrl!.onTimestamp(timestampInfo);
@@ -83,8 +73,7 @@ export class Player {
             });
 
             /* Set up buffer control for the player. */
-            this.bctrl = new BufferCtrl.BufferControl(this.video, this.audio ? [this.audio] : [], this.verbose,
-                                                      this.debugHandler);
+            this.bctrl = new BufferCtrl.BufferControl(this.video, this.verbose, this.debugHandler);
 
             /* Set up the "on new source playing" event handler. */
             this.stream.onNewStreamStart = (): void => {
@@ -416,35 +405,22 @@ export class Player {
             return;
         }
 
-        const videoBufferLength = this.bctrl!.getBufferLength();
-        const audioBufferLength = this.audio ? this.bctrl!.getBufferLength(0) : NaN;
-        const combinedBufferLength = this.audio ? Math.min(videoBufferLength, audioBufferLength) : videoBufferLength;
-
+        const bufferLength = this.bctrl!.getBufferLength();
         const maxBuffer = this.bctrl!.getBufferTarget();
         const catchUpStats = this.bctrl!.getCatchUpStats();
 
         const videoUnprunedBufferLength =
             (this.video.buffered.length === 0) ? 0 :
             (this.video.buffered.end(this.video.buffered.length - 1) - this.video.buffered.start(0));
-        const audioUnprunedBufferLength =
-            (!this.audio || this.audio.buffered.length === 0) ? 0 :
-            (this.audio.buffered.end(this.audio.buffered.length - 1) - this.audio.buffered.start(0));
 
         const netStats = this.bctrl!.getNetworkTimingStats();
         const sNetStats = this.bctrl!.getNetworkTimingStats(true);
 
         console.log(
             `Run time: ${(Date.now() - this.startTime!) / 1000} s\n` +
-            `Video buffer length: ${videoBufferLength} ms\n` +
-            `Audio buffer length: ${audioBufferLength} ms\n` +
-            `Combined buffer length: ${combinedBufferLength} ms\n` +
-            `Extra video buffer length: ${videoBufferLength - combinedBufferLength} ms\n` +
-            `Extra audio buffer length: ${audioBufferLength - combinedBufferLength} ms\n` +
-            `Unpruned video buffer length: ${videoUnprunedBufferLength * 1000} ms\n` +
-            `Unpruned audio buffer length: ${audioUnprunedBufferLength * 1000} ms\n` +
+            `Buffer length: ${bufferLength} ms\n` +
+            `Unpruned buffer length: ${videoUnprunedBufferLength * 1000} ms\n` +
             `Video playback rate: ${this.video.playbackRate}\n` +
-            `Audio playback rate: ${this.audio ? this.audio.playbackRate : NaN}\n` +
-            `AV synchronization offset: ${this.audio ? this.bctrl!.getSecondarySync(0) : 0} ms\n` +
             `Network delay history length: count = ${netStats.historyLength} (${sNetStats.historyLength})\n` +
             `                              time  = ${netStats.historyAge / 1000} s\n` +
             `Delay normal: µ = ${netStats.delayMean} ms (${sNetStats.delayMean} ms)\n` +
@@ -473,7 +449,6 @@ export class Player {
     // Stuff from the constructor.
     private readonly verbose: boolean;
     private readonly video: HTMLVideoElement;
-    private readonly audio: HTMLAudioElement | null;
     private readonly infoUrl: string;
 
     // Worker objects.

@@ -437,11 +437,10 @@ class SegmentDownloader {
 }
 
 export class MseWrapper {
-    constructor(video: HTMLVideoElement, audio: HTMLAudioElement | null, segmentDuration: number,
-                segmentPreavailability: number, onTimestamp: (timestampInfo: TimestampInfo) => void,
-                onReceived: (receivedInfo: ReceivedInfo) => void, onError: (description: string) => void) {
+    constructor(video: HTMLVideoElement, segmentDuration: number, segmentPreavailability: number,
+                onTimestamp: (timestampInfo: TimestampInfo) => void, onReceived: (receivedInfo: ReceivedInfo) => void,
+                onError: (description: string) => void) {
         this.video = video;
-        this.audio = audio;
         this.segmentDuration = segmentDuration;
         this.segmentPreavailability = segmentPreavailability;
         this.onTimestamp = onTimestamp;
@@ -492,9 +491,6 @@ export class MseWrapper {
 
         /* Stop the underlying media elements. */
         this.video.pause();
-        if (this.audio) {
-            this.audio.pause();
-        }
 
         /* Clean up. */
         this.cleaup();
@@ -504,21 +500,14 @@ export class MseWrapper {
      * Set the mutedness of the stream.
      */
     setMuted(muted: boolean): void {
-        if (this.audio) {
-            this.audio.muted = muted;
-            if (!muted && !this.video.paused) {
-                void this.audio.play();
-            }
-        } else {
-            this.video.muted = muted;
-        }
+        this.video.muted = muted;
     }
 
     /**
      * Get the mutedness of the stream.
      */
     getMuted(): boolean {
-        return this.audio ? this.audio.muted : this.video.muted;
+        return this.video.muted;
     }
 
     /**
@@ -536,7 +525,6 @@ export class MseWrapper {
             this.segmentDownloader.stop();
         }
         this.videoMediaSource = null;
-        this.audioMediaSource = null;
         this.videoStream = null;
         this.audioStream = null;
     }
@@ -593,17 +581,13 @@ export class MseWrapper {
                                           this.onError,
                                           (): void => {
                 void this.video.play();
-                if (this.audio && !this.audio.muted) {
-                    void this.audio.play();
-                }
-
                 if (this.onNewStreamStart) {
                     this.onNewStreamStart();
                 }
             });
             if (audioInfo && this.interleaved) {
                 this.audioStream =
-                    new Stream(this.audio ? this.audioMediaSource! : this.videoMediaSource!, audioInit!,
+                    new Stream(this.videoMediaSource!, audioInit!,
                                this.getMimeForStream(manifest, this.audioStreamIndex!), this.segmentDuration,
                                this.onError);
             }
@@ -624,14 +608,7 @@ export class MseWrapper {
         /* Create new media sources and bind them to the media elements. */
         if (!recall) {
             this.videoMediaSource = new MediaSource();
-            if (this.audio) {
-                this.audioMediaSource = new MediaSource();
-            }
-
             this.video.src = URL.createObjectURL(this.videoMediaSource);
-            if (withAudio && this.audio) {
-                this.audio.src = URL.createObjectURL(this.audioMediaSource!);
-            }
         }
 
         /* Wait for the media sourecs to be ready. */
@@ -641,14 +618,6 @@ export class MseWrapper {
                 this.setMediaSources(onMediaSourceReady, withAudio, true);
             };
             this.videoMediaSource!.addEventListener("sourceopen", callback);
-            return;
-        }
-        if (withAudio && this.audio && this.audioMediaSource!.readyState !== "open") {
-            const callback = (): void => {
-                this.audioMediaSource!.removeEventListener("opensource", callback);
-                this.setMediaSources(onMediaSourceReady, withAudio, true);
-            };
-            this.audioMediaSource!.addEventListener("sourceopen", callback);
             return;
         }
 
@@ -694,7 +663,6 @@ export class MseWrapper {
     }
 
     private readonly video: HTMLVideoElement;
-    private readonly audio: HTMLAudioElement | null;
     private readonly segmentDuration: number;
     private readonly segmentPreavailability: number;
     private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
@@ -702,7 +670,6 @@ export class MseWrapper {
     private readonly onError: (description: string) => void;
 
     private videoMediaSource: MediaSource | null = null;
-    private audioMediaSource: MediaSource | null = null;
 
     private baseUrl: string | null = null;
     private videoStreamIndex: number = 0;

@@ -42,9 +42,6 @@ module.exports = (env, argv) => {
         "process.env.INFO_URL": defEnv("INFO_URL", "http://localhost:8080/live/info.json")
     }));
     config.plugins.push(new webpack.DefinePlugin({
-        "process.env.SECONDARY_AUDIO": defEnv("SECONDARY_AUDIO", false)
-    }));
-    config.plugins.push(new webpack.DefinePlugin({
         "process.env.SECONDARY_VIDEO": defEnv("SECONDARY_VIDEO", false)
     }));
 
