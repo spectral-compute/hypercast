@@ -56,6 +56,10 @@ class Stream {
      * @param description A description of the segment.
      */
     startSegment(segment: number, description: string): void {
+        if (this.isFinished()) {
+            return;
+        }
+
         if (segment === 0 && this.onStart) {
             this.onStart();
         }
@@ -73,6 +77,10 @@ class Stream {
      * @param segment The segment that is now finished.
      */
     endSegment(segment: number): void {
+        if (this.isFinished()) {
+            return;
+        }
+
         /* Make this idempotent. */
         if (segment < this.currentSegment) {
             return;
@@ -110,6 +118,10 @@ class Stream {
      * @param segment The segment that the data is from.
      */
     acceptSegmentData(data: ArrayBuffer, segment: number): void {
+        if (this.isFinished()) {
+            return;
+        }
+
         if (segment === this.currentSegment) {
             this.queue.push(data);
             this.advanceQueue();
@@ -132,6 +144,10 @@ class Stream {
      * Try to add more data to the MSE buffer.
      */
     private advanceQueue(): void {
+        if (this.isFinished()) {
+            return;
+        }
+
         /* We can only advance the queue at all if we're not still updating. */
         if (this.sourceBuffer.updating) {
             return;
@@ -162,6 +178,10 @@ class Stream {
      * Remove stale data from the MSE buffer.
      */
     private prune(): void {
+        if (this.isFinished()) {
+            return;
+        }
+
         /* Figure out if anything is buffered at all. */
         const buffered = this.sourceBuffer.buffered;
         if (buffered.length === 0) {
@@ -190,6 +210,17 @@ class Stream {
             this.queue.push(buffer);
         }
         this.otherSegmentsQueue.delete(this.currentSegment);
+    }
+
+    /**
+     * Check that the media source isn't finished with.
+     *
+     * The media source can be externally disconnected from the underlying media element, such as when the stream is
+     * changed during playback. This method detects conditions like that so that we don't continue trying to add data to
+     * such a media source.
+     */
+    private isFinished(): boolean {
+        return this.mediaSource.readyState !== "open";
     }
 
     private readonly mediaSource: MediaSource;
@@ -233,6 +264,12 @@ class SegmentDownloader {
     }
 
     stop(): void {
+        // Stop any existing download.
+        if (this.currentResponse) {
+            this.currentResponse.cancel();
+        }
+
+        // Stop the timers.
         this.segmentIndex = Infinity; // Stop the download of any new segments.
         if (this.downloadTimeout) {
             clearTimeout(this.downloadTimeout);
@@ -331,8 +368,12 @@ class SegmentDownloader {
                     return;
                 }
 
+                // Get the reader and save it where it can be cancelled in case we get stopped.
+                const reader: ReadableStreamDefaultReader = response.body!.getReader();
+                this.currentResponse = reader;
+
                 // Start reading from the response.
-                await this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
+                await this.pump(reader, `Stream ${this.streamIndex}, segment ${segmentIndex}`);
             } catch (ex: any) {
                 const e = ex as Error;
                 this.onError(`Error fetching chunk ${url}: ${e.message}`);
@@ -434,6 +475,7 @@ class SegmentDownloader {
     private nextSegmentStart: number = 0;
     private downloadTimeout: number | null = null;
     private schedulerTimeout: number | null = null;
+    private currentResponse: ReadableStreamDefaultReader | null = null;
 }
 
 export class MseWrapper {
@@ -449,6 +491,11 @@ export class MseWrapper {
     }
 
     setSource(baseUrl: string, videoStream: number, audioStream: number | null, interleaved: boolean): void {
+        /* Stop downloading any existing stream. */
+        if (this.segmentDownloader) {
+            this.segmentDownloader.stop();
+        }
+
         /* If we're setting the source to what it's already set to, do nothing. */
         if (baseUrl === this.baseUrl && videoStream === this.videoStreamIndex &&
             audioStream === this.audioStreamIndex) {
