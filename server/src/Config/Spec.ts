@@ -338,7 +338,10 @@ export interface Config {
         loop: boolean,
 
         /**
-         * List of video angle sources (as RTSP streams).
+         * List of video angle sources.
+         *
+         * For Decklink, prepend the name ffmpeg uses with "decklink://". This will make the server add "-f decklink" as
+         * necessary.
          */
         sources: string[],
 

@@ -31,6 +31,7 @@ const realtimeInputArgs = [
     "-thread_queue_size", "0"
 ];
 
+const decklinkInputArgs = ["-f", "decklink", ...realtimeInputArgs];
 const pipeInputArgs = [...realtimeInputArgs, "-blocksize", `${pipeSize}`];
 const rtspInputArgs = [...realtimeInputArgs, "-rtsp_transport", "tcp"];
 
@@ -130,6 +131,9 @@ function getExternalSourceArgs(src: string, config: Config): string[] {
         args = [...args, ...pipeInputArgs];
     } else if (src.startsWith("rtsp://")) {
         args = [...args, ...rtspInputArgs];
+    } else if (src.startsWith("decklink://")) {
+        args = [...args, ...decklinkInputArgs];
+        src = src.slice(11); // The bit after "decklink://".
     } else if (src.search(/^[A-Za-z0-9]+:[/]{2}/) === 0) {
         args = [...args, ...realtimeInputArgs]; // This is a guess, but the intended use of this system is realtime.
     } else if (fs.statSync(src).isFile()) {
