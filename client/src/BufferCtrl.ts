@@ -1,6 +1,7 @@
 import {TimestampInfo} from "./Deinterleave";
 import {ReceivedInfo} from "./Stream";
 import {BufferControlTickInfo, DebugHandler} from "./Debug"
+import {API} from "live-video-streamer-common";
 
 export interface NetworkTimingStats {
     delayMean: number,
@@ -41,6 +42,22 @@ export class BufferControl {
                 this.debugHandler = debugHandler;
             }
         }
+    }
+
+    /**
+     * Set buffer control parameters for a given video configuration from the server.
+     *
+     * @param params The parameters to set.
+     */
+    setBufferControlParameters(params: API.BufferControl) {
+        this.serverParams = params;
+    }
+
+    /**
+     * Get the server parameters.
+     */
+    getServerParams(): API.BufferControl {
+        return this.serverParams;
     }
 
     /**
@@ -185,7 +202,7 @@ export class BufferControl {
             this.maxBuffer = 1000;
         } else {
             this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
-                             this.timestampAutoBufferExtra;
+                             this.serverParams.extraBuffer;
             this.maxBuffer = Math.max(this.maxBuffer, this.timestampAutoMinTarget);
         }
 
@@ -259,9 +276,12 @@ export class BufferControl {
     }
 
     // Settings.
+    private serverParams: API.BufferControl = {
+        extraBuffer: 180 // 3x maximum opus frame size.
+    };
+
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.
     private readonly timestampAutoBufferMax = 0.995;
-    private readonly timestampAutoBufferExtra = 180; // 3x maximum opus frame size.
     private readonly timestampAutoMinTarget = 500; // Minimum buffer target in ms to browsers that take time to seek.
     private readonly timestampAutoBufferDowngrade = 4000; // If data is this delayed, network is probably overloaded.
     private readonly syncClockPeriod = 100;

@@ -290,7 +290,10 @@ export class VideoServer {
                 codec: codec.codec,
                 bitrate: codec.bitrate,
                 width: codec.width,
-                height: codec.height
+                height: codec.height,
+                bufferCtrl: {
+                    extraBuffer: codec.bufferCtrl.extraBuffer
+                }
             });
         }
         return result;

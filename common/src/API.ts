@@ -3,6 +3,13 @@
  */
 export namespace API {
     /**
+     * Buffer control information.
+     */
+    export interface BufferControl {
+        extraBuffer: number // Extra buffer, on top of the theoretical minimum measured, in ms.
+    }
+
+    /**
      * Stream index info objects we receive.
      */
     export interface SegmentIndexDescriptor {
@@ -26,7 +33,8 @@ export namespace API {
         codec: string,
         bitrate: number,
         width: number,
-        height: number
+        height: number,
+        bufferCtrl: BufferControl
     }
 
     /**

@@ -292,6 +292,9 @@ export class Player {
         /* Tell the streamer. */
         this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
                                this.quality < this.serverInfo.avMap.length);
+
+        /* Update the buffer control parameters. */
+        this.bctrl!.setBufferControlParameters(this.serverInfo.videoConfigs[this.videoStream]!.bufferCtrl);
     }
 
     /**
@@ -339,7 +342,8 @@ export class Player {
                                              ` (${sNetStats.delayMax - sNetStats.delayMin} ms)\n` +
             `Catch up events: n = ${catchUpStats.eventCount}\n` +
             `                 µ = ${catchUpStats.averageTimeBetweenEvents / 1000} s\n` +
-            `Buffer target: ${maxBuffer} ms\n`
+            `Buffer target: ${maxBuffer} ms\n` +
+            `Server parameters: ${JSON.stringify(this.bctrl!.getServerParams())}\n`
         );
     }
 

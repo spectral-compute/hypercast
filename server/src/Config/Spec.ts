@@ -20,6 +20,22 @@ export type H264Preset = "ultrafast" | "superfast" | "veryfast" | "faster" | "fa
                          "veryslow" | "placebo";
 
 /**
+ * Information to control client-side buffering.
+ *
+ * This is a per video-configuration object because different video configurations (especially bitrate) might require
+ * different buffering parameters.
+ */
+export interface BufferControl {
+    /**
+     * Extra buffer above the maximum observed when seeking.
+     *
+     * The default is set to be 3 Opus frames (180 ms) to stop audio buffering causing seeking events. Increasing this
+     * parameter makes playback smoother at the expense of latency.
+     */
+    extraBuffer: number
+}
+
+/**
  * Audio configuration for a single stream quality.
  */
 export interface AudioConfig {
@@ -98,6 +114,14 @@ export interface VideoConfig {
      * The height for this video stream
      */
     height: number
+
+    /**
+     * Client-side buffer control settings.
+     *
+     * This is per video-configuration because the video configuration (and other video foibles), especially the
+     * bitrate, can have a big effect on the needed buffering parameters.
+     */
+    bufferCtrl: BufferControl
 }
 
 /**
