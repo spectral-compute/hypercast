@@ -61,6 +61,8 @@ typedocify server Config/Spec \
            README ServerConfigSpec/README "Ultra low-latency video streamer server configuration" "" \
            interfaces/AudioConfig ServerConfigSpec/interfaces/AudioConfig \
                "Ultra low-latency video streamer server configuration" "\`AudioConfig\` interface" \
+           interfaces/BufferControl ServerConfigSpec/interfaces/BufferControl \
+               "Ultra low-latency video streamer server configuration" "\`BufferControl\` interface" \
            interfaces/FilesystemDirectoryConfig ServerConfigSpec/interfaces/FilesystemDirectoryConfig \
                "Ultra low-latency video streamer server configuration" "\`FilesystemDirectoryConfig\` interface" \
            interfaces/CodecOptions ServerConfigSpec/interfaces/CodecOptions \
