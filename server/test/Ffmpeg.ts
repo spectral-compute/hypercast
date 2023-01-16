@@ -41,6 +41,7 @@ test("1 video", (): void => {
         "-bufsize:v:0", "3000k",
         "-g:v:0", "450",
         "-force_key_frames:v:0", "expr:eq(mod(n, 450), 0)",
+        "-minrate:v:0", "1000k",
 
         // Codec-specific options.
         "-preset:v:0", "faster",
@@ -133,6 +134,7 @@ test("2 videos", (): void => {
         "-bufsize:v:0", "2000k",
         "-g:v:0", "450",
         "-force_key_frames:v:0", "expr:eq(mod(n, 450), 0)",
+        "-minrate:v:0", "666k",
 
         // Codec-specific options.
         "-preset:v:0", "faster",
@@ -147,6 +149,7 @@ test("2 videos", (): void => {
         "-bufsize:v:1", "1000k",
         "-g:v:1", "450",
         "-force_key_frames:v:1", "expr:eq(mod(n, 450), 0)",
+        "-minrate:v:1", "512k",
 
         // Codec-specific options.
         "-preset:v:1", "faster",
@@ -233,6 +236,7 @@ test("1 video with audio", (): void => {
         "-bufsize:v:0", "3000k",
         "-g:v:0", "450",
         "-force_key_frames:v:0", "expr:eq(mod(n, 450), 0)",
+        "-minrate:v:0", "1000k",
 
         // Codec-specific options.
         "-preset:v:0", "faster",
