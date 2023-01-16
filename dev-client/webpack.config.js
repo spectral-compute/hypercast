@@ -39,7 +39,7 @@ module.exports = (env, argv) => {
         return JSON.stringify((env[name] === undefined) ? def : env[name]);
     };
     config.plugins.push(new webpack.DefinePlugin({
-        "process.env.INFO_URL": defEnv("INFO_URL", "http://localhost:8080/live/info.json")
+        "process.env.INFO_URL": defEnv("INFO_URL", null)
     }));
     config.plugins.push(new webpack.DefinePlugin({
         "process.env.SECONDARY_VIDEO": defEnv("SECONDARY_VIDEO", false)

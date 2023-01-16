@@ -9,12 +9,12 @@ import * as lvsc from "live-video-streamer-client";
 /* Variables we expect to receive from the build environment. */
 declare namespace process {
     let env: {
-        REACT_APP_INFO_URL: string;
+        REACT_APP_INFO_URL: string | undefined;
     };
 }
 
 /* Create the player object. */
-const player: lvsc.Player = new lvsc.Player(process.env.REACT_APP_INFO_URL,
+const player: lvsc.Player = new lvsc.Player(process.env.REACT_APP_INFO_URL ? process.env.REACT_APP_INFO_URL : null,
                                             document.getElementById("video")! as HTMLVideoElement);
 
 /* Start. */

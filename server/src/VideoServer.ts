@@ -397,7 +397,7 @@ export class VideoServer {
     protected buildServer(): http.Server {
         return http.createServer((request: http.IncomingMessage, response: http.ServerResponse): void => {
             /* Extract request information. */
-            const path = request.url;
+            const path = request.url ? VideoServer.filterUrl(request.url) : null;
             const address = request.socket.remoteAddress;
             const port = request.socket.remotePort;
 
@@ -494,6 +494,7 @@ export class VideoServer {
         assertNonNull(request.socket);
         assertNonNull(request.socket.remoteAddress);
         assertNonNull(request.url);
+        const path = VideoServer.filterUrl(request.url);
 
         const doHead = (): void => {
             response.statusCode = HttpStatus.OK;
@@ -509,8 +510,8 @@ export class VideoServer {
             }
         };
 
-        const doTransfer = (): void => {
-            const sf = this.serverFileStore.get(request.url!);
+        const doTransfer = (url: string): void => {
+            const sf = this.serverFileStore.get(url);
             sf.writeWith((b: Buffer): void => {
                 response.write(b);
             });
@@ -529,7 +530,7 @@ export class VideoServer {
 
         /* See whether the request is for a banned URL. */
         for (const regex of this.forbiddenPaths) {
-            if (!regex.test(request.url)) {
+            if (!regex.test(path)) {
                 continue;
             }
             response.statusCode = HttpStatus.FORBIDDEN;
@@ -539,20 +540,20 @@ export class VideoServer {
         }
 
         /* Try to find the requested path. */
-        if (this.serverFileStore.has(request.url)) {
+        if (this.serverFileStore.has(path)) {
             doHead();
             if (!isHead) {
-                doTransfer();
+                doTransfer(path);
             }
             return;
-        } else if (this.segmentIndexDescriptors.has(request.url)) {
+        } else if (this.segmentIndexDescriptors.has(path)) {
             response.statusCode = HttpStatus.OK;
             this.addCacheControl(response, Liveness.ephemeral, true);
             if (this.config.network.origin) {
                 response.setHeader("Access-Control-Allow-Origin", this.config.network.origin);
             }
             if (!isHead) {
-                response.write(this.segmentIndexDescriptors.get(request.url)!.toJson());
+                response.write(this.segmentIndexDescriptors.get(path)!.toJson());
             }
             response.end();
             return;
@@ -564,7 +565,7 @@ export class VideoServer {
             return;
         } else if (liveness !== Liveness.farEdge) {
             // Don't allow "../" style attacks.
-            if (request.url.includes("..")) {
+            if (path.includes("..")) {
                 response.statusCode = HttpStatus.NOT_FOUND;
                 this.addCacheControl(response, liveness, false);
                 response.end();
@@ -612,7 +613,7 @@ export class VideoServer {
                     resp.write(result.buffer);
                 }
                 resp.end();
-            })(request.url, request.socket.remoteAddress, response);
+            })(path, request.socket.remoteAddress, response);
             return;
         }
 
@@ -624,24 +625,26 @@ export class VideoServer {
         }
 
         /* When the file is added, be set up to serve it. */
-        const onPut = (path: string): void => {
-            /* Wait for the right path. */
-            if (path !== request.url) {
-                return;
-            }
-            this.serverFileStore.off("add", onPut);
+        const onPut = ((url: string) => {
+            return (newPath: string): void => {
+                /* Wait for the right path. */
+                if (newPath !== url) {
+                    return;
+                }
+                this.serverFileStore.off("add", onPut);
 
-            /* If we got an intervening delete, then the best we can do is just finish now. This is really an error
-               condition though. */
-            if (!this.serverFileStore.has(request.url)) {
-                this.log.warn(`Warning: ${request.url} was deleted while being served to active request!`);
-                response.end();
-                return;
-            }
+                /* If we got an intervening delete, then the best we can do is just finish now. This is really an error
+                   condition though. */
+                if (!this.serverFileStore.has(url)) {
+                    this.log.warn(`Warning: ${url} was deleted while being served to active request!`);
+                    response.end();
+                    return;
+                }
 
-            /* Otherwise, set up the transfer. */
-            doTransfer();
-        };
+                /* Otherwise, set up the transfer. */
+                doTransfer(url);
+            };
+        })(path); // Crazy IIFE to capture path.
         this.serverFileStore.on("add", onPut);
     }
 
@@ -751,6 +754,18 @@ export class VideoServer {
             sf.add(Buffer.from(JSON.stringify(driftInfo.get())));
             sf.finish();
         });
+    }
+
+    /**
+     * Filter the URL from the requst.
+     *
+     * This removes things like GET parameters.
+     *
+     * @param url The URL to filter.
+     * @return The filtered URL.
+     */
+    private static filterUrl(url: string): string {
+        return url.replace(/[?].*$/, "");
     }
 
     public startStreaming(): void {

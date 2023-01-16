@@ -3,7 +3,6 @@ import {AppDebugHandler} from "./debug";
 
 /* Configuration :) */
 const infoUrl = process.env.INFO_URL;
-(document.getElementById("info_url")! as HTMLSpanElement).innerText = infoUrl;
 
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLVideoElement;
@@ -27,6 +26,7 @@ if (process.env.SECONDARY_VIDEO) {
 
 /* Create the player. */
 const player = new lvsc.Player(infoUrl, video, process.env.NODE_ENV === "development");
+(document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getInfoUrl();
 
 /* Performance/debug event handling. */
 if (process.env.NODE_ENV === "development") {

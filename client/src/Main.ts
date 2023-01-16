@@ -8,11 +8,21 @@ import {assertType} from "@ckitching/typescript-is";
 
 export class Player {
     /**
-     * @param infoUrl The URL to the server's info JSON object.
+     * @param infoUrl The URL to the server's info JSON object. If set to null, the URL is obtained from the streaminfo
+     *                GET parameter.
      * @param video The video tag to play video into.
      * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string, video: HTMLVideoElement, verbose: boolean = false) {
+    constructor(infoUrl: string | null, video: HTMLVideoElement, verbose: boolean = false) {
+        // Get the URL from the streaminfo GET parameter if no info URL is given.
+        if (infoUrl === null) {
+            infoUrl = (new URLSearchParams(window.location.search)).get("streaminfo");
+            if (infoUrl === null) {
+                throw Error(`Could not get "streaminfo" GET parameter from window location "${window.location.href}".`);
+            }
+        }
+
+        // Set properties :)
         this.infoUrl = infoUrl;
         this.video = video;
         this.verbose = verbose;
@@ -21,7 +31,7 @@ export class Player {
     /**
      * Start playing video.
      *
-     * None of the other methods of this object are valid until the promise has completed.
+     * None of the other methods of this object are valid until the promise has completed unless otherwise noted.
      */
     async init(): Promise<void> {
         try {
@@ -127,6 +137,15 @@ export class Player {
         }
         this.stream!.stop();
         this.bctrl!.stop();
+    }
+
+    /**
+     * Get the URL from which the info JSON was loaded (or is to be loaded).
+     *
+     * This method can be called before init().
+     */
+    getInfoUrl(): string {
+        return this.infoUrl;
     }
 
     /**

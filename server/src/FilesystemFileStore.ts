@@ -57,6 +57,10 @@ export class DirectoryFileStore {
      * @return A FilesystemFileStoreResult describing the found resource, or null if not found.
      */
     async get(resource: string): Promise<FilesystemFileStoreResult | null> {
+        // Strip trailing slashes.
+        resource = resource.replace(/[/]+$/, "");
+
+        // Try and load the file.
         try {
             // If requesting a directory, actually load the index file.
             let path: string = `${this.path}/${resource}`;
