@@ -40,8 +40,7 @@ export class Addler32 {
  * control interfaces, such as the initial buffer length (which might change
  * during the time processing takes).
  */
-export interface BufferControlTickInfo
-{
+export interface BufferControlTickInfo {
     /**
      * When the tick happened.
      */
@@ -62,8 +61,7 @@ export interface BufferControlTickInfo
 /**
  * Interface for debugging the player.
  */
-export interface DebugHandler
-{
+export interface DebugHandler {
     /**
      * Called once the player has created the buffer control object.
      *

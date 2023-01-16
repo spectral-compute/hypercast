@@ -1,6 +1,6 @@
 import {TimestampInfo} from "./Deinterleave";
 import {ReceivedInfo} from "./Stream";
-import {BufferControlTickInfo, DebugHandler} from "./Debug"
+import {BufferControlTickInfo, DebugHandler} from "./Debug";
 import {API} from "live-video-streamer-common";
 
 export interface NetworkTimingStats {
@@ -49,7 +49,7 @@ export class BufferControl {
      *
      * @param params The parameters to set.
      */
-    setBufferControlParameters(params: API.BufferControl) {
+    setBufferControlParameters(params: API.BufferControl): void {
         this.serverParams = params;
     }
 
@@ -106,7 +106,7 @@ export class BufferControl {
      *
      * @param receivedInfo Information about the received data.
      */
-    onRecieved(receivedInfo: ReceivedInfo) {
+    onRecieved(receivedInfo: ReceivedInfo): void {
         if (process.env.NODE_ENV === "development") {
             if (this.debugHandler !== null) {
                 this.debugHandler.onReceived(receivedInfo);
@@ -133,8 +133,7 @@ export class BufferControl {
      * @return The buffer length, in seconds, of the media element.
      */
     getBufferLength(): number {
-        const mediaElement = this.mediaElement;
-        const buffered = mediaElement!.buffered;
+        const buffered = this.mediaElement.buffered;
         if (buffered.length === 0) {
             return NaN;
         }
@@ -190,7 +189,7 @@ export class BufferControl {
     private bufferControlTick(): void {
         const now = Date.now().valueOf();
         const bufferLength = this.getBufferLength();
-        let tickInfo: BufferControlTickInfo = {
+        const tickInfo: BufferControlTickInfo = {
             timestamp: now,
             primaryBufferLength: bufferLength,
             catchUp: false
@@ -311,5 +310,5 @@ export class BufferControl {
     private interval: number | null = null;
 
     // Debugging.
-    private debugHandler: DebugHandler | null = null;
+    private readonly debugHandler: DebugHandler | null = null;
 }

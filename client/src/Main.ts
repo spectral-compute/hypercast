@@ -2,7 +2,7 @@ import * as BufferCtrl from "./BufferCtrl";
 import {TimestampInfo} from "./Deinterleave";
 import {ReceivedInfo} from "./Stream";
 import * as Stream from "./Stream";
-import {DebugHandler} from "./Debug"
+import {DebugHandler} from "./Debug";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 

@@ -266,7 +266,7 @@ class SegmentDownloader {
     stop(): void {
         // Stop any existing download.
         if (this.currentResponse) {
-            this.currentResponse.cancel();
+            void this.currentResponse.cancel();
         }
 
         // Stop the timers.
