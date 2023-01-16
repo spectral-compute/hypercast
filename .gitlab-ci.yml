@@ -52,6 +52,15 @@ Build-Production:
   variables:
     GIT_STRATEGY: none
 
+Package:
+  extends: .env
+  stage: Build-Production
+  script:
+    - run "cd src && yarn package"
+    - run "cd src && find | grep -F spectral-video-streamer-" # Check we got the package.
+  variables:
+    GIT_STRATEGY: none
+
 Manual:
   extends: .env
   stage: Deploy

@@ -15,6 +15,12 @@ toc: true
 This process can be undone with `yarn clean`. The cleaning process can be verified with `git clean -dXn`.
 
 
+## Packaging
+
+1. Run `yarn install` from the soure directory.
+2. Run `yarn package`.
+
+
 ## Building the clients
 
 The `dev-client` and `demo-client` can both be built with `yarn bundle` and `yarn bundle-dev` from their respective

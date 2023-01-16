@@ -6,7 +6,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "bundle": "(cd ../client && yarn bundle \"$@\") && ../cra-build-helper.sh build \"$@\"",
+    "bundle": "(cd ../client && yarn bundle \"$@\") && GENERATE_SOURCEMAP=false ../cra-build-helper.sh build \"$@\"",
     "bundle-dev": "(cd ../client && yarn bundle-dev \"$@\") && ../cra-build-helper.sh build \"$@\"",
     "clean": "rm -rf build",
     "lint": "node node_modules/eslint/bin/eslint.js --max-warnings=0 --ext .ts --ext .tsx .",

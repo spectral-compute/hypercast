@@ -23,6 +23,29 @@ The following is a minimal example of a server configuration:
 }
 ```
 
+For a first test setup, it is useful to put the `demo-client` directory in the server configuration as follows:
+```json
+{
+  "video": {
+    "sources": [
+      "rtsp://192.0.2.2:554/video"
+    ]
+  },
+  "filesystem": {
+    "directories": [
+      {
+        "path": "/path/to/spectral-video-streamer/demo-client",
+        "index": "index.html",
+        "ephemeral": true
+      }
+    ]
+  }
+}
+```
+
+This makes the client available from the server. In this example, both `/index.html` and (because of the `index` field)
+`/` serve the demo client.
+
 
 ## Defaults
 
