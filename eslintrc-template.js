@@ -18,6 +18,7 @@ module.exports = {
         tsconfigRootDir: __dirname,
         project: ["./tsconfig.json", "client/tsconfig.json", "server/tsconfig.json"],
     },
+    ignorePatterns: ["build/*"],
     rules: {
         /* Non-default base ESLint rules that we want. */
         "eqeqeq": ["error"],
