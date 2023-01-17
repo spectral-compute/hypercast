@@ -249,7 +249,6 @@ export class BufferControl {
         }
 
         this.debugBufferControlTick(tickInfo);
-        return;
     }
 
     private debugBufferControlTick(tickInfo: BufferControlTickInfo): void {
