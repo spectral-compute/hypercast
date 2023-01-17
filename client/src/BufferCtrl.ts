@@ -134,7 +134,7 @@ export class BufferControl {
      */
     getBufferLength(): number {
         const buffered = this.mediaElement.buffered;
-        if (buffered.length === 0) {
+        if (buffered.length === 0 || this.mediaElement.currentTime < buffered.start(0)) {
             return NaN;
         }
         return (buffered.end(buffered.length - 1) - this.mediaElement.currentTime) * 1000;

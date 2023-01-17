@@ -99,11 +99,6 @@ export class AppDebugHandler {
     }
 
     onBufferControlTick(tickInfo: BufferControlTickInfo): void {
-        /* A hack to avoid showing a huge apparent buffer length at the start of streaming. */
-        if (tickInfo.timestamp < this.start + 4000) {
-            return;
-        }
-
         /* Calculate the timestamp. */
         const t = (tickInfo.timestamp - this.start) / 1000;
 
