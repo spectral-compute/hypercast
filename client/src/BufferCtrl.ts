@@ -64,9 +64,11 @@ export class BufferControl {
      * Start the buffer control.
      */
     start(): void {
+        const now = Date.now();
         this.catchUpEvents = 0;
-        this.catchUpEventsStart = Date.now();
+        this.catchUpEventsStart = now;
         this.lastCatchUpEventClusterEnd = 0;
+        this.waitingForInitialSeekSince = now;
 
         this.interval = setInterval((): void => {
             this.bufferControlTick();
@@ -118,10 +120,13 @@ export class BufferControl {
      * to be called whenever a new stream starts being received by the streamer.
      */
     onNewStreamStart(): void {
+        const now = Date.now();
+
         // Now that we got a new stream (downgrade or otherwise), the buffering might be different.
         this.timestampInfos = [];
-        this.catchUpEventsStart = Date.now();
+        this.catchUpEventsStart = now;
         this.lastCatchUpEventClusterEnd = 0;
+        this.waitingForInitialSeekSince = now;
 
         // If we asked for a downgrade, we might have gotten it now, so stop waiting for it.
         this.waitingForNewStream = false;
@@ -192,7 +197,8 @@ export class BufferControl {
         const tickInfo: BufferControlTickInfo = {
             timestamp: now,
             primaryBufferLength: bufferLength,
-            catchUp: false
+            catchUp: false,
+            initialSeek: false
         };
 
         /* Figure out the target buffer size. */
@@ -213,8 +219,17 @@ export class BufferControl {
             this.onRecommendDowngrade();
         }
 
+        /* If we're waiting for the initial seek, but we're still downloading rapidly, then we haven't found the live
+           edge yet. */
+        const initialSeek = this.waitingForInitialSeekSince !== 0 &&
+                            (now - this.waitingForInitialSeekSince) >= this.serverParams.minimumInitTime;
+        if (this.waitingForInitialSeekSince !== 0 && !initialSeek) {
+            this.debugBufferControlTick(tickInfo);
+            return;
+        }
+
         /* If we have sufficiently little buffer that we don't need to skip. */
-        if (bufferLength <= this.maxBuffer) {
+        if (bufferLength <= this.maxBuffer && !initialSeek) {
             this.bufferExceededCount = 0;
             this.debugBufferControlTick(tickInfo);
             return;
@@ -258,8 +273,11 @@ export class BufferControl {
 
         // Seek.
         this.mediaElement.currentTime = rangeEnd - seekBufferSeconds;
-        if (this.lastCatchUpEventClusterEnd !== 0) {
-            this.catchUpEvents++; // Not just the initial seek that always has to happen.
+        if (initialSeek) {
+            this.waitingForInitialSeekSince = 0;
+            tickInfo.initialSeek = true; // The initial seek that gets the stream to the live edge of the first segment.
+        } else {
+            this.catchUpEvents++;
             tickInfo.catchUp = true;
         }
         this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
@@ -294,7 +312,8 @@ export class BufferControl {
     private serverParams: API.BufferControl = {
         extraBuffer: 180, // 3x maximum opus frame size.
         initialBuffer: 1000,
-        seekBuffer: 0
+        seekBuffer: 0,
+        minimumInitTime: 500
     };
 
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.
@@ -319,6 +338,9 @@ export class BufferControl {
 
     // Buffer control state machine.
     private bufferExceededCount: number = 0;
+
+    // Buffer control state machine for initial seek.
+    private waitingForInitialSeekSince: number = 0;
 
     // Tracking buffering performance.
     private catchUpEvents: number = 0;

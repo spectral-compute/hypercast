@@ -56,6 +56,11 @@ export interface BufferControlTickInfo {
      * Whether a catch-up event happened.
      */
     catchUp: boolean;
+
+    /**
+     * Whether the initial seek event happened.
+     */
+    initialSeek: boolean;
 }
 
 /**

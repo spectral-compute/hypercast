@@ -5,7 +5,8 @@ export const defaultVideoConfig = {
     bufferCtrl: {
         extraBuffer: 180,
         initialBuffer: 1000,
-        seekBuffer: 0
+        seekBuffer: 0,
+        minimumInitTime: 2000
     },
     width: 1920,
     height: 1080,

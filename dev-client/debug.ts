@@ -22,6 +22,14 @@ export class AppDebugHandler {
                         type: "scatter" as const,
                         pointRadius: 4
                     }, {
+                        label: "Initial Seek Event",
+                        backgroundColor: "rgb(0, 127, 0)",
+                        borderColor: "rgb(0, 127, 0)",
+                        data: [],
+
+                        type: "scatter" as const,
+                        pointRadius: 4
+                    }, {
                         label: "Segment Start",
                         backgroundColor: "rgb(127, 127, 127)",
                         borderColor: "rgb(127, 127, 127)",
@@ -106,6 +114,11 @@ export class AppDebugHandler {
         if (tickInfo.catchUp) {
             for (const c of [this.latencyChart, this.dlChart]) {
                 this.getData(c, "Catch Up Event").push({x: t, y: 0});
+            }
+        }
+        if (tickInfo.initialSeek) {
+            for (const c of [this.latencyChart, this.dlChart]) {
+                this.getData(c, "Initial Seek Event").push({x: t, y: 0});
             }
         }
         this.getData(this.latencyChart, "Target Buffer").push({x: t, y: this.bctrl.getBufferTarget()});

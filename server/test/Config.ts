@@ -45,7 +45,8 @@ test("Default", (): void => {
                     bufferCtrl: {
                         extraBuffer: 180,
                         initialBuffer: 1000,
-                        seekBuffer: 0
+                        seekBuffer: 0,
+                        minimumInitTime: 2000
                     },
                     minBitrate: null,
                     crf: 25,
@@ -112,7 +113,8 @@ test("Override", (): void => {
                     bufferCtrl: {
                         extraBuffer: 180,
                         initialBuffer: 1000,
-                        seekBuffer: 0
+                        seekBuffer: 0,
+                        minimumInitTime: 2000
                     },
                     minBitrate: null,
                     crf: 25,
@@ -195,7 +197,8 @@ test("Filesystem", (): void => {
                     bufferCtrl: {
                         extraBuffer: 180,
                         initialBuffer: 1000,
-                        seekBuffer: 0
+                        seekBuffer: 0,
+                        minimumInitTime: 2000
                     },
                     minBitrate: null,
                     crf: 25,
@@ -269,7 +272,8 @@ test("Two video configs", (): void => {
                     bufferCtrl: {
                         extraBuffer: 180,
                         initialBuffer: 1000,
-                        seekBuffer: 0
+                        seekBuffer: 0,
+                        minimumInitTime: 2000
                     },
                     minBitrate: null,
                     crf: 25,
@@ -285,7 +289,8 @@ test("Two video configs", (): void => {
                     bufferCtrl: {
                         extraBuffer: 180,
                         initialBuffer: 1000,
-                        seekBuffer: 0
+                        seekBuffer: 0,
+                        minimumInitTime: 2000
                     },
                     minBitrate: null,
                     crf: 25,

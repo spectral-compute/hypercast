@@ -294,7 +294,8 @@ export class VideoServer {
                 bufferCtrl: {
                     extraBuffer: codec.bufferCtrl.extraBuffer,
                     initialBuffer: codec.bufferCtrl.initialBuffer,
-                    seekBuffer: codec.bufferCtrl.seekBuffer
+                    seekBuffer: codec.bufferCtrl.seekBuffer,
+                    minimumInitTime: codec.bufferCtrl.minimumInitTime
                 }
             });
         }

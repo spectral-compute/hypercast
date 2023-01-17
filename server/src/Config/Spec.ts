@@ -46,7 +46,15 @@ export interface BufferControl {
      *
      * Increasing this can prevent additional stalls after a seek and after starting to play a stream.
      */
-    seekBuffer: number
+    seekBuffer: number,
+
+    /**
+     * The minimum time to wait before doing the initial seek to get the stream playing.
+     *
+     * Increasing this reduces stuttering at the start at the expense of delaying the video playback. It should not
+     * adversely affect latency once playback has begun.
+     */
+    minimumInitTime: number
 }
 
 /**
