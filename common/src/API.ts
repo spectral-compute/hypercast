@@ -7,6 +7,7 @@ export namespace API {
      */
     export interface BufferControl {
         extraBuffer: number // Extra buffer, on top of the theoretical minimum measured, in ms.
+        seekBuffer: number // The buffer to keep when seeking to the live edge, in ms.
     }
 
     /**

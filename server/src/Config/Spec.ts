@@ -32,7 +32,14 @@ export interface BufferControl {
      * The default is set to be 3 Opus frames (180 ms) to stop audio buffering causing seeking events. Increasing this
      * parameter makes playback smoother at the expense of latency.
      */
-    extraBuffer: number
+    extraBuffer: number,
+
+    /**
+     * The buffer to keep when seeking to the live edge, in ms.
+     *
+     * Increasing this can prevent additional stalls after a seek and after starting to play a stream.
+     */
+    seekBuffer: number
 }
 
 /**

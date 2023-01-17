@@ -202,7 +202,9 @@ export class BufferControl {
         } else {
             this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
                              this.serverParams.extraBuffer;
-            this.maxBuffer = Math.max(this.maxBuffer, this.timestampAutoMinTarget);
+            this.maxBuffer = Math.max(this.maxBuffer,
+                                      Math.max(this.timestampAutoMinTarget,
+                                               this.serverParams.seekBuffer + this.serverParams.extraBuffer));
         }
 
         /* If the above algorithm is asking for this much buffer, then probably the network can't cope. */
@@ -232,6 +234,7 @@ export class BufferControl {
         }
         this.bufferExceededCount = 0;
 
+        // We can't skip if there's no media at all.
         const seekRange = this.mediaElement.seekable;
         if (seekRange.length === 0) {
             if (this.verbose) {
@@ -240,7 +243,18 @@ export class BufferControl {
             this.debugBufferControlTick(tickInfo);
             return;
         }
-        this.mediaElement.currentTime = seekRange.end(seekRange.length - 1);
+
+        // Don't skip ahead if there's not enough buffered contiguously
+        const seekBufferSeconds = this.serverParams.seekBuffer / 1000;
+        const rangeStart = seekRange.start(seekRange.length - 1);
+        const rangeEnd = seekRange.end(seekRange.length - 1);
+        if (rangeStart > rangeEnd - seekBufferSeconds) {
+            this.debugBufferControlTick(tickInfo);
+            return;
+        }
+
+        // Seek.
+        this.mediaElement.currentTime = rangeEnd - seekBufferSeconds;
         this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
         if (this.lastCatchUpEventClusterEnd !== 0) {
             this.catchUpEvents++; // Not just the initial seek that always has to happen.
@@ -275,7 +289,8 @@ export class BufferControl {
 
     // Settings.
     private serverParams: API.BufferControl = {
-        extraBuffer: 180 // 3x maximum opus frame size.
+        extraBuffer: 180, // 3x maximum opus frame size.
+        seekBuffer: 0
     };
 
     private readonly timestampInfoMaxAge = 120000; // 2 minutes.

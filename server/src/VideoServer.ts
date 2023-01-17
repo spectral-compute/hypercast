@@ -292,7 +292,8 @@ export class VideoServer {
                 width: codec.width,
                 height: codec.height,
                 bufferCtrl: {
-                    extraBuffer: codec.bufferCtrl.extraBuffer
+                    extraBuffer: codec.bufferCtrl.extraBuffer,
+                    seekBuffer: codec.bufferCtrl.seekBuffer
                 }
             });
         }

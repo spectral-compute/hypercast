@@ -3,7 +3,8 @@ export const defaultVideoConfig = {
     minBitrate: null,
     crf: 25,
     bufferCtrl: {
-        extraBuffer: 180
+        extraBuffer: 180,
+        seekBuffer: 0
     },
     width: 1920,
     height: 1080,
