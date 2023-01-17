@@ -234,20 +234,23 @@ export class BufferControl {
         }
         this.bufferExceededCount = 0;
 
-        // We can't skip if there's no media at all.
+        // We can't skip if there's no media at all. These are specified as normalized.
+        const bufferRange = this.mediaElement.buffered;
         const seekRange = this.mediaElement.seekable;
-        if (seekRange.length === 0) {
-            if (this.verbose) {
+        if (seekRange.length === 0 || bufferRange.length === 0) {
+            if (this.verbose && !initialSeek) {
                 console.warn("Cannot seek to catch up");
             }
             this.debugBufferControlTick(tickInfo);
             return;
         }
 
+        // Figure out the last contiguous range that's both seekable and buffered.
+        const rangeStart = Math.max(bufferRange.start(bufferRange.length - 1), seekRange.start(seekRange.length - 1));
+        const rangeEnd = Math.min(bufferRange.end(bufferRange.length - 1), seekRange.end(seekRange.length - 1));
+
         // Don't skip ahead if there's not enough buffered contiguously
         const seekBufferSeconds = this.serverParams.seekBuffer / 1000;
-        const rangeStart = seekRange.start(seekRange.length - 1);
-        const rangeEnd = seekRange.end(seekRange.length - 1);
         if (rangeStart > rangeEnd - seekBufferSeconds) {
             this.debugBufferControlTick(tickInfo);
             return;
