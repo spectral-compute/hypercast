@@ -3,7 +3,13 @@ import * as http from "http";
 import {StatusCodes as HttpStatus} from "http-status-codes";
 import {API, assertNonNull} from "live-video-streamer-common";
 
-import {Config, computeSegmentDuration, substituteManifestPattern, FilesystemDirectoryConfig} from "./Config/Config";
+import {
+    Config,
+    computeSegmentDuration,
+    substituteManifestPattern,
+    FilesystemDirectoryConfig,
+    SourceConfig
+} from "./Config/Config";
 import * as Ffmpeg from "./Ffmpeg";
 import {Logger} from "./Log";
 import {ServerFileStore} from "./ServerFileStore";
@@ -329,7 +335,7 @@ export class VideoServer {
             avMap: this.getAudioVideoMap()
         };
 
-        this.config.video.sources.forEach((_: string, index: number): void => {
+        this.config.video.sources.forEach((_: string|SourceConfig, index: number): void => {
             serverInfo.angles.push({
                 name: `Angle ${index}`,
                 path: substituteManifestPattern(this.config.dash.manifest, this.uniqueID, index).
@@ -773,7 +779,7 @@ export class VideoServer {
 
     public startStreaming(): void {
         this.log.info("Building ffmpeg processes...");
-        this.ffmpegProcesses = this.config.video.sources.map((source: string, i: number) => {
+        this.ffmpegProcesses = this.config.video.sources.map((source: string|SourceConfig, i: number) => {
             return new Ffmpeg.Subprocess(`Source ${i + 1}`,
                                          Ffmpeg.getTranscoderArgs(i, this.config, source, this.uniqueID));
         });

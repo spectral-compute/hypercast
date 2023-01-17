@@ -278,3 +278,86 @@ test("1 video with audio", (): void => {
         "http://localhost:8080/live/uid/angle-0/manifest.mpd"
     ]);
 });
+
+test("decklink arguments", (): void => {
+    const config = applyDefaultConfig({});
+    const args = getTranscoderArgs(0, config, {source: "decklink://UltraStudio Recorder 3G",
+                                               extraInputArgs: ["-format_code", "Hp60", "-video_input", "hdmi"]},
+                                   "uid");
+    expect(args).toStrictEqual([
+        /* globalArgs */
+        "-loglevel", "repeat+level+info",
+        "-nostdin",
+
+        /* decklink:// */
+        "-f", "decklink",
+
+        /* realtimeInputArgs */
+        "-avioflags", "direct",
+        "-fflags", "nobuffer",
+        "-rtbufsize", "1024",
+        "-thread_queue_size", "0",
+
+        /* extraInputArgs */
+        "-format_code", "Hp60", "-video_input", "hdmi",
+
+        /* getExternalSourceArgs */
+        "-i", "UltraStudio Recorder 3G",
+
+        /* getFilteringArgs */
+        "-filter_complex", "[0:v]split=1[vin0]; [vin0]fps=30000/1001,scale=1920x1080[v0]",
+
+        /* Output map in getTranscoderArgs(). */
+        "-map", "[v0]",
+
+        /* videoArgs */
+        "-pix_fmt:v", "yuv420p",
+
+        /* audioArgs */
+        "-ac:a", "1",
+
+        /* getEncodeArgs stream-specific arguments */
+        "-c:v:0", "h264",
+        "-crf:v:0", "25",
+        "-maxrate:v:0", "3000k",
+        "-bufsize:v:0", "3000k",
+        "-g:v:0", "450",
+        "-force_key_frames:v:0", "expr:eq(mod(n, 450), 0)",
+        "-minrate:v:0", "1000k",
+
+        // Codec-specific options.
+        "-preset:v:0", "faster",
+
+        /* h264Args */
+        "-tune:v:0", "zerolatency",
+
+        /* getDashOutputArgs */
+        "-seg_duration", "15.015",
+        "-target_latency", "0.5",
+        "-adaptation_sets", "id=0,streams=v",
+
+        /* outputArgs */
+        "-flush_packets", "1",
+        "-fflags", "flush_packets", "-copyts",
+
+        /* dashArgs */
+        "-f", "dash",
+        "-use_timeline", "0",
+        "-use_template", "1",
+        "-dash_segment_type", "mp4",
+        "-single_file", "0",
+        "-media_seg_name", "chunk-stream$RepresentationID$-$Number%09d$.$ext$",
+        "-format_options", "movflags=cmaf",
+        "-frag_type", "every_frame",
+        "-window_size", "3",
+        "-extra_window_size", "2",
+        "-utc_timing_url", "https://time.akamai.com/?iso",
+        "-ldash", "1",
+        "-streaming", "1",
+        "-index_correction", "0",
+        "-tcp_nodelay", "1",
+        "-method", "PUT",
+        "-remove_at_exit", "1",
+        "http://localhost:8080/live/uid/angle-0/manifest.mpd"
+    ]);
+});

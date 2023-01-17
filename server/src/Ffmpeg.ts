@@ -3,9 +3,12 @@ import * as child_process from "child_process";
 import * as fs from "fs";
 import * as process from "process";
 import * as stream from "stream";
+import * as ckis from "@ckitching/typescript-is";
 import Timeout = NodeJS.Timeout;
-import {AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern,
-        VideoConfig} from "./Config/Config";
+import {
+    AudioConfig, CodecOptions, Config, computeSegmentDuration, substituteManifestPattern,
+    VideoConfig, SourceConfig
+} from "./Config/Config";
 import {Logger} from "./Log";
 
 /* FFMPEG Arguments. */
@@ -124,30 +127,33 @@ const videoCodecArgs = {
 const audioCodecArgs = new Map<string, string[][]>();
 
 /* Add external audio and video reading. */
-function getExternalSourceArgs(src: string, config: Config): string[] {
+function getExternalSourceArgs(src: string|SourceConfig, config: Config): string[] {
+    let srcString: string = ckis.equals<SourceConfig>(src) ? src.source : src;
+    const extraInputArgs: string[] = ckis.equals<SourceConfig>(src) ? src.extraInputArgs : [];
+
     let args: string[] = globalArgs;
 
-    if (src.startsWith("pipe:")) {
+    if (srcString.startsWith("pipe:")) {
         args = [...args, ...pipeInputArgs];
-    } else if (src.startsWith("rtsp://")) {
+    } else if (srcString.startsWith("rtsp://")) {
         args = [...args, ...rtspInputArgs];
-    } else if (src.startsWith("decklink://")) {
+    } else if (srcString.startsWith("decklink://")) {
         args = [...args, ...decklinkInputArgs];
-        src = src.slice(11); // The bit after "decklink://".
-    } else if (src.search(/^[A-Za-z0-9]+:[/]{2}/) === 0) {
+        srcString = srcString.slice(11); // The bit after "decklink://".
+    } else if (srcString.search(/^[A-Za-z0-9]+:[/]{2}/) === 0) {
         args = [...args, ...realtimeInputArgs]; // This is a guess, but the intended use of this system is realtime.
-    } else if (fs.statSync(src).isFile()) {
+    } else if (fs.statSync(srcString).isFile()) {
         args = [...args, ...fileInputArgs];
         if (config.video.loop) {
             args = args.concat(["-stream_loop", "-1"]);
         }
-    } else if (fs.statSync(src).isFIFO()) {
+    } else if (fs.statSync(srcString).isFIFO()) {
         args = [...args, ...pipeInputArgs]; // This is just a pipe that is named in the filesystem.
     } else {
         args = [...args, ...realtimeInputArgs]; // This is a guess, but the intended use of this system is realtime.
     }
 
-    args = [...args, "-i", src];
+    args = [...args, ...extraInputArgs, "-i", srcString];
 
     return args;
 }
@@ -332,7 +338,8 @@ function getDashOutputArgs(segmentLengthMultiplier: number, videoConfigs: VideoC
 }
 
 /* Get the ffmpeg arguments to give to Subprocess to transcode from external input to DASH in one go. */
-export function getTranscoderArgs(angle: number, config: Config, source: string, uniqueId: string): string[] {
+export function getTranscoderArgs(angle: number, config: Config, source: string|SourceConfig,
+                                  uniqueId: string): string[] {
     const videoConfigs = config.video.configs;
     const audioConfigs = config.audio.configs;
 

@@ -69,6 +69,8 @@ typedocify server Config/Spec \
                "Ultra low-latency video streamer server configuration" "\`CodecOptions\` interface" \
            interfaces/Config ServerConfigSpec/interfaces/Config \
                "Ultra low-latency video streamer server configuration" "\`Config\` interface" \
+           interfaces/SourceConfig ServerConfigSpec/interfaces/SourceConfig \
+               "Ultra low-latency video streamer server configuration" "\`SourceConfig\` interface" \
            interfaces/VideoConfig ServerConfigSpec/interfaces/VideoConfig \
                "Ultra low-latency video streamer server configuration" "\`VideoConfig\` interface"
 echo -e "Finished running \e[1mTypeDoc\e[m"

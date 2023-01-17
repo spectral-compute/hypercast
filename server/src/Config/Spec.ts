@@ -147,6 +147,24 @@ export interface VideoConfig {
 }
 
 /**
+ * Source configuration.
+ *
+ * This is useful where ffmpeg needs more information than a source string can provide, such as for piped input, or
+ * certain Decklink conditions.
+ */
+export interface SourceConfig {
+    /**
+     * The source (given after -i to ffmpeg).
+     */
+    source: string,
+
+    /**
+     * Extra input arguments to give for the source.
+     */
+    extraInputArgs: string[]
+}
+
+/**
  * Tuning parameters for codecs.
  */
 export interface CodecOptions {
@@ -365,7 +383,7 @@ export interface Config {
          * For Decklink, prepend the name ffmpeg uses with "decklink://". This will make the server add "-f decklink" as
          * necessary.
          */
-        sources: string[],
+        sources: (string|SourceConfig)[],
 
         /**
          * Whether or not to print a timestamp onto the video.

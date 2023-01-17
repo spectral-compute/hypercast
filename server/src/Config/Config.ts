@@ -4,7 +4,8 @@ import * as ckis from "@ckitching/typescript-is";
 import {assertNonNull} from "live-video-streamer-common";
 
 import {Config, VideoConfig} from "./Spec";
-import {defaultConfig, defaultVideoConfig, defaultAudioConfig, defaultFilesystemDirectoryConfig} from "./Default";
+import {defaultConfig, defaultVideoConfig, defaultAudioConfig, defaultSourceConfig,
+        defaultFilesystemDirectoryConfig} from "./Default";
 export * from "./Spec";
 
 export function computeSegmentDuration(segmentLengthMultiplier: number,
@@ -109,7 +110,8 @@ export function applyDefaultConfig(config: unknown): Config {
     // The following apply() imposes a superset of the following keys (needed later) on the result.
     interface ConfigPart {
         video: {
-            configs: unknown[]
+            configs: unknown[],
+            sources: unknown[]
         },
         audio: {
             configs: unknown[]
@@ -125,6 +127,9 @@ export function applyDefaultConfig(config: unknown): Config {
     // Video configuration.
     for (let i = 0; i < result.video.configs.length; i++) {
         result.video.configs[i] = apply(defaultVideoConfig, result.video.configs[i]);
+    }
+    for (let i = 0; i < result.video.sources.length; i++) {
+        result.video.sources[i] = apply(defaultSourceConfig, result.video.sources[i]);
     }
 
     // Audio configuration.

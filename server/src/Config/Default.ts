@@ -21,6 +21,10 @@ export const defaultAudioConfig = {
     codec: "aac"
 };
 
+export const defaultSourceConfig = {
+    extraInputArgs: []
+};
+
 export const defaultFilesystemDirectoryConfig = {
     urlPrefix: "/",
     index: "",
