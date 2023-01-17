@@ -35,6 +35,13 @@ export interface BufferControl {
     extraBuffer: number,
 
     /**
+     * The size of the target buffer when a stream is first played, in ms.
+     *
+     * If this buffer is exceeded before a buffer history is built, it's considered that the player has fallen behind.
+     */
+    initialBuffer: number,
+
+    /**
      * The buffer to keep when seeking to the live edge, in ms.
      *
      * Increasing this can prevent additional stalls after a seek and after starting to play a stream.

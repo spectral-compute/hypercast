@@ -4,6 +4,7 @@ export const defaultVideoConfig = {
     crf: 25,
     bufferCtrl: {
         extraBuffer: 180,
+        initialBuffer: 1000,
         seekBuffer: 0
     },
     width: 1920,

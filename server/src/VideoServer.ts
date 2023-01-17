@@ -293,6 +293,7 @@ export class VideoServer {
                 height: codec.height,
                 bufferCtrl: {
                     extraBuffer: codec.bufferCtrl.extraBuffer,
+                    initialBuffer: codec.bufferCtrl.initialBuffer,
                     seekBuffer: codec.bufferCtrl.seekBuffer
                 }
             });

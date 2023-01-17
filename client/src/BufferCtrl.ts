@@ -198,7 +198,7 @@ export class BufferControl {
         /* Figure out the target buffer size. */
         const delays: number[] = this.getSortedTimestampDelays();
         if (delays.length < 100) {
-            this.maxBuffer = 1000;
+            this.maxBuffer = this.serverParams.initialBuffer;
         } else {
             this.maxBuffer = delays[Math.floor(delays.length * this.timestampAutoBufferMax)]! - delays[0]! +
                              this.serverParams.extraBuffer;
@@ -290,6 +290,7 @@ export class BufferControl {
     // Settings.
     private serverParams: API.BufferControl = {
         extraBuffer: 180, // 3x maximum opus frame size.
+        initialBuffer: 1000,
         seekBuffer: 0
     };
 
