@@ -255,11 +255,11 @@ export class BufferControl {
 
         // Seek.
         this.mediaElement.currentTime = rangeEnd - seekBufferSeconds;
-        this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
         if (this.lastCatchUpEventClusterEnd !== 0) {
             this.catchUpEvents++; // Not just the initial seek that always has to happen.
             tickInfo.catchUp = true;
         }
+        this.lastCatchUpEventClusterEnd = now + this.catchUpEventDuration;
 
         this.debugBufferControlTick(tickInfo);
     }
