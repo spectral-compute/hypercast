@@ -111,6 +111,11 @@ unmute.onclick = (): void => {
     mute.hidden = false;
 };
 
+const fullscreen = document.getElementById("fullscreen")!;
+fullscreen.onclick = (): void => {
+    void video.requestFullscreen();
+};
+
 const stop = document.getElementById("stop")!;
 const start = document.getElementById("start")!;
 stop.onclick = (): void => {
