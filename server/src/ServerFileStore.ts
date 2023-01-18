@@ -270,16 +270,6 @@ export class ServerFileStore extends EventEmitter {
      * buffer size. This means files that stream slowly (e.g: audio) get delayed. By interleaving them with higher
      * bandwidth files (e.g: video), the latter evicts the buffer for the former.
      *
-     * Each file has a corresponding index (according to the patterns array). The contents of the source files are
-     * inserted into the interleaved file in chunks. The format is simply a repetition of:
-     *  - An 8-bit content ID. The low 6 bits are the file index. The high 2 bits are the width of the length:
-     *     - 0: 8-bit length.
-     *     - 1: 16-bit length.
-     *     - 2: 32-bit length.
-     *     - 3: 64-bit length.
-     *  - The N-bit little-endian length.
-     *  - The data chunk.
-     *
      * @param namePattern The pattern to use to construct the path for the interleaved file. {n} is replaced with
      *                    capture group n.
      * @param patterns A list of patterns to interleave. The capture groups will be used as a key so that only files

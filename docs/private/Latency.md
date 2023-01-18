@@ -51,12 +51,16 @@ The format is very simple.
 Each original file has a corresponding index in the file into which it is interleaved. The contents of the source files
 are inserted into the interleaved file in chunks. The format is simply a repetition of:
 
- - An 8-bit content ID. The low 6 bits are the file index. The high 2 bits are the width of the length:
-    - 0: 8-bit length.
-    - 1: 16-bit length.
-    - 2: 32-bit length.
-    - 3: 64-bit length.
+ - An 8-bit content ID.
+    - The low 5 bits are the file index.
+    - Bit 5 indicates whether there's a timestamp included for this chunk.
+    - The high 2 bits are the width of the length:
+      - 0: 8-bit length.
+      - 1: 16-bit length.
+      - 2: 32-bit length.
+      - 3: 64-bit length.
  - The N-bit little-endian length.
+ - The timestamp, if present. This is a 64-bit unsigned integer in µs.
  - The data chunk.
 
 The end of an original file is signalled by a zero-byte chunk for the given file index.
