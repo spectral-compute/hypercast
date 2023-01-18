@@ -12,7 +12,7 @@ function getFileAsBuffers(file: ReturnType<ServerFileStore["get"]>): Buffer[] {
 test("Simple", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -47,7 +47,7 @@ test("Simple", (): void => {
 test("Filename pattern", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave{1}", [/^\/a([0-9]+)$/, /^\/b([0-9]+)$/], Infinity);
+    sfs.addInterleavingPattern("/interleave{1}", [/^\/a([0-9]+)$/, /^\/b([0-9]+)$/], Infinity, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave0")).toBeFalsy();
@@ -106,7 +106,7 @@ test("Filename pattern", (): void => {
 test("Successive chunk", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -141,7 +141,7 @@ test("Successive chunk", (): void => {
 test("Early EOF", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -182,7 +182,7 @@ test("Early EOF", (): void => {
 test("16-bit chunk length", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -222,7 +222,7 @@ test("16-bit chunk length", (): void => {
 test("32-bit chunk length", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], Infinity, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();
@@ -262,7 +262,7 @@ test("32-bit chunk length", (): void => {
 test("Timestamps", (): void => {
     /* Create a file store with an interleave. */
     const sfs = new ServerFileStore();
-    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], 0);
+    sfs.addInterleavingPattern("/interleave", [/^\/a$/, /^\/b$/], 0, 0, 0);
 
     /* Create the underlying files. */
     expect(sfs.has("/interleave")).toBeFalsy();

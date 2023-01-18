@@ -1,15 +1,25 @@
 import {EventEmitter} from "events";
 import {Logger} from "./Log";
+import {MinimumInterleaveRate} from "./MinimumInterleaveRate";
 
 const log = new Logger("Server File Store");
 
 class InterleavedFile {
     constructor(fileStore: ServerFileStore, namePattern: string, captureGroups: string[], interleaveTotal: number,
-                timestampInterval: number) {
+                timestampInterval: number, minimumRate: number, minimumRateWindowSize: number) {
         this.fileStore = fileStore;
         this.captureGroups = captureGroups;
         this.interleaveTotal = interleaveTotal;
         this.timestampInterval = timestampInterval;
+
+        /* Make sure the minimum rate is maintained. */
+        if (minimumRate > 0) {
+            this.minimumRateTracker = new MinimumInterleaveRate((b: Buffer): void => {
+                // The padding data file index is here. If this is changed, then change the documentation and the call
+                // to this.onData() in Deinterleaver.acceptData() in the client too.
+                this.addChunk(31, b);
+            }, minimumRate, minimumRateWindowSize);
+        }
 
         /* Figure out what the path for the interleaved file is. */
         let substitutedPattern: string = namePattern;
@@ -126,12 +136,27 @@ class InterleavedFile {
             timestampBuffer = Buffer.alloc(0);
         }
 
-        this.serverFile.add(Buffer.concat([getValueAsBuffer(contentId, 1), lengthBuffer, timestampBuffer, b]));
+        const chunk = Buffer.concat([getValueAsBuffer(contentId, 1), lengthBuffer, timestampBuffer, b]);
+        this.serverFile.add(chunk);
+
+        /* Keep the minimum rate tracker up to date. */
+        if (this.minimumRateTracker === null) {
+            return;
+        }
+        if (!this.minimumRateTracker.isRunning()) {
+            // This is started here so that if anything ever adds an interleave during pre-availability, it doesn't
+            // generate a minimum bitrate at that point. Warmup data should be handled separately if we want that.
+            this.minimumRateTracker.start();
+        }
+        this.minimumRateTracker.addData(chunk.length);
     }
 
     private onSourceFinish(path: string): void {
         this.sourceInProgressPaths.delete(path);
         if (this.interleaveCount === this.interleaveTotal && this.sourceInProgressPaths.size === 0) {
+            if (this.minimumRateTracker?.isRunning()) {
+                this.minimumRateTracker.stop();
+            }
             this.serverFile.finish();
             log.debug(`Finishing interleaved file ${this.interleavedPath}`);
         }
@@ -150,6 +175,7 @@ class InterleavedFile {
     }
 
     private readonly fileStore: ServerFileStore;
+    private readonly minimumRateTracker: MinimumInterleaveRate | null = null;
     private readonly captureGroups: string[];
     private readonly interleaveTotal: number; // The number of files to interleave.
     private readonly timestampInterval: number; // Period between timestamps in the interleave.
@@ -168,7 +194,8 @@ class InterleavedFile {
 }
 
 class InterleavePattern {
-    constructor(fileStore: ServerFileStore, namePattern: string, patterns: RegExp[], timestampInterval: number) {
+    constructor(fileStore: ServerFileStore, namePattern: string, patterns: RegExp[], timestampInterval: number,
+                minimumRate: number, minimumRateWindowSize: number) {
         log.debug(`Creating interleave pattern: ${namePattern}`);
         for (const pattern of patterns) {
             log.debug(`    "${pattern.source}"`);
@@ -178,6 +205,8 @@ class InterleavePattern {
         this.namePattern = namePattern;
         this.patterns = patterns;
         this.timestampInterval = timestampInterval;
+        this.minimumRate = minimumRate;
+        this.minimumRateWindowSize = minimumRateWindowSize;
 
         fileStore.on("add", (path: string): void => {
             this.onServerAddPath(path);
@@ -202,7 +231,8 @@ class InterleavePattern {
             }
         }
         const interleavedFile = new InterleavedFile(this.fileStore, this.namePattern, captureGroups,
-                                                    this.patterns.length, this.timestampInterval);
+                                                    this.patterns.length, this.timestampInterval,
+                                                    this.minimumRate, this.minimumRateWindowSize);
         interleavedFile.addFileAtIndex(path, patternIndex);
         this.interleavedFiles.push(interleavedFile);
     }
@@ -211,6 +241,8 @@ class InterleavePattern {
     private readonly namePattern: string;
     private readonly patterns: RegExp[];
     private readonly timestampInterval: number;
+    private readonly minimumRate: number;
+    private readonly minimumRateWindowSize: number;
     private readonly interleavedFiles = new Array<InterleavedFile>();
 }
 
@@ -276,9 +308,12 @@ export class ServerFileStore extends EventEmitter {
      *                 with matching capture groups are interleaved. Therefore, each pattern must have the same number
      *                 of capture groups.
      * @param timestampInterval Average period between timestamps in the interleave.
+     * @param minimumRate The minimum rate to maintain, in bytes per second, for this interleave.
+     * @param minimumRateWindowSize The window over which to evaluate the minimum rate, in ms.
      */
-    addInterleavingPattern(namePattern: string, patterns: RegExp[], timestampInterval: number): void {
-        new InterleavePattern(this, namePattern, patterns, timestampInterval);
+    addInterleavingPattern(namePattern: string, patterns: RegExp[], timestampInterval: number, minimumRate: number,
+                           minimumRateWindowSize: number): void {
+        new InterleavePattern(this, namePattern, patterns, timestampInterval, minimumRate, minimumRateWindowSize);
     }
 
     add(path: string): ServerFile {

@@ -366,7 +366,9 @@ export class VideoServer {
                     regexes.push(new RegExp(`${livePrefix}chunk-stream${va[1]}-([0-9]+).[^.]+`));
                 }
                 this.serverFileStore.addInterleavingPattern(`${livePrefix}interleaved${va[0]}-{1}`, regexes,
-                                                            timestampInterval);
+                                                            timestampInterval,
+                                                            this.config.video.configs[va[0]]!.minInterleaveRate * 128,
+                                                            this.config.video.configs[va[0]]!.minInterleaveWindow);
 
                 if (!this.config.dash.interleavedDirectDashSegments) {
                     for (const regex of regexes) {

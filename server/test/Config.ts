@@ -49,6 +49,8 @@ test("Default", (): void => {
                         minimumInitTime: 2000
                     },
                     minBitrate: null,
+                    minInterleaveRate: 0,
+                    minInterleaveWindow: 200,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -117,6 +119,8 @@ test("Override", (): void => {
                         minimumInitTime: 2000
                     },
                     minBitrate: null,
+                    minInterleaveRate: 0,
+                    minInterleaveWindow: 200,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -201,6 +205,8 @@ test("Filesystem", (): void => {
                         minimumInitTime: 2000
                     },
                     minBitrate: null,
+                    minInterleaveRate: 0,
+                    minInterleaveWindow: 200,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -276,6 +282,8 @@ test("Two video configs", (): void => {
                         minimumInitTime: 2000
                     },
                     minBitrate: null,
+                    minInterleaveRate: 0,
+                    minInterleaveWindow: 200,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -293,6 +301,8 @@ test("Two video configs", (): void => {
                         minimumInitTime: 2000
                     },
                     minBitrate: null,
+                    minInterleaveRate: 0,
+                    minInterleaveWindow: 200,
                     crf: 25,
                     width: 1920,
                     height: 1080,
@@ -365,6 +375,8 @@ test("Source Default", (): void => {
                         minimumInitTime: 2000
                     },
                     minBitrate: null,
+                    minInterleaveRate: 0,
+                    minInterleaveWindow: 200,
                     crf: 25,
                     width: 1920,
                     height: 1080,

@@ -1,6 +1,8 @@
 export const defaultVideoConfig = {
     bitrate: 3000,
     minBitrate: null,
+    minInterleaveRate: 0,
+    minInterleaveWindow: 200,
     crf: 25,
     bufferCtrl: {
         extraBuffer: 180,

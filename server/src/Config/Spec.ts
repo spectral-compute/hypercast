@@ -89,6 +89,21 @@ export interface VideoConfig {
     minBitrate: number | null,
 
     /**
+     * The minimum bitrate in kBit/s for any interleave that contains this video stream.
+     *
+     * If the specified bitrate is not achieved naturally, then the interleave is padded with extra data to achieve the
+     * minimum rate.
+     */
+    minInterleaveRate: number;
+
+    /**
+     * The window, in ms, over which the minimum interleave rate is evaluated.
+     *
+     * The rate is evaluated twice per window, so the worst case scenario is no data transmitted for 1.5x the window.
+     */
+    minInterleaveWindow: number;
+
+    /**
      * Constant rate factor.
      *
      * For h264, see the [CRF section of the Ffmpeg h264 encoding guide](https://trac.ffmpeg.org/wiki/Encode/H.264#crf).

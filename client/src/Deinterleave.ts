@@ -101,7 +101,9 @@ export class Deinterleaver {
 
             // Store whatever of the chunk we currently have.
             const data = buffer.slice(offset, offset + chunkLength);
-            this.onData(data, this.currentIndex);
+            if (this.currentIndex !== 31) {
+                this.onData(data, this.currentIndex);
+            }
             this.currentOffset += chunkLength;
             offset += chunkLength;
 

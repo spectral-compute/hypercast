@@ -63,4 +63,5 @@ are inserted into the interleaved file in chunks. The format is simply a repetit
  - The timestamp, if present. This is a 64-bit unsigned integer in µs.
  - The data chunk.
 
-The end of an original file is signalled by a zero-byte chunk for the given file index.
+The end of an original file is signalled by a zero-byte chunk for the given file index. File index 31 (i.e: the index
+with all 1s) is reserved for padding.
