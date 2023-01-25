@@ -3,9 +3,14 @@ title: Building
 toc: true
 ---
 
+
+The Javascript build process runs out-of-tree by default from within the CMake build system. This page describes how to
+use the Javascript build system directly.
+
+
 ## Basic build steps
 
-1. Run `yarn install` from the source repository.
+1. Run `yarn install` from the source repository's `js` directory.
 2. Run `yarn bundle` (for a production build) or `yarn bundle-dev` (for a development build) to build the server and the
    clients. This will produce a `dist` directory in `client`, `dev-client`, `demo-client`, and `server`.
 3. Run `yarn foreach lint` to run the linter on everything.
@@ -13,12 +18,6 @@ toc: true
 5. Run `yarn test` to run the tests for the client, the server, and the shared code.
 
 This process can be undone with `yarn clean`. The cleaning process can be verified with `git clean -dXn`.
-
-
-## Packaging
-
-1. Run `yarn install` from the soure directory.
-2. Run `yarn package`.
 
 
 ## Building the clients
@@ -34,7 +33,7 @@ for example:
 `https://stream-demo.spectralcompute.co.uk/?streaminfo=https%3A%2F%2Fstream-demo.spectralcompute.co.uk%2Flive%2Finfo.json`.
 
 
-## Starting the server
+## Starting the Typescript server
 
 The server can be started with `yarn start SERVER_CONFIG.json` from the `server` directory or
 `node live-video-streamer-server.js SERVER_CONFIG.json` from the `server/dist` directory. See the user documentation

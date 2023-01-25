@@ -58,31 +58,42 @@ cd "${SRCDIR}"
 # Run typedoc to build reference documentation.
 typedocify client Main classes/Player ClientAPI "Ultra low-latency video streamer client API" "\`Player\` class"
 typedocify server Config/Spec \
-           README ServerConfigSpec/README "Ultra low-latency video streamer server configuration" "" \
-           interfaces/AudioConfig ServerConfigSpec/interfaces/AudioConfig \
-               "Ultra low-latency video streamer server configuration" "\`AudioConfig\` interface" \
-           interfaces/BufferControl ServerConfigSpec/interfaces/BufferControl \
-               "Ultra low-latency video streamer server configuration" "\`BufferControl\` interface" \
-           interfaces/FilesystemDirectoryConfig ServerConfigSpec/interfaces/FilesystemDirectoryConfig \
-               "Ultra low-latency video streamer server configuration" "\`FilesystemDirectoryConfig\` interface" \
-           interfaces/CodecOptions ServerConfigSpec/interfaces/CodecOptions \
-               "Ultra low-latency video streamer server configuration" "\`CodecOptions\` interface" \
-           interfaces/Config ServerConfigSpec/interfaces/Config \
-               "Ultra low-latency video streamer server configuration" "\`Config\` interface" \
-           interfaces/SourceConfig ServerConfigSpec/interfaces/SourceConfig \
-               "Ultra low-latency video streamer server configuration" "\`SourceConfig\` interface" \
-           interfaces/VideoConfig ServerConfigSpec/interfaces/VideoConfig \
-               "Ultra low-latency video streamer server configuration" "\`VideoConfig\` interface"
+           README private/ServerConfigSpec/README \
+               "Ultra low-latency video streamer Typescript server configuration" "" \
+           interfaces/AudioConfig private/ServerConfigSpec/interfaces/AudioConfig \
+               "Ultra low-latency video streamer Typescript server configuration" "\`AudioConfig\` interface" \
+           interfaces/BufferControl private/ServerConfigSpec/interfaces/BufferControl \
+               "Ultra low-latency video streamer Typescript server configuration" "\`BufferControl\` interface" \
+           interfaces/FilesystemDirectoryConfig private/ServerConfigSpec/interfaces/FilesystemDirectoryConfig \
+               "Ultra low-latency video streamer Typescript server configuration" "\`FilesystemDirectoryConfig\` interface" \
+           interfaces/CodecOptions private/ServerConfigSpec/interfaces/CodecOptions \
+               "Ultra low-latency video streamer Typescript server configuration" "\`CodecOptions\` interface" \
+           interfaces/Config private/ServerConfigSpec/interfaces/Config \
+               "Ultra low-latency video streamer Typescript server configuration" "\`Config\` interface" \
+           interfaces/SourceConfig private/ServerConfigSpec/interfaces/SourceConfig \
+               "Ultra low-latency video streamer Typescript server configuration" "\`SourceConfig\` interface" \
+           interfaces/VideoConfig private/ServerConfigSpec/interfaces/VideoConfig \
+               "Ultra low-latency video streamer Typescript server configuration" "\`VideoConfig\` interface"
 echo -e "Finished running \e[1mTypeDoc\e[m"
 
 # Patch the defaults into the ServerConfiguration documentation.
-substitute "${TMP}/markdown/ServerConfiguration.md" "DEFAULTS" \
+substitute "${TMP}/markdown/private/ServerConfiguration.md" "DEFAULTS" \
            "$(echo "$(sed -E 's/export//' "../server/src/Config/Default.ts")
                     console.log(JSON.stringify(defaultConfig, null, 2));" | node)"
 
+# Figure out where xcmake is.
+if [ -e "${SRCDIR}/xcmake" ] ; then
+    XCMAKE="${SRCDIR}/xcmake"
+elif [ -e "${SRCDIR}/../../xcmake" ] ; then
+    XCMAKE="${SRCDIR}/../../xcmake"
+else
+    echo "Could not find xcmake!" 1>&2
+    exit 1
+fi
+
 # Build the documentation with pandoc.
 echo -e "Running \e[1mpandoc\e[m"
-"xcmake/tools/pandoc/standalone.sh" "${TMP}/markdown" "${OUTDIR}" live-video-streamer -- "$@"
+"${XCMAKE}/tools/pandoc/standalone.sh" "${TMP}/markdown" "${OUTDIR}" live-video-streamer -- "$@"
 
 # Clean up.
 rm -rf "${TMP}"

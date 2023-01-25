@@ -1,8 +1,7 @@
 stages:
-  - Build-Development
-  - Lint
+  - Build-Debug
   - Test
-  - Build-Production
+  - Build-Release
   - Deploy
 
 .env:
@@ -10,54 +9,56 @@ stages:
 
 Build:
   extends: .env
-  stage: Build-Development
+  stage: Build-Debug
   script:
-    - run "cd src && yarn install"
-    - run "cd src && yarn bundle-dev"
+    - run "cmake -DCMAKE_BUILD_TYPE=Debug -DXCMAKE_CLANG_TIDY=On -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
+    - run "make -C build install -j$(nproc)"
   variables:
     CI_PROPAGATE_WORKSPACE: 1
-
-Lint:
-  extends: .env
-  stage: Lint
-  script:
-    - run "cd src && yarn foreach lint"
-  variables:
-    GIT_STRATEGY: none
 
 Test:
   extends: .env
   stage: Test
   script:
-    - run "cd src && yarn test"
+    - run "inst/test/bin/live-video-streamer-server_test"
+    - run "inst/test/bin/js_test"
   variables:
     GIT_STRATEGY: none
 
-Build-Production:
+Build-Release-With-Server:
   extends: .env
-  stage: Build-Production
+  stage: Build-Release
   script:
-    # Clean the source tree (yarn insists on in-tree builds D: ), and check that the clean worked..
-    - run "cd src && yarn clean"
-    - run bash -c 'cd src && [[ "$(git clean -dXn | wc -l)" == "0" ]]' # Test to see if yarn clean removed everything.
+    - run "rm -rf build inst"
+    - run "cmake -DCMAKE_BUILD_TYPE=Release -DXCMAKE_PACKAGING=On -DXCMAKE_CLANG_TIDY=On -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
+    - run "make -C build install package -j$(nproc)"
+    - run "tar tf build/*.tar.gz" # Show the package contents.
 
-    # Yarn has the stupid property that it needs a plugin to do a production install. Install that badly named plugin
-    # and use it to do a production install. Add the plugin here rather than in git because doing the latter would mean
-    # committing the plugin itself into git - yuck!
-    - run "cd src && yarn plugin import workspace-tools"
-    - run "cd src && yarn workspaces focus --production --all"
+    # Check package contents.
+    - run "tar tf build/*.tar.gz | grep -qE '^spectral-live-video-streamer/bin/live-video-streamer-server$'"
+    - run "tar tf build/*.tar.gz | grep -qE '^SpectralLiveVideoStreamer/share/spectral-video-streamer/demo-client/index[.]html$'"
+    - run "tar tf build/*.tar.gz | grep -qE '^SpectralLiveVideoStreamer/share/spectral-video-streamer/client/live-video-streamer-client[.]js$'"
+    - run "tar tf build/*.tar.gz | grep -qE '^SpectralLiveVideoStreamer/share/spectral-video-streamer/client/live-video-streamer-client[.]d[.]ts$'"
+    - run "! tar tf build/*.tar.gz | grep -qE '([.]map|/asset-manifest[.]json)$'"
 
-    # Actually do the build.
-    - run "cd src && yarn bundle"
   variables:
     GIT_STRATEGY: none
 
-Package:
+Build-Release-Client-Only:
   extends: .env
-  stage: Build-Production
+  stage: Build-Release
   script:
-    - run "cd src && yarn package"
-    - run "cd src && find | grep -F spectral-video-streamer-" # Check we got the package.
+    - run "rm -rf build inst"
+    - run "cmake -DCMAKE_BUILD_TYPE=Release -DXCMAKE_PACKAGING=On -DENABLE_SERVER=Off -DXCMAKE_CLANG_TIDY=On -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
+    - run "make -C build install package -j$(nproc)"
+    - run "tar tf build/*.tar.gz" # Show the package contents.
+
+    # Check package contents.
+    - run "tar tf build/*.tar.gz | grep -qE '^spectral-live-video-streamer-client/demo-client/index[.]html$'"
+    - run "tar tf build/*.tar.gz | grep -qE '^spectral-live-video-streamer-client/client/live-video-streamer-client[.]js$'"
+    - run "tar tf build/*.tar.gz | grep -qE '^spectral-live-video-streamer-client/client/live-video-streamer-client[.]d[.]ts$'"
+    - run "! tar tf build/*.tar.gz | grep -qE '([.]map|/asset-manifest[.]json)$'"
+
   variables:
     GIT_STRATEGY: none
 
@@ -67,6 +68,4 @@ Manual:
   variables:
     GIT_STRATEGY: none
   script:
-    - run mkdir docs_inst
-    - run "cd src && docs/build.sh ../docs_inst"
-    - run publishDocs.sh docs_inst
+    - run publishDocs.sh

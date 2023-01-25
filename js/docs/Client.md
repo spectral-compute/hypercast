@@ -1,5 +1,5 @@
 ---
-title: Ultra low-latency video streamer
+title: Ultra low-latency video streamer client
 toc: true
 ---
 
@@ -15,19 +15,10 @@ server. The client uses the standard
 [Media Source Extensions](https://developer.mozilla.org/en-US/docs/Web/API/Media_Source_Extensions_API) provided by
 modern web browsers for efficient video decode and display in a standard plugin-free way.
 
- - [Client documentation](./Client.md)
+ - [Client API](./ClientAPI.md) reference
 
 
-[](!CLIENT_ONLY)
-## Server
+## Demo Client
 
- - [Server documentation](./server/README.md)
-[]()
-
-
-## Content Distribution Network
-
-Your CDN needs to be configured appropriately for the ultra low-latency video streamer to work properly. We have a guide
-to setting up the ultra low-latency video streamer for a CDN.
-
- - [Setup guide for using Cloudflare](./Cloudflare.md) with the ultra low-latency video streaming server. 
+There is a demo client written in [Typescript](https://www.typescriptlang.org/) to demonstrate use of the ultra
+low-latency streamer client in an application.
