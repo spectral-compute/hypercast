@@ -1,0 +1,15 @@
+@INCLUDE_PATH = "@CMAKE_CURRENT_LIST_DIR@"
+
+# Some parameters, like IO context, don't benefit from repeated documentation.
+@WARN_IF_INCOMPLETE_DOC = NO
+
+# The template in XCmake is optimized for external documentation. This is internal documentation.
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_PRIV_VIRTUAL   = YES
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_METHODS  = YES
+EXTRACT_ANON_NSPACES   = YES
+HIDE_UNDOC_CLASSES     = NO
+INTERNAL_DOCS          = YES

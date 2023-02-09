@@ -7,6 +7,11 @@ project(SpectralLiveVideoStreamer
         LANGUAGES CXX)
 include(XCMake)
 
+# LTO.
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+endif()
+
 # We want to figure out if the only stuff is Javascript (i.e: client only).
 set(JS_ONLY 1 CACHE INTERNAL "" FORCE)
 

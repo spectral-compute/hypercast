@@ -1,0 +1,9 @@
+# Include XCMake's defaults.
+InheritParentConfig: true
+
+# Checks that either cause false positives, compiler crashes, or that the project uses the pattern for.
+Checks: "\
+-clang-analyzer-core.CallAndMessage,\
+-clang-analyzer-core.NullDereference,\
+-readability-simplify-boolean-expr,\
+-google-explicit-constructor"
