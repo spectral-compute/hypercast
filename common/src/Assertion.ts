@@ -21,3 +21,4 @@ export function assertNonNull<T>(x: T, message?: string): asserts x is NonNullab
         throw new NullityAssertionError(`Object asserted to be non-null is undefined${message ? ": " + message : "."}`);
     }
 }
+
