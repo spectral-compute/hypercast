@@ -3,13 +3,20 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import {AppCtx} from "./AppCtx";
+
+// Global-ish state.
+const TheAppContext = new AppCtx();
+export const AppContext = React.createContext(TheAppContext);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <AppContext.Provider value={TheAppContext}>
+      <App />
+    </AppContext.Provider>
   </React.StrictMode>
 );
 
