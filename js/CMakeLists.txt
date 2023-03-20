@@ -10,7 +10,6 @@ include(CMakeDependentOption)
 option(ENABLE_JS "Enable Javascript stuff (e.g: the client library and demo client)." On)
 cmake_dependent_option(JS_DEV "Build the Javascript stuff in development mode rather than production mode."
                        ${DEBUG_ON_OFF} ENABLE_JS Off)
-cmake_dependent_option(JS_LINT "Run the Javascript linter during the build process." ${XCMAKE_CLANG_TIDY} ENABLE_JS Off)
 
 # The rest of this script is meaningful only if the Javascript build is turned on.
 if (NOT ENABLE_JS)
@@ -87,16 +86,14 @@ if (NOT XCMAKE_PACKAGING)
 endif()
 
 # Lint.
-if (JS_LINT)
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
-                       COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
-                       COMMAND yarn foreach lint
-                       DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
-                       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-                       COMMENT "Running Javascript linter."
-                       VERBATIM)
-    add_custom_target(js_yarn_foreach_lint ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint")
-endif()
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
+                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
+                   COMMAND yarn foreach lint
+                   DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
+                   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+                   COMMENT "Running Javascript linter."
+                   VERBATIM)
+add_custom_target(js_yarn_foreach_lint ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint")
 
 # Create the Javascript test script in the install directory. This really just serves to make it easy to find what to
 # run. It depends on the build directory.
