@@ -28,6 +28,7 @@
   "dependencies": {
     "@babel/core": "^7.17.10",
     "babel-loader": "^8.2.5",
+    "chart.js": "^4.2.1",
     "copy-webpack-plugin": "^10.2.4",
     "live-video-streamer-client": "workspace:^",
     "ts-loader": "^9.3.0",
