@@ -53,11 +53,12 @@ public:
      * @param path The path to add the resource to. This must not point to a resource that already exists and must not
      *             point to a child of a resource.
      * @param args The arguments to forward to the resource's constructor.
-     * @return A reference to the newly created resource.
+     * @return A shared pointer to the newly created resource. The server also keeps ownership of the resource until
+     *         it's removed or replaced.
      * @throws std::runtime_error if the conditions on path are not met.
      */
     template <typename ResourceType, typename... Args>
-    ResourceType &addResource(const Path &path, Args &&...args)
+    std::shared_ptr<ResourceType> addResource(const Path &path, Args &&...args)
     {
         return addOrReplaceResource<ResourceType>(false, path, std::forward<Args>(args)...);
     }
@@ -69,11 +70,11 @@ public:
      * @param path The path to add the resource to. This must not point to an intermediate path in the resource tree and
      *             must not point to a child of a resource.
      * @param args The arguments to forward to the resource's constructor.
-     * @return A reference to the newly created resource.
+     * @return A shared pointer to the newly created resource.
      * @throws std::runtime_error if the conditions on path are not met.
      */
     template <typename ResourceType, typename... Args>
-    ResourceType &addOrReplaceResource(const Path &path, Args &&...args)
+    std::shared_ptr<ResourceType> addOrReplaceResource(const Path &path, Args &&...args)
     {
         return addOrReplaceResource<ResourceType>(true, path, std::forward<Args>(args)...);
     }
@@ -119,18 +120,17 @@ private:
      * @return A reference to the newly created resource.
      */
     template <typename ResourceType, typename... Args>
-    ResourceType &addOrReplaceResource(bool replace, const Path &path, Args &&...args)
+    std::shared_ptr<ResourceType> addOrReplaceResource(bool replace, const Path &path, Args &&...args)
     {
         /* Get the node that we're going to insert into, and check it's not a tree. */
         std::shared_ptr<Resource> &node = getOrCreateLeafNode(path, replace);
 
         /* Create the resource. */
         auto resource = std::make_shared<ResourceType>(std::forward<Args>(args)...); // Create the resource.
-        ResourceType &result = *resource; // Extract the resource reference to return. Not changed by the std::move.
 
         /* Insert it into the tree and return a reference to it. */
-        node = std::move(resource);
-        return result;
+        node = resource;
+        return resource;
     }
 
     /**
