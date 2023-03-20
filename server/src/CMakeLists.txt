@@ -29,8 +29,8 @@ else()
     target_link_options(${TARGET} PRIVATE -Wl,--gc-sections)
 endif()
 
-# Boost.
-find_package(Boost REQUIRED COMPONENTS filesystem)
+# Boost-filesystem is needed to have asyncio FS stuff.
+find_package(Boost 1.81.0 REQUIRED COMPONENTS filesystem)
 target_link_libraries(${TARGET} PRIVATE Boost::boost Boost::filesystem)
 
 # Remove lots of Boost goo that we don't need or want. E.g: source location strings that probably aid reverse
