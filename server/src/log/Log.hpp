@@ -52,6 +52,12 @@ private:
          */
         ~NewItem();
 
+        // No copying or moving.
+        NewItem(const NewItem &) = delete;
+        NewItem(NewItem &&) = delete;
+        NewItem &operator=(const NewItem &) = delete;
+        NewItem &operator=(NewItem &&) = delete;
+
         /**
          * Append a formatted object to the new log item's message.
          */
@@ -69,12 +75,6 @@ private:
          * Create a log item to write to now.
          */
         explicit NewItem(Context &parent, Level level, std::string_view kind);
-
-        // No copying or moving.
-        NewItem(const NewItem &) = delete;
-        NewItem(NewItem &&) = delete;
-        NewItem &operator=(const NewItem &) = delete;
-        NewItem &operator=(NewItem &&) = delete;
 
         const std::chrono::steady_clock::time_point steadyCreationTime;
         const std::chrono::system_clock::time_point systemCreationTime;
@@ -124,6 +124,12 @@ public:
      * Destroy the context and record its destruction.
      */
     ~Context();
+
+    // No copying or moving.
+    Context(const Context &) = delete;
+    Context(Context &&) = delete;
+    Context &operator=(const Context &) = delete;
+    Context &operator=(Context &&) = delete;
 
     /**
      * Create a log entry.
@@ -178,12 +184,6 @@ private:
      */
     explicit Context(Log &parent, std::string name, size_t index);
 
-    // No copying or moving.
-    Context(const Context &) = delete;
-    Context(Context &&) = delete;
-    Context &operator=(const Context &) = delete;
-    Context &operator=(Context &&) = delete;
-
     /**
      * Append the given item to the log.
      */
@@ -212,6 +212,12 @@ public:
      * Finish the log and record this.
      */
     virtual ~Log();
+
+    // No copying or moving.
+    Log(const Log &) = delete;
+    Log(Log &&) = delete;
+    Log &operator=(const Log &) = delete;
+    Log &operator=(Log &&) = delete;
 
     /**
      * Create a new context with the given name.
@@ -259,12 +265,6 @@ protected:
 
 private:
     friend class Context; // Only Context should call append.
-
-    // No copying or moving.
-    Log(const Log &) = delete;
-    Log(Log &&) = delete;
-    Log &operator=(const Log &) = delete;
-    Log &operator=(Log &&) = delete;
 
     /**
      * Load an item from the stored log.

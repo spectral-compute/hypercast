@@ -119,4 +119,4 @@ private:
     const bool isPublic;
 };
 
-} // namespace server
+} // namespace Server

@@ -28,6 +28,6 @@ std::vector<std::byte> readFile(const std::filesystem::path &path);
  */
 std::string replaceAll(std::string_view string, std::string_view token, std::string_view replacement);
 
-} // namespace util
+} // namespace Util
 
 /// @}

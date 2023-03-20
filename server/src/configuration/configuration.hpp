@@ -323,6 +323,6 @@ private:
     void validate() const;
 };
 
-} // namespace Configuration
+} // namespace Config
 
 /// @}

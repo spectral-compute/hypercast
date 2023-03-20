@@ -11,7 +11,7 @@ namespace Log
 class Context;
 class Log;
 
-} // namespace
+} // namespace Log
 
 /**
  * @defgroup server Server

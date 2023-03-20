@@ -31,6 +31,6 @@ inline Awaitable<std::string> getStdout(IOContext &ioc, std::string_view executa
     return getStdout(ioc, executable, std::span(arguments.begin(), arguments.end()));
 }
 
-} // namespace Util
+} // namespace Subprocess
 
 /// @}

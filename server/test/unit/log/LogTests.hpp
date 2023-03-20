@@ -22,7 +22,7 @@ class Log;
 namespace
 {
 
-std::unique_ptr<Log::Log> createLog(IOContext &ioc, Log::Level minLevel = Log::Level::info);
+std::unique_ptr<Log::Log> createLog(IOContext &ioc, Log::Level minLevel = Log::Level::info); // NOLINT
 
 } // namespace
 

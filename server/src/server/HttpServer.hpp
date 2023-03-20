@@ -21,7 +21,7 @@ namespace Server
 class HttpServer final : public Server
 {
 public:
-    virtual ~HttpServer();
+    ~HttpServer() override;
 
     /**
      * Create the HTTP server.

@@ -32,6 +32,10 @@ class Response
 public:
     virtual ~Response();
 
+    // It makes no sense to copy a Response object.
+    Response(const Response &) = delete;
+    Response &operator=(const Response &) = delete;
+
     /**
      * Determine whether any of the write methods have been called.
      */
@@ -174,10 +178,6 @@ protected:
     }
 
 private:
-    // It makes no sense to copy a Response object.
-    Response(const Response &) = delete;
-    Response &operator=(const Response &) = delete;
-
     /**
      * Write some data to the response body.
      *

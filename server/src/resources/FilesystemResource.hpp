@@ -41,7 +41,7 @@ public:
      */
     FilesystemResource(IOContext &ioc, std::filesystem::path path, CacheKind cacheKind = CacheKind::fixed,
                        bool isPublic = false) :
-        FilesystemResource(ioc, path, {}, cacheKind, isPublic)
+        FilesystemResource(ioc, std::move(path), {}, cacheKind, isPublic)
     {
     }
 

@@ -31,17 +31,17 @@ public:
             other.parent = nullptr;
         }
 
-    private:
-        friend class Mutex;
-
-        explicit LockGuard(Mutex &parent) : parent(&parent) {}
-
         // No copying.
         LockGuard(const LockGuard &) = delete;
         LockGuard &operator=(const LockGuard &) = delete;
 
         // Don't allow move *assignment* (where we might have a mutex to unlock too) either. Only move construction.
         LockGuard &operator=(LockGuard &&other) = delete;
+
+    private:
+        friend class Mutex;
+
+        explicit LockGuard(Mutex &parent) : parent(&parent) {}
 
         /**
          * The mutex to unlock when this object goes out of scope.

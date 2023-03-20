@@ -43,13 +43,15 @@ public:
 
     TestRequest(Server::Path path, Type type, std::span<const std::byte> data, bool isPublic = false,
                 bool expectPartialRead = false) :
-        TestRequest(path, type, std::span<const std::span<const std::byte>>({data}), isPublic, expectPartialRead)
+        TestRequest(std::move(path), type, std::span<const std::span<const std::byte>>({data}), isPublic,
+                    expectPartialRead)
     {
     }
 
     TestRequest(Server::Path path, Type type, std::string_view string, bool isPublic = false,
                 bool expectPartialRead = false) :
-        TestRequest(path, type, std::span((const std::byte *)string.data(), string.size()), isPublic, expectPartialRead)
+        TestRequest(std::move(path), type, std::span((const std::byte *)string.data(), string.size()), isPublic,
+                    expectPartialRead)
     {
     }
 
