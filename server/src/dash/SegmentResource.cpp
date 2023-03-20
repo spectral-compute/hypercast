@@ -15,10 +15,11 @@ Dash::SegmentResource::~SegmentResource() = default;
 Dash::SegmentResource::SegmentResource(IOContext &ioc, Log::Log &log, const Config::Dash &config,
                                        Dash::DashResources &resources,
                                        unsigned int streamIndex, unsigned int segmentIndex,
-                                       Dash::InterleaveResource &interleave,
+                                       std::shared_ptr<InterleaveResource> interleave,
                                        unsigned int interleaveIndex, unsigned int indexInInterleave) :
     Resource(config.expose), log(log("segment")), event(ioc), resources(resources),
-    streamIndex(streamIndex), segmentIndex(segmentIndex), interleave(interleave), indexInInterleave(indexInInterleave)
+    streamIndex(streamIndex), segmentIndex(segmentIndex), interleave(std::move(interleave)),
+    indexInInterleave(indexInInterleave)
 {
     /* Log information about this segment. */
     this->log << "new" << Log::Level::info << Json::dump({
@@ -91,7 +92,7 @@ Awaitable<void> Dash::SegmentResource::handlePut(Server::Response &, Server::Req
         }
 
         // Hand the data over to the interleave.
-        interleave.addStreamData(dataPart, indexInInterleave);
+        interleave->addStreamData(dataPart, indexInInterleave);
 
         // Record the data if it's useful, and notify anything waiting for it.
         bool isEmpty = dataPart.empty();

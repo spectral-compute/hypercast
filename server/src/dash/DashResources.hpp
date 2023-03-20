@@ -1,6 +1,9 @@
 #pragma once
 
 #include "log/Log.hpp"
+#include "server/Path.hpp"
+
+#include <vector>
 
 class IOContext;
 
@@ -59,6 +62,9 @@ public:
     void notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex);
 
 private:
+    class Interleave;
+    class Stream;
+
     /**
      * Create the resources for the given segment.
      *
@@ -67,11 +73,31 @@ private:
      */
     void createSegment(unsigned int streamIndex, unsigned int segmentIndex);
 
+    /**
+     * Remove segments that should have expired and should no longer be accessible.
+     */
+    void gcSegments();
+
     IOContext &ioc;
     Log::Log &log;
     Log::Context logContext;
-    const Config::Dash &dashConfig;
+    const Config::Root &config;
     Server::Server &server;
+
+    /**
+     * The base path for all the resources this object manages.
+     */
+    const Server::Path basePath;
+
+    /**
+     * Tracks state for each non-interleave stream.
+     */
+    std::vector<Stream> streams;
+
+    /**
+     * Tracks state for each interleave stream.
+     */
+    std::vector<Interleave> interleaves;
 };
 
 } // namespace Dash

@@ -39,7 +39,8 @@ public:
      * @param indexInInterleave The index of this stream in the interleave.
      */
     explicit SegmentResource(IOContext &ioc, Log::Log &log, const Config::Dash &config, DashResources &resources,
-                             unsigned int streamIndex, unsigned int segmentIndex, InterleaveResource &interleave,
+                             unsigned int streamIndex, unsigned int segmentIndex,
+                             std::shared_ptr<InterleaveResource> interleave,
                              unsigned int interleaveIndex, unsigned int indexInInterleave);
 
     Awaitable<void> operator()(Server::Response &response, Server::Request &request) override;
@@ -83,7 +84,7 @@ private:
     /**
      * The interleave this segment gets interleaved into.
      */
-    InterleaveResource &interleave;
+    std::shared_ptr<InterleaveResource> interleave;
 
     /**
      * The index of this segment's stream in the interleave.
