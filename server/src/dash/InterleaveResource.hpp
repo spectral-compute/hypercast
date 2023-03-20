@@ -46,7 +46,7 @@ private:
     /**
      * The number of streams in the interleave that haven't yet finished.
      */
-    unsigned int numRemaimningStreams;
+    unsigned int numRemainingStreams;
 
     /**
      * The interval, in ms, between timestamps.

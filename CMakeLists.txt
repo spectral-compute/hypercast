@@ -25,8 +25,10 @@ if (JS_ONLY)
 else()
     set(DOCS_PREPROCESSOR_FLAG_NAMES)
 endif()
+
 add_manual(global_docs_customer INSTALL_DESTINATION docs/live-video-streamer MANUAL_SRC ${CMAKE_CURRENT_LIST_DIR}/docs
            ${DOCS_PREPROCESSOR_FLAG_NAMES})
+
 if (XCMAKE_PRIVATE_DOCS)
     add_manual(global_docs_internal INSTALL_DESTINATION private_docs/live-video-streamer
                MANUAL_SRC ${CMAKE_CURRENT_LIST_DIR}/private_docs)

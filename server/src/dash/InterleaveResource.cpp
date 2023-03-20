@@ -26,7 +26,7 @@ Dash::InterleaveResource::~InterleaveResource() = default;
 
 Dash::InterleaveResource::InterleaveResource(IOContext &ioc, Log::Log &log, unsigned int numStreams,
                                              unsigned int timestampIntervalMs) :
-    log(log("interleave")), numRemaimningStreams(numStreams), timestampIntervalMs(timestampIntervalMs), event(ioc)
+    log(log("interleave")), numRemainingStreams(numStreams), timestampIntervalMs(timestampIntervalMs), event(ioc)
 {
 }
 
@@ -42,7 +42,7 @@ Awaitable<void> Dash::InterleaveResource::operator()(Server::Response &response,
     }
 
     /* Keep waiting for more data until we've had it all. */
-    for (size_t i = 0; numRemaimningStreams > 0; i++) {
+    for (size_t i = 0; numRemainingStreams > 0; i++) {
         // Wait for more data to become available if necessary.
         assert(i <= data.size());
         while (i == data.size()) {
@@ -64,11 +64,11 @@ bool Dash::InterleaveResource::getAllowGet() const noexcept
 void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart, unsigned int streamIndex)
 {
     assert(streamIndex < 31);
-    assert(numRemaimningStreams > 0);
+    assert(numRemainingStreams > 0);
 
     /* Record if this stream is ending. */
     if (dataPart.empty()) {
-        numRemaimningStreams--;
+        numRemainingStreams--;
     }
     // Even if the stream is ending, we need to put an empty chunk (with its header) into the interleave so that the
     // client knows it's ended.
