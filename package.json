@@ -9,7 +9,8 @@
     "client",
     "common",
     "demo-client",
-    "dev-client"
+    "dev-client",
+    "settings-ui"
   ],
   "scripts": {
     "bundle": "(cd server && yarn bundle \"$@\") && (cd client && yarn bundle \"$@\") && (cd dev-client && yarn bundle \"$@\") && (cd demo-client && yarn bundle \"$@\")",

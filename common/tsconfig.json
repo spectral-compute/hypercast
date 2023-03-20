@@ -4,6 +4,9 @@
     "outDir": "./build",
     "lib": ["ESNext"],
     "types": ["node"],
+    "composite": true,
+    "declarationMap": true,
+    "declaration": true,
     "allowJs": true
   },
   "include": ["./src/**/*.ts"],

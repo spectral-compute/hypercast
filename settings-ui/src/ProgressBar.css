@@ -1,0 +1,11 @@
+.progressBarContainer {
+  width: 100%;
+  height: 1em;
+
+  background-color: black;
+}
+
+.progressBarBar {
+  height: 100%;
+  background-color: blueviolet;
+}

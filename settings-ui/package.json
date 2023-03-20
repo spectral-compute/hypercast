@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@ckitching/typescript-is": "^0.1.21",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
@@ -10,11 +11,21 @@
     "@types/node": "^16.7.13",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
+    "eslint-plugin-i18n-json": "^4.0.0",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-i18n": "^1.0.3",
+    "i18next": "^22.4.12",
+    "live-video-streamer-common": "workspace:^",
     "react": "^18.2.0",
+    "react-app-rewired": "^2.2.1",
     "react-dom": "^18.2.0",
+    "react-i18next": "^12.2.0",
     "react-scripts": "5.0.1",
+    "ts-loader": "^9.4.2",
     "typescript": "^4.4.2",
-    "web-vitals": "^2.1.0"
+    "util": "^0.12.5"
   },
   "scripts": {
     "start": "react-scripts start",

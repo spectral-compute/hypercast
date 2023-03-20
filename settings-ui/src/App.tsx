@@ -1,27 +1,33 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {useContext} from 'react';
 import './App.css';
+import {AppContext} from "./index";
+import PortsStatus from "./PortsStatus";
+import LoadEstimator from "./LoadEstimator";
+import PortStatus from "./PortStatus";
 
 function App() {
-  return (
-    <div className="App">
+  const appCtx = useContext(AppContext);
 
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  // TODO: initial state loading crap.
+
+
+  return <>
+      <div className="mainCols">
+        <div className="inputsCol col">
+          <h2>Inputs</h2>
+
+          {
+            appCtx.machineInfo.inputPorts.map(p =>
+              <PortStatus desc={p}></PortStatus>
+          )}
+        </div>
+        <div className="streamsCol col">
+            <h2>Streams</h2>
+        </div>
+      </div>
+      <LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>
+  </>;
 }
 
 export default App;
+
