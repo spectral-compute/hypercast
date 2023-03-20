@@ -144,6 +144,7 @@ Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, const Config::S
             if (foundDefaultVideo || (result.video && !isDefault)) {
                 continue;
             }
+            foundDefaultVideo = isDefault;
 
             // Build the stream info object.
             result.video = stream.get<MediaInfo::VideoStreamInfo>();
@@ -153,6 +154,7 @@ Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, const Config::S
             if (foundDefaultAudio || (result.audio && !isDefault)) {
                 continue;
             }
+            foundDefaultAudio = isDefault;
 
             // Build the stream info object.
             result.audio = stream.get<MediaInfo::AudioStreamInfo>();
