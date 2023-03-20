@@ -17,11 +17,7 @@ if (NOT ENABLE_JS)
 endif()
 
 # Figure out the install prefix.
-if (JS_ONLY)
-    set(JS_INSTALL_PREFIX "")
-else()
-    set(JS_INSTALL_PREFIX "share/spectral-video-streamer/")
-endif()
+set(JS_INSTALL_PREFIX "share/spectral-video-streamer/")
 
 # Figure out what to exclude from the built Javascript stuff.
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")

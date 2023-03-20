@@ -6,9 +6,6 @@ if (NOT ENABLE_SERVER)
     return()
 endif()
 
-# We're not only building Javascript stuff.
-set(JS_ONLY 0 CACHE INTERNAL "" FORCE)
-
 # Add the server's stuff.
 add_subdirectory(src)
 add_subdirectory(test)
