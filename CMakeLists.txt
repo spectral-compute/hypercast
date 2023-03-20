@@ -47,7 +47,6 @@ if (XCMAKE_ENABLE_DOCS)
         DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         COMMENT "Generate documentation for the Javascript projects."
-        VERBATIM
     )
     add_custom_target(js_yarn_docs ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_docs")
 

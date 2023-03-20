@@ -19,7 +19,7 @@ function (makeTestInputFromStdio OUT IN)
 
     # Add a command and target to create the test file.
     string(MAKE_C_IDENTIFIER "StdioTest_${OUT}" TARGET_NAME)
-    add_custom_command(OUTPUT "${BUILD_DEST}" VERBATIM
+    add_custom_command(OUTPUT "${BUILD_DEST}"
                        COMMAND ${ARGN} < "${IN}" > "${BUILD_DEST}"
                        MAIN_DEPENDENCY "${IN}"
                        COMMENT "Creating test file ${OUT}")
@@ -49,7 +49,7 @@ function (makeSmpteTest WIDTH HEIGHT FRAMERATE SAMPLERATE)
 
     # Add a command and target to create the test file.
     string(MAKE_C_IDENTIFIER "SmpteTest_${NAME}" TARGET_NAME)
-    add_custom_command(OUTPUT "${BUILD_DEST}" VERBATIM
+    add_custom_command(OUTPUT "${BUILD_DEST}"
                        COMMAND ffmpeg -loglevel warning
                                       -f lavfi -i "smptehdbars=rate=${FRAMERATE}:size=${WIDTH}x${HEIGHT}"
                                       -f lavfi -i "sine=frequency=1000:sample_rate=${SAMPLERATE}" -t 1
