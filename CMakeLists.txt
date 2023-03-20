@@ -7,6 +7,20 @@ project(SpectralLiveVideoStreamer
         LANGUAGES CXX)
 include(XCMake)
 
+# Something that's On for debug builds and Off otherwise.
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(DEBUG_ON_OFF On)
+else()
+    set(DEBUG_ON_OFF Off)
+endif()
+
+# Options.
+include(CMakeDependentOption)
+option(ENABLE_JS "Enable Javascript stuff (e.g: the client library and demo client)." On)
+cmake_dependent_option(JS_DEV "Build the Javascript stuff in development mode rather than production mode."
+        ${DEBUG_ON_OFF} ENABLE_JS Off)
+
+
 # LTO.
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
@@ -14,7 +28,6 @@ endif()
 
 # Sub-projects.
 add_subdirectory(server)
-add_subdirectory(js)
 
 # Documentation.
 set(DOCS_PREPROCESSOR_FLAG_NAMES)
@@ -56,3 +69,7 @@ endif()
 
 # Configure the packaging.
 set(CPACK_PACKAGE_NAME "spectral-live-video-streamer")
+
+if (ENABLE_JS)
+    include(js.cmake)
+endif()

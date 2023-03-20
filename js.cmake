@@ -1,16 +1,3 @@
-# Something that's On for debug builds and Off otherwise.
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    set(DEBUG_ON_OFF On)
-else()
-    set(DEBUG_ON_OFF Off)
-endif()
-
-# Options.
-include(CMakeDependentOption)
-option(ENABLE_JS "Enable Javascript stuff (e.g: the client library and demo client)." On)
-cmake_dependent_option(JS_DEV "Build the Javascript stuff in development mode rather than production mode."
-                       ${DEBUG_ON_OFF} ENABLE_JS Off)
-
 # The rest of this script is meaningful only if the Javascript build is turned on.
 if (NOT ENABLE_JS)
     return()
