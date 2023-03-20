@@ -10,7 +10,10 @@ class Request;
 class Response;
 
 /**
- * An HTTP resource that can be registered with a server.
+ * A resource that can be registered with a server.
+ *
+ * Think of it like an HTTP resource. If the first line of a request is `GET /squiggle HTTP/1.0`, then this object is
+ * the thing that handles requests to `/squiggle`.
  */
 class Resource
 {
