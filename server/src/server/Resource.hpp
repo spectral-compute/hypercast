@@ -10,7 +10,7 @@ class Request;
 class Response;
 
 /**
- * A resource that can be registered with a server.
+ * An HTTP resource that can be registered with a server.
  */
 class Resource
 {
