@@ -25,8 +25,8 @@ public:
      * @param cacheKind The caching to use for the resource.
      * @param isPublic Whether the resource should be available publicly.
      */
-    ErrorResource(Error error, CacheKind cacheKind, bool isPublic = false, bool allowGet = true, bool allowPost = false,
-                  bool allowPut = false) :
+    explicit ErrorResource(Error error, CacheKind cacheKind, bool isPublic = false, bool allowGet = true,
+                           bool allowPost = false, bool allowPut = false) :
         Resource(isPublic), error(std::move(error)), cacheKind(cacheKind), allowGet(allowGet), allowPost(allowPost),
         allowPut(allowPut)
     {
