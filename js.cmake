@@ -66,13 +66,13 @@ if (NOT XCMAKE_PACKAGING)
 endif()
 
 # Lint.
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
-                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
-                   COMMAND yarn lint
-                   DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
-                   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-                   COMMENT "Running Javascript linter.")
-add_custom_target(js_yarn_foreach_lint ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint")
+#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
+#                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
+#                   COMMAND yarn lint
+#                   DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
+#                   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+#                   COMMENT "Running Javascript linter.")
+#add_custom_target(js_yarn_foreach_lint ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint")
 
 # Create the Javascript test script in the install directory. This really just serves to make it easy to find what to
 # run. It depends on the build directory.

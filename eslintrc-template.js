@@ -16,7 +16,7 @@ module.exports = {
 
         /* Needed for type-dependent linters. */
         tsconfigRootDir: __dirname,
-        project: ["./tsconfig.json", "client/tsconfig.json", "server/tsconfig.json"],
+        project: ["./tsconfig.json", "client/tsconfig.json"],
     },
     ignorePatterns: ["build/*"],
     rules: {

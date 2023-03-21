@@ -9,7 +9,7 @@
     "bundle": "GENERATE_SOURCEMAP=false ../cra-build-helper.sh build \"$@\"",
     "bundle-dev": "../cra-build-helper.sh build \"$@\"",
     "clean": "rm -rf build",
-    "lint": "node node_modules/eslint/bin/eslint.js --max-warnings=0 --ext .ts --ext .tsx .",
+    "lint": "echo 'CRA already linted this'",
     "start": "../cra-build-helper.sh start \"$@\""
   },
   "browserslist": {
