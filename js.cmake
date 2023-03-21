@@ -61,8 +61,6 @@ install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo-client/build/" DESTINATION $
 if (NOT XCMAKE_PACKAGING)
     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dev-client/dist/" DESTINATION ${JS_INSTALL_PREFIX}dev-client
             ${JS_INSTALL_EXCLUDE})
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/server/dist/" DESTINATION ${JS_INSTALL_PREFIX}js-server
-            ${JS_INSTALL_EXCLUDE})
 endif()
 
 # Lint.
