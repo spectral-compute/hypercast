@@ -14,12 +14,16 @@ else()
 endif()
 
 # Copy everything to the build tree, since Jumblescript build systems have the mysterious property of not permitting
-# out-of-tree builds.
-file(GLOB_RECURSE JS_SRC RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "*")
+# out-of-tree builds. Annoyingly, some tools also expects things to be in the root directory, so we have to pick out the
+# bits we want rather than isolating it all in its own directory.
+file(GLOB_RECURSE JS_SRC RELATIVE "${CMAKE_CURRENT_LIST_DIR}" CONFIGURE_DEPENDS
+     ".yarn/*" "client/*" "common/*" "demo-client/*" "dev-client/*" "settings-ui/*"
+     ".yarnrc.yml" "cra-build-helper.sh" "eslintrc-template.js" "package.json" "tsconfig.json" "yarn.lock"
+     "docs/build.sh" "docs/typedoc.js")
 set(JS_COPY_DEPS)
 foreach (F IN LISTS JS_SRC)
-    # Exclude junk that might exist from an in-tree build, or is C++.
-    if (F MATCHES "(^|/)(build|dist|node_modules|.cpp|.h|.cmake|CMakeLists.txt|.git|cmake-build-debug)/")
+    # Exclude junk that might exist from an in-tree build, or is not JS-related.
+    if (F MATCHES "(^|/)(build|dist|node_modules)/")
         continue()
     endif()
 
@@ -33,25 +37,26 @@ foreach (F IN LISTS JS_SRC)
     # Add the copy to the list of dependencies, so if it changes, the JS targets below get re-run.
     list(APPEND JS_COPY_DEPS "${CMAKE_CURRENT_BINARY_DIR}/${F}")
 endforeach()
+add_custom_target(js_copy ALL DEPENDS "${JS_COPY_DEPS}")
 
 # Install JS dependencies. This construction of add_custom_command and add_custom_target creates a target that is
 # considered out of date when any of JS_COPY_DEPS changes, but still runs by default when not up to date.
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install"
-                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install"
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file"
                    COMMAND yarn install
-                   DEPENDS "${JS_COPY_DEPS}"
+                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file"
+                   DEPENDS js_copy
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                    COMMENT "Installing Javascript dependencies.")
-add_custom_target(js_yarn_install ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install")
+add_custom_target(js_yarn_install ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file")
 
 # Build the projects.
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle"
-                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle"
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
                    COMMAND yarn "$<IF:$<BOOL:JS_DEV>,bundle-dev,bundle>"
-                   DEPENDS js_yarn_install "${JS_COPY_DEPS}"
+                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
+                   DEPENDS js_copy js_yarn_install
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                    COMMENT "Building Javascript projects.")
-add_custom_target(js_yarn_bundle ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle")
+add_custom_target(js_yarn_bundle ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file")
 
 # Install the things we just built.
 install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/client/dist/" DESTINATION ${JS_INSTALL_PREFIX}client
@@ -67,7 +72,7 @@ endif()
 #add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
 #                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
 #                   COMMAND yarn lint
-#                   DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
+#                   DEPENDS js_copy js_yarn_bundle
 #                   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 #                   COMMENT "Running Javascript linter.")
 #add_custom_target(js_yarn_foreach_lint ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint")
@@ -78,4 +83,31 @@ if (XCMAKE_ENABLE_TESTS)
     file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_test"
          CONTENT "#!/bin/bash\ncd ${CMAKE_CURRENT_BINARY_DIR}\nyarn test")
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/js_test" DESTINATION test/bin)
+endif()
+
+# Generate documentation.
+if (XCMAKE_ENABLE_DOCS)
+    # Create a symlink to xcmake so the documentation script can find it.
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/docs")
+    file(CREATE_LINK "${CMAKE_SOURCE_DIR}/xcmake" "${CMAKE_CURRENT_BINARY_DIR}/docs/xcmake" SYMBOLIC)
+
+    # Actually generate the documentaiton.
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_docs_file"
+        COMMAND yarn docs
+        COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_docs_file"
+        DEPENDS js_copy js_yarn_bundle
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        COMMENT "Generate documentation for the Javascript projects."
+    )
+    add_custom_target(js_yarn_docs ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_docs_file")
+
+    # Install the customer documentation. Note that because we're merging with the global documentation, we need to
+    # rename index.html.
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/docs/dist/docs/" DESTINATION "docs" PATTERN "*.html.d" EXCLUDE)
+
+    # Install the private documentation.
+    #if (XCMAKE_PRIVATE_DOCS)
+    #    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/docs/dist/private_docs/live-video-streamer/private/"
+    #            DESTINATION "private_docs/live-video-streamer" PATTERN "*.html.d" EXCLUDE)
+    #endif()
 endif()
