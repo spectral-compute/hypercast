@@ -76,9 +76,10 @@ Awaitable<void> Dash::SegmentResource::handleGet(Server::Response &response, Ser
     }
 }
 
-Awaitable<void> Dash::SegmentResource::handlePut(Server::Response &, Server::Request &request)
+Awaitable<void> Dash::SegmentResource::handlePut(Server::Response &response, Server::Request &request)
 {
     assert(!request.getIsPublic());
+    response.setCacheKind(Server::CacheKind::none);
 
     /* Read the request's data. */
     for (bool first = true; ; first = false) {
