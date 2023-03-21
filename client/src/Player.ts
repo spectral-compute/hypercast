@@ -112,7 +112,7 @@ export class Player {
     /**
      * Start playing video.
      */
-    start(): void {
+    start = () => {
         this.stream!.start();
         this.bctrl!.start();
 
@@ -131,7 +131,7 @@ export class Player {
      *
      * This resets the player back to the state it was in before start() was called.
      */
-    stop(): void {
+    stop = () => {
         if (this.verboseInterval) {
             clearInterval(this.verboseInterval);
         }
@@ -252,6 +252,16 @@ export class Player {
      */
     setMuted(muted: boolean): void {
         this.stream!.setMuted(muted);
+    }
+
+    /** Mute the audio. */
+    mute = () => {
+        this.setMuted(true);
+    }
+
+    /** Unmute the audio. */
+    unmute = () => {
+        this.setMuted(false);
     }
 
     /**
