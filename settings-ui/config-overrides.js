@@ -24,7 +24,7 @@ function matchesAny(regexes, string) {
 module.exports = function override(config, env) {
     // let rules = config.module.rules[1].oneOf;
     // config.module.rules[0].test = /\.(css)$/;
-    // const srcmapLoader = config.module.rules[0].loader;
+    const srcmapLoader = config.module.rules[0].loader;
     const numRules = config.module.rules.length;
     const rules = config.module.rules[numRules - 1].oneOf;
 
@@ -45,6 +45,8 @@ module.exports = function override(config, env) {
                     // ... Then babel-ify it.
                     loader: r.loader,
                     options: r.options,
+                }, {
+                    loader: srcmapLoader
                 }, {
                     // Compile TS first.
                     loader: "ts-loader",

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import './index.sass';
 import App from './App';
 import {AppCtx} from "./AppCtx";
 import {initialiseTranslationLibrary} from "./i18n/i18n";

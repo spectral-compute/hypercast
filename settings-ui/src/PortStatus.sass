@@ -1,0 +1,23 @@
+.portStatus
+  display: flex
+  flex-direction: column
+
+  align-items: center
+  h3
+    margin: 0
+  h4
+    margin: 0
+
+  &.connected
+    color: green
+    g
+      fill: green
+
+  &.disconnected
+    color: grey
+    g
+      fill: grey
+
+.portStatusList
+  display: flex
+  gap: 1em
