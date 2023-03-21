@@ -242,6 +242,11 @@ public:
      */
     Awaitable<void> wait() const;
 
+    /**
+     * Change the logger's settings at runtime.
+     */
+    void reconfigure(Level minLevel, bool print);
+
 protected:
     /**
      * Create a log and record this.
@@ -250,7 +255,6 @@ protected:
      * @param print Print the log to stderr.
      */
     explicit Log(Level minLevel, bool print, IOContext &ioc);
-
     /**
      * Get the number of times store has been called.
      *
@@ -298,8 +302,8 @@ private:
     const std::chrono::steady_clock::time_point steadyCreationTime;
     const std::chrono::system_clock::time_point systemCreationTime;
 
-    const Level minLevel;
-    const bool print;
+    Level minLevel;
+    bool print;
 
     /**
      * The number of items that have been written.

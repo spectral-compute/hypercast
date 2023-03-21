@@ -1,18 +1,16 @@
 #include "configuration/configuration.hpp"
 #include "configuration/defaults.hpp"
-#include "dash/DashResources.hpp"
 #include "log/FileLog.hpp"
 #include "log/MemoryLog.hpp"
-#include "resources/FilesystemResource.hpp"
 #include "server/HttpServer.hpp"
 #include "server/Path.hpp"
 #include "util/Event.hpp"
 #include "util/util.hpp"
+#include "server/ServerState.h"
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 
-#include <memory>
 #include <stdexcept>
 
 using namespace std::string_literals;
@@ -30,31 +28,6 @@ Config::Root loadConfig(const char *path)
 }
 
 /**
- * Create a log based on the configuration specification of it.
- */
-std::unique_ptr<Log::Log> createLog(const Config::Log &config, IOContext &ioc)
-{
-    if (config.path.empty()) {
-        return std::make_unique<Log::MemoryLog>(ioc, config.level, *config.print);
-    }
-    return std::make_unique<Log::FileLog>(ioc, config.path, config.level, *config.print);
-}
-
-/**
- * Add directories that get served verbatim to the server.
- */
-void addFilesystemPathsToServer(Server::Server &server, const std::map<std::string, Config::Directory> &directories,
-                                IOContext &ioc)
-{
-    for (const auto &[path, directory]: directories) {
-        server.addResource<Server::FilesystemResource>(path, ioc, directory.localPath, directory.index,
-                                                       directory.ephemeral ? Server::CacheKind::ephemeral :
-                                                                             Server::CacheKind::fixed,
-                                                       !directory.secure);
-    }
-}
-
-/**
  * Asynchronous version of main.
  */
 Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
@@ -63,22 +36,18 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     if (argc != 2) {
         throw std::runtime_error("Usage: "s + (argc ? argv[0] : "") + " configuration.json");
     }
+
+    // Load and populate a config object.
     Config::Root config = loadConfig(argv[1]);
+
+    // TODO: This is likely no longer correct, since the ffprobeage will need to be changed to cope with
+    //       multiple input ports.
     co_await Config::fillInDefaults(ioc, config);
 
-    /* Create a log file. */
-    std::unique_ptr<Log::Log> log = createLog(config.log, ioc);
+    Server::State st{config, ioc};
 
-    /* Create the server. */
-    Server::HttpServer server(ioc, *log, config.network.port, config.http);
-
-    /* Add stuff to the server. */
-    addFilesystemPathsToServer(server, config.paths.directories, ioc);
-    Dash::DashResources dash(ioc, *log, config, server);
-
-    /* Start FFmpeg streaming DASH into the server. */
-
-    /* Keep the above objects in scope indefinitely. */
+    // Hang this coroutine forever. Interesting things happen as a result of the server handling requests
+    // in another coroutine.
     Event event(ioc);
     while (true) {
         co_await event.wait();

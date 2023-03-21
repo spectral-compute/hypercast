@@ -71,6 +71,11 @@ Log::Log::Log(Level minLevel, bool print, IOContext &ioc) :
 {
 }
 
+void Log::Log::reconfigure(Level level, bool p) {
+    minLevel = level;
+    print = p;
+}
+
 Log::Context Log::Log::operator()(std::string_view name)
 {
     assert(!name.empty()); // Require a name.
