@@ -10,7 +10,7 @@
   "scripts": {
     "bundle": "ts-patch install -s && yarn webpack --bail --mode=production \"$@\"",
     "bundle-dev": "ts-patch install -s && yarn webpack --bail --mode=development \"$@\"",
-    "clean": "rm -rf build dist",
+    "clean": "rm -rf build dist node_modules",
     "lint": "yarn eslint --max-warnings=0 --ext .ts src test",
     "test": "yarn jest --clearCache && ts-patch install && jest --config test/jest.config.js \"$@\""
   },

@@ -16,7 +16,7 @@
     "bundle": "yarn workspaces foreach -p run bundle",
     "bundle-dev": "yarn workspaces foreach -p run bundle-dev",
     "lint": "yarn workspaces foreach -p run lint",
-    "clean": "yarn workspaces foreach -p run clean",
+    "clean": "yarn workspaces foreach -p run clean && rm -rf .yarn/cache .yarn/install-state.gz node_modules",
     "docs": "rm -rf docs/dist && docs/build.sh docs/dist",
     "test": "(cd common && yarn test) && (cd client && yarn test)"
   },
