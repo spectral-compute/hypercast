@@ -22,4 +22,5 @@ while [ "$#" != "0" ] ; do
     esac
 done
 
+yarn ts-patch install -s
 yarn react-app-rewired "${CMD}"

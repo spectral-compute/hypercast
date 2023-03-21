@@ -22,9 +22,11 @@ function matchesAny(regexes, string) {
 }
 
 module.exports = function override(config, env) {
-    let rules = config.module.rules[1].oneOf;
-    config.module.rules[0].test = /\.(css)$/;
-    const srcmapLoader = config.module.rules[0].loader;
+    // let rules = config.module.rules[1].oneOf;
+    // config.module.rules[0].test = /\.(css)$/;
+    // const srcmapLoader = config.module.rules[0].loader;
+    const numRules = config.module.rules.length;
+    const rules = config.module.rules[numRules - 1].oneOf;
 
     // - Switch off typescript transpilation in babel.
     // - Add ts-loader to do typescript compilation before babel runs. This will respect our tsconfig.json.
@@ -35,6 +37,7 @@ module.exports = function override(config, env) {
                 runtime: 'automatic',
                 typescript: false
             };
+
             rules[i] = {
                 test: /\.(js|mjs|jsx|ts|tsx)$/,
                 include: r.include,
@@ -43,15 +46,15 @@ module.exports = function override(config, env) {
                     loader: r.loader,
                     options: r.options,
                 }, {
-                    loader: srcmapLoader
-                }, {
                     // Compile TS first.
                     loader: "ts-loader",
-                    "options": {
+                    options: {
                         "projectReferences": true
                     }
                 }]
             }
+
+            break;
         }
     }
 
@@ -61,6 +64,12 @@ module.exports = function override(config, env) {
     config.plugins.splice(config.plugins.findIndex((p => p instanceof ForkTsCheckerWebpackPlugin)), 1);
 
     // Polyfill for nodejs `util`, since ts-is uses it. Can perhaps be removed...?
+    if (!config.resolve) {
+        config.resolve = {};
+    }
+    if (!config.resolve.fallback) {
+        config.resolve.fallback = {};
+    }
     config.resolve.fallback["util"] = require.resolve("util/");
 
     return config;

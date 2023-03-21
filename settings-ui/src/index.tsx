@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import {AppCtx} from "./AppCtx";
 import {initialiseTranslationLibrary} from "./i18n/i18n";
+import {assertType} from "@ckitching/typescript-is";
 
 // Global-ish state.
 const TheAppContext = new AppCtx();

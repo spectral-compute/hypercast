@@ -2,13 +2,24 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./build",
-    "lib": ["ESNext", "DOM"],
-    "types": [],
-    "allowJs": true,
+    "target": "ESNext",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "composite": true,
+    "declarationMap": true,
+    "declaration": true,
     "plugins": [
       { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
     ]
   },
-  "include": ["./src/**/*.ts", "./typings/globals.d.ts"],
-  "exclude": ["node_modules"]
+  "include": ["./src/**/*.ts"],
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "../common"
+    }
+  ]
 }

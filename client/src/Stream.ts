@@ -33,7 +33,7 @@ class Stream {
         this.onError = onError;
         this.onStart = onStart;
 
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             this.checksum = new Debug.Addler32();
         }
 
@@ -63,7 +63,7 @@ class Stream {
         if (segment === 0 && this.onStart) {
             this.onStart();
         }
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             this.checksumDescriptions.set(segment, description);
         }
         this.acceptSegmentData(this.init, segment);
@@ -161,10 +161,10 @@ class Stream {
             const data = this.queue.shift();
             if (data !== null) {
                 this.sourceBuffer.appendBuffer(data!);
-                if (process.env.NODE_ENV === "development") {
+                if (process.env["NODE_ENV"] === "development") {
                     this.checksum!.update(data!);
                 }
-            } else if (process.env.NODE_ENV === "development") {
+            } else if (process.env["NODE_ENV"] === "development") {
                 console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)!} ` +
                             `checksum: ${this.checksum!.getChecksum()}, length: ${this.checksum!.getLength()}`);
                 this.checksum = new Debug.Addler32();
@@ -302,7 +302,7 @@ class SegmentDownloader {
                 this.onError(`Error downloading stream index descriptor: ${e.message}`);
             }
         };
-        this.schedulerTimeout = setTimeout((): void => {
+        this.schedulerTimeout = window.setTimeout((): void => {
             void timeoutFn();
         }, this.segmentDuration * DownloadSchedulerUpdatePeriod);
 
@@ -382,7 +382,7 @@ class SegmentDownloader {
 
         /* Schedule the downloading of the next segment. */
         this.segmentIndex++;
-        this.downloadTimeout = setTimeout((): void => {
+        this.downloadTimeout = window.setTimeout((): void => {
             this.download();
         }, this.nextSegmentStart - Date.now());
         this.nextSegmentStart += this.segmentDuration;

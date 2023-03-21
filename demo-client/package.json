@@ -6,11 +6,11 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "bundle": "(cd ../client && yarn bundle \"$@\") && GENERATE_SOURCEMAP=false ../cra-build-helper.sh build \"$@\"",
-    "bundle-dev": "(cd ../client && yarn bundle-dev \"$@\") && ../cra-build-helper.sh build \"$@\"",
+    "bundle": "GENERATE_SOURCEMAP=false ../cra-build-helper.sh build \"$@\"",
+    "bundle-dev": "../cra-build-helper.sh build \"$@\"",
     "clean": "rm -rf build",
     "lint": "node node_modules/eslint/bin/eslint.js --max-warnings=0 --ext .ts --ext .tsx .",
-    "start": "(cd ../client && yarn bundle-dev \"$@\") && ../cra-build-helper.sh start \"$@\""
+    "start": "../cra-build-helper.sh start \"$@\""
   },
   "browserslist": {
     "production": [
@@ -34,6 +34,7 @@
     "react-app-rewired": "^2.2.1",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "typescript": "^4.6.4"
+    "ts-patch": "^2.1.0",
+    "typescript": "=4.7.3"
   }
 }

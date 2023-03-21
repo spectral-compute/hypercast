@@ -16,7 +16,7 @@ const resources = {
 } as const;
 
 export async function initialiseTranslationLibrary() {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env["NODE_ENV"] === 'development') {
         // Compare keysets of translation files in development, to avoid mistakes.
         const englishKeys = new Set(Object.keys(resources.en.translation));
         for (const [k, v] of Object.entries(resources)) {

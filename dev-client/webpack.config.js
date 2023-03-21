@@ -1,5 +1,6 @@
 const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const path = require("path");
 
 var config = {
     entry: "./app.ts",
@@ -13,7 +14,12 @@ var config = {
                 test: /\.ts$/,
                 use: [
                     "babel-loader",
-                    "ts-loader"
+                    {
+                        loader: "ts-loader",
+                        options: {
+                            projectReferences: true
+                        }
+                    }
                 ]
             }
         ]
@@ -26,7 +32,10 @@ var config = {
         })
     ],
     resolve: {
-        extensions: [".ts"]
+        alias: {
+            'live-video-streamer-client': path.resolve(__dirname, '../client/src'),
+        },
+        extensions: [".ts", ".js"]
     }
 };
 

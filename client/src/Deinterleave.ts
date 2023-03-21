@@ -31,7 +31,7 @@ export class Deinterleaver {
         this.onTimestamp = onTimestamp;
         this.description = description;
 
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             this.checksums = new Map<number, Debug.Addler32>();
         }
     }
@@ -119,7 +119,7 @@ export class Deinterleaver {
             }
 
             // Print checksums.
-            if (process.env.NODE_ENV === "development") {
+            if (process.env["NODE_ENV"] === "development") {
                 if (!this.checksums!.has(this.currentIndex)) {
                     this.checksums!.set(this.currentIndex, new Debug.Addler32());
                 }

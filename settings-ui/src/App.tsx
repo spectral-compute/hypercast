@@ -1,7 +1,6 @@
-import React, {useContext} from 'react';
+import {useContext} from 'react';
 import './App.css';
 import {AppContext} from "./index";
-import PortsStatus from "./PortsStatus";
 import LoadEstimator from "./LoadEstimator";
 import PortStatus from "./PortStatus";
 
@@ -30,4 +29,3 @@ function App() {
 }
 
 export default App;
-

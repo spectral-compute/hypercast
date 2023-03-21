@@ -6,8 +6,7 @@
     "types": ["node"],
     "composite": true,
     "declarationMap": true,
-    "declaration": true,
-    "allowJs": true
+    "declaration": true
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["node_modules"]

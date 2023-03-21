@@ -36,7 +36,7 @@ export class BufferControl {
         this.mediaElement = mediaElement;
         this.onRecommendDowngrade = onRecommendDowngrade;
         this.verbose = verbose;
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             if (debugHandler !== null) {
                 debugHandler.setBufferControl(this);
                 this.debugHandler = debugHandler;
@@ -70,7 +70,7 @@ export class BufferControl {
         this.lastCatchUpEventClusterEnd = 0;
         this.waitingForInitialSeekSince = now;
 
-        this.interval = setInterval((): void => {
+        this.interval = window.setInterval((): void => {
             this.bufferControlTick();
         }, this.syncClockPeriod);
     }
@@ -96,7 +96,7 @@ export class BufferControl {
         this.timestampInfos = (sliceStart < 0) ? [] : this.timestampInfos.slice(sliceStart, this.timestampInfos.length);
         this.timestampInfos.push(timestampInfo);
 
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             if (this.debugHandler !== null) {
                 this.debugHandler.onTimestamp(timestampInfo);
             }
@@ -109,7 +109,7 @@ export class BufferControl {
      * @param receivedInfo Information about the received data.
      */
     onRecieved(receivedInfo: ReceivedInfo): void {
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             if (this.debugHandler !== null) {
                 this.debugHandler.onReceived(receivedInfo);
             }
@@ -286,7 +286,7 @@ export class BufferControl {
     }
 
     private debugBufferControlTick(tickInfo: BufferControlTickInfo): void {
-        if (process.env.NODE_ENV !== "development") {
+        if (process.env["NODE_ENV"] !== "development") {
             return;
         }
         if (this.debugHandler === null) {

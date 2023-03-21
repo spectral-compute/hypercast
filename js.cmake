@@ -19,7 +19,7 @@ file(GLOB_RECURSE JS_SRC RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "*")
 set(JS_COPY_DEPS)
 foreach (F IN LISTS JS_SRC)
     # Exclude junk that might exist from an in-tree build, or is C++.
-    if (F MATCHES "(^|/)(.yarn|build|dist|node_modules|.cpp|.h|.cmake|CMakeLists.txt|.git|cmake-build-debug)/")
+    if (F MATCHES "(^|/)(build|dist|node_modules|.cpp|.h|.cmake|CMakeLists.txt|.git|cmake-build-debug)/")
         continue()
     endif()
 
@@ -38,7 +38,7 @@ endforeach()
 # considered out of date when any of JS_COPY_DEPS changes, but still runs by default when not up to date.
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install"
                    COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install"
-                   COMMAND yarn install --no-progress
+                   COMMAND yarn install
                    DEPENDS "${JS_COPY_DEPS}"
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                    COMMENT "Installing Javascript dependencies.")

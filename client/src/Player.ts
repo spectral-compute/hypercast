@@ -121,7 +121,7 @@ export class Player {
             return;
         }
         this.startTime = Date.now();
-        this.verboseInterval = setInterval((): void => {
+        this.verboseInterval = window.setInterval((): void => {
             this.printVerboseInvervalInfo();
         }, 1000);
     }
@@ -260,7 +260,7 @@ export class Player {
      * Set the handler to receive the performance and debugging information the player can generate.
      */
     setDebugHandler(debugHandler: DebugHandler): void {
-        if (process.env.NODE_ENV !== "development") {
+        if (process.env["NODE_ENV"] !== "development") {
             throw Error("Player.setDebugHandler is for development only.");
         }
         this.debugHandler = debugHandler;

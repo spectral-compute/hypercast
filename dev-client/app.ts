@@ -1,8 +1,8 @@
-import * as lvsc from "live-video-streamer-client";
+import {Player} from "live-video-streamer-client";
 import {AppDebugHandler} from "./debug";
 
 /* Configuration :) */
-const infoUrl = process.env.INFO_URL;
+const infoUrl = process.env["INFO_URL"]!;
 
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLVideoElement;
@@ -12,7 +12,7 @@ video.addEventListener("error", (): void => {
 
 /* Attach secondary view. */
 const secondaryVideo = document.getElementById("secondaryVideo") as HTMLVideoElement;
-if (process.env.SECONDARY_VIDEO) {
+if (process.env["SECONDARY_VIDEO"]) {
     video.addEventListener("loadedmetadata", (): void => {
         secondaryVideo.muted = true;
         /* eslint "@typescript-eslint/no-unsafe-assignment": "off", "@typescript-eslint/no-unsafe-member-access": "off",
@@ -25,11 +25,11 @@ if (process.env.SECONDARY_VIDEO) {
 }
 
 /* Create the player. */
-const player = new lvsc.Player(infoUrl, video, process.env.NODE_ENV === "development");
+const player = new Player(infoUrl, video, process.env["NODE_ENV"] === "development");
 (document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getInfoUrl();
 
 /* Performance/debug event handling. */
-if (process.env.NODE_ENV === "development") {
+if (process.env["NODE_ENV"] === "development") {
     player.setDebugHandler(new AppDebugHandler());
 }
 
