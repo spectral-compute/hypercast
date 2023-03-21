@@ -11,11 +11,14 @@ interface StateButtonState {
      * A function to call when entering this state.
      *
      * It's only called when the button is clicked, not as a result of being the default state.
+     * Nothing is done to the returned value.
      */
-    fn: () => void,
+    fn?: () => any,
 }
 
 export interface StateButtonProps {
+    id?: string,
+
     /**
      * List of states to cycle between.
      */
@@ -33,14 +36,18 @@ export interface StateButtonProps {
  * A button that switches between states when clicked.
  */
 export default function StateButton({
+    id,
     states,
     initialState = 0
 }: StateButtonProps): React.ReactElement<HTMLDivElement> {
     const [state, setState] = React.useState<number>(initialState);
     return (
-        <div id="mute" className="button" onClick={
+        <div id={id} className="button" onClick={
             (): void => {
-                states[state]!.fn();
+                const fn = states[state]!.fn;
+                if (fn) {
+                    fn();
+                }
                 setState((state + 1) % states.length);
             }
         }>{states[state]!.name}</div>

@@ -1,58 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import StateButton from "./StateButton";
 import "./index.css";
+import Player from "./Player";
 
-import * as lvsc from "live-video-streamer-client";
 
-/* Variables we expect to receive from the build environment. */
-declare namespace process {
-    let env: {
-        REACT_APP_INFO_URL: string | undefined;
-    };
-}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+        <Player/>
 
-/* Create the player object. */
-const player: lvsc.Player = new lvsc.Player(process.env.REACT_APP_INFO_URL ? process.env.REACT_APP_INFO_URL : null,
-                                            document.getElementById("video")! as HTMLVideoElement);
-
-/* Start. */
-async function init(): Promise<void> {
-    await player.init();
-    player.start();
-
-    ReactDOM.createRoot(document.getElementById("controls")!).render(
-        <React.StrictMode>
-            <div>
-                <StateButton states={[
-                    {
-                        name: "Stop",
-                        fn: (): void => {
-                            player.stop();
-                        }
-                    }, {
-                        name: "Start",
-                        fn: (): void => {
-                            player.start();
-                        }
-                    }
-                ]} />
-                <StateButton states={[
-                    {
-                        name: "Unmute",
-                        fn: (): void => {
-                            player.setMuted(false);
-                        }
-                    }, {
-                        name: "Mute",
-                        fn: (): void => {
-                            player.setMuted(true);
-                        }
-                    }
-                ]} />
-            </div>
-        </React.StrictMode>
-    );
-}
-void init();
+        <div className="description">
+            This is a demo of <a href="https://spectralcompute.co.uk/" target="_blank">Spectral Compute</a>'s ultra
+            low-latency video streaming product.
+        </div>
+    </React.StrictMode>
+);
