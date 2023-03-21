@@ -12,6 +12,35 @@
 namespace
 {
 
+std::string cacheKindToString(std::optional<Server::CacheKind> cacheKind)
+{
+    if (!cacheKind) {
+        return "Null";
+    }
+    switch (*cacheKind) {
+        case Server::CacheKind::none: return "None";
+        case Server::CacheKind::ephemeral: return "Ephemeral";
+        case Server::CacheKind::fixed: return "Fixed";
+        case Server::CacheKind::indefinite: return "Indefinite";
+    }
+    return "Unknown";
+}
+
+std::string errorKindToString(std::optional<Server::ErrorKind> errorKind)
+{
+    if (!errorKind) {
+        return "Null";
+    }
+    switch (*errorKind) {
+        case Server::ErrorKind::BadRequest: return "Bad request";
+        case Server::ErrorKind::Forbidden: return "Forbidden";
+        case Server::ErrorKind::NotFound: return "Not found";
+        case Server::ErrorKind::UnsupportedType: return "Unsupported type";
+        case Server::ErrorKind::Internal: return "Internal";
+    }
+    return "Unknown";
+}
+
 /**
  * A test implementation of Server::Response.
  *
@@ -40,8 +69,10 @@ public:
 
         EXPECT_FALSE(ended); // This should only be set by the server.
         EXPECT_EQ(writeStarted, getWriteStarted());
-        EXPECT_EQ(errorKind, getErrorKind());
-        EXPECT_EQ(cacheKind, getCacheKind());
+        EXPECT_EQ(errorKind, getErrorKind()) << "Reference error kind: " << errorKindToString(errorKind)
+                                             << ", actual error kind: " << errorKindToString(getErrorKind());
+        EXPECT_EQ(cacheKind, getCacheKind()) << "Reference cache kind: " << cacheKindToString(cacheKind)
+                                             << ", actual cache kind: " << cacheKindToString(getCacheKind());
         EXPECT_EQ(mimeType, getMimeType());
         EXPECT_EQ(accumulatedRef.size(), accumulatedData.size()); // Easier to read than the next one.
         EXPECT_EQ(accumulatedRef, accumulatedData);
