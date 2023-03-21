@@ -68,7 +68,7 @@ endif()
 # Lint.
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
                    COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
-                   COMMAND yarn foreach lint
+                   COMMAND yarn lint
                    DEPENDS js_yarn_bundle "${JS_COPY_DEPS}"
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                    COMMENT "Running Javascript linter.")
