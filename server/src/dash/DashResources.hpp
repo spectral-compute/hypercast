@@ -61,6 +61,14 @@ public:
      */
     void notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex);
 
+    /**
+     * Get the base path in the server for the streams managed by this object.
+     */
+    const Server::Path &getBasePath() const
+    {
+        return basePath;
+    }
+
 private:
     class Interleave;
     class Stream;

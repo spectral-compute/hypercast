@@ -6,6 +6,7 @@
 #include "log/Log.hpp"
 #include "resources/ConstantResource.hpp"
 #include "resources/ErrorResource.hpp"
+#include "resources/PutResource.hpp"
 #include "server/Server.hpp"
 #include "util/asio.hpp"
 #include "util/util.hpp"
@@ -56,10 +57,23 @@ std::string getUid()
  * @param segmentIndex The segment index within the interleave.
  * @return The name of the segment file (without directory).
  */
-std::string getSegmentName(unsigned int streamIndex, unsigned int segmentIndex, const char *suffix)
+std::string getSegmentName(unsigned int streamIndex, unsigned int segmentIndex)
 {
     char name[64];
-    snprintf(name, sizeof(name), "chunk-stream%u-%0.09u.%s", streamIndex, segmentIndex, suffix);
+    snprintf(name, sizeof(name), "chunk-stream%u-%0.09u.m4s", streamIndex, segmentIndex);
+    return name;
+}
+
+/**
+ * Get the name of a segment file.
+ *
+ * @param streamIndex The interleave stream index.
+ * @return The name of the initializer segment file (without directory).
+ */
+std::string getInitializerName(unsigned int streamIndex)
+{
+    char name[64];
+    snprintf(name, sizeof(name), "init-stream%u.m4s", streamIndex);
     return name;
 }
 
@@ -343,18 +357,36 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     }
 
     /* Add resources. */
+    // The info.json.
     server.addResource<Server::ConstantResource>(config.paths.liveInfo, getLiveInfo(config, basePath),
                                                  "application/json", Server::CacheKind::ephemeral, true);
+
+    // The manifest.mpd file.
+    server.addResource<Server::PutResource>(basePath / "manifest.mpd", Server::CacheKind::fixed, true);
 
     // For now, each video quality has a single corresponding audio quality.
     {
         unsigned int videoIndex = 0;
         unsigned int audioIndex = (unsigned int)config.qualities.size();
         for (const Config::Quality &q: config.qualities) {
-            createSegment(videoIndex++, 0);
-            if (q.audio) {
-                createSegment(audioIndex++, 0);
+            // Add the first video segment and corresponding interleave.
+            createSegment(videoIndex, 0);
+
+            // Add the initializer segment.
+            server.addResource<Server::PutResource>(basePath / getInitializerName(videoIndex), Server::CacheKind::fixed,
+                                                    true);
+
+            // Next video stream.
+            videoIndex++;
+
+            // Likewise for audio.
+            if (!q.audio) {
+                continue;
             }
+            createSegment(audioIndex, 0);
+            server.addResource<Server::PutResource>(basePath / getInitializerName(audioIndex), Server::CacheKind::fixed,
+                                                    true);
+            audioIndex++;
         }
     }
 }
@@ -413,7 +445,7 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
 
     /* Add the new segment. */
     streams[streamIndex].get(segmentIndex, server,
-                             basePath / getSegmentName(segmentIndex, segmentIndex, isAudio ? "m4a" : "m4v"), lifetimeMs,
+                             basePath / getSegmentName(segmentIndex, segmentIndex), lifetimeMs,
                              ioc, log, config.dash, *this, streamIndex, segmentIndex, interleave, interleaveIndex,
                              isAudio ? 1 : 0);
     ++interleave; // The stream now has been given the interleave.
