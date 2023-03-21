@@ -36,9 +36,7 @@ struct Source final
     bool timestamp = false;
     std::optional<unsigned int> latency;
 
-#ifdef WITH_TESTING
     bool operator==(const Source &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -82,9 +80,7 @@ struct FrameRate final
      */
     unsigned int denominator = 1;
 
-#ifdef WITH_TESTING
     bool operator==(const FrameRate &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -112,9 +108,7 @@ struct VideoQuality final
     unsigned int vpXSpeed = 8;
     std::optional<unsigned int> gop;
 
-#ifdef WITH_TESTING
     bool operator==(const VideoQuality &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -134,9 +128,7 @@ struct AudioQuality final
         return sampleRate && codec != Codec::AudioCodec::none;
     }
 
-#ifdef WITH_TESTING
     bool operator==(const AudioQuality &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -149,9 +141,7 @@ struct ClientBufferControl final
     std::optional<unsigned int> seekBuffer;
     std::optional<unsigned int> minimumInitTime;
 
-#ifdef WITH_TESTING
     bool operator==(const ClientBufferControl &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -167,9 +157,7 @@ struct Quality final
     unsigned int interleaveTimestampInterval = 100;
     ClientBufferControl clientBufferControl;
 
-#ifdef WITH_TESTING
     bool operator==(const Quality &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -181,9 +169,7 @@ struct Dash final
     bool expose = false;
     unsigned int preAvailabilityTime = 4000;
 
-#ifdef WITH_TESTING
     bool operator==(const Dash &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -196,9 +182,7 @@ struct Network final
     unsigned int transitJitter = 200;
     unsigned int transitBufferSize = 32768;
 
-#ifdef WITH_TESTING
     bool operator==(const Network &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -209,9 +193,7 @@ struct Http final
     std::optional<std::string> origin = "*";
     unsigned int cacheNonLiveTime = 600;
 
-#ifdef WITH_TESTING
     bool operator==(const Http &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -224,9 +206,7 @@ struct Directory final
     bool secure = false;
     bool ephemeral = false;
 
-#ifdef WITH_TESTING
     bool operator==(const Directory &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -238,9 +218,7 @@ struct Paths final
     std::string liveStream = "/live/{uid}";
     std::map<std::string, Directory> directories;
 
-#ifdef WITH_TESTING
     bool operator==(const Paths &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -250,9 +228,7 @@ struct History final
 {
     unsigned int historyLength = 90;
 
-#ifdef WITH_TESTING
     bool operator==(const History &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -264,9 +240,7 @@ struct Log final
     std::optional<bool> print;
     ::Log::Level level = ::Log::Level::info;
 
-#ifdef WITH_TESTING
     bool operator==(const Log &) const;
-#endif // WITH_TESTING
 };
 
 /**
@@ -295,9 +269,7 @@ public:
     History history;
     Log log;
 
-#ifdef WITH_TESTING
     bool operator==(const Root &) const;
-#endif // WITH_TESTING
 
 private:
 #ifndef WITH_TESTING
