@@ -1,25 +1,25 @@
 import React from "react";
 
-/**
- * A button that switches between states when clicked.
- */
-export function StateButton(args: {
+// One of possible states of a StateButton
+interface StateButtonState {
+    /**
+     * The button text when in this state.
+     */
+    name: string,
+
+    /**
+     * A function to call when entering this state.
+     *
+     * It's only called when the button is clicked, not as a result of being the default state.
+     */
+    fn: () => void,
+}
+
+export interface StateButtonProps {
     /**
      * List of states to cycle between.
      */
-    states: {
-        /**
-         * The button text when in this state.
-         */
-        name: string,
-
-        /**
-         * A function to call when entering this state.
-         *
-         * It's only called when the button is clicked, not as a result of being the default state.
-         */
-        fn: () => void
-    }[],
+    states: StateButtonState[],
 
     /**
      * The initial state.
@@ -27,20 +27,22 @@ export function StateButton(args: {
      * Default: 0.
      */
     initialState?: number
-}): React.ReactElement<HTMLDivElement> {
-    // Defaults.
-    const props = {
-        initialState: 0,
-        ...args
-    };
+}
 
-    const [state, setState] = React.useState<number>(props.initialState);
+/**
+ * A button that switches between states when clicked.
+ */
+export default function StateButton({
+    states,
+    initialState = 0
+}: StateButtonProps): React.ReactElement<HTMLDivElement> {
+    const [state, setState] = React.useState<number>(initialState);
     return (
         <div id="mute" className="button" onClick={
             (): void => {
-                props.states[state]!.fn();
-                setState((state + 1) % props.states.length);
+                states[state]!.fn();
+                setState((state + 1) % states.length);
             }
-        }>{props.states[state]!.name}</div>
+        }>{states[state]!.name}</div>
     );
 }

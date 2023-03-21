@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import {StateButton} from "./StateButton";
+import StateButton from "./StateButton";
 import "./index.css";
 
 import * as lvsc from "live-video-streamer-client";
