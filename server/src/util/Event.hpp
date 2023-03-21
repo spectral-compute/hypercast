@@ -17,6 +17,8 @@ public:
     ~Event();
     explicit Event(IOContext &ioc);
 
+    Event(Event &&) = default;
+
     /**
      * Wait for the event to happen.
      *
