@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -35,6 +36,12 @@ public:
      * @param captureStdin Make it possible to supply data to the subprocess via stdin.
      * @param captureStdout Make it possible to retrieve data from the subprocess's stdout.
      * @param captureStderr Make it possible to retrieve data from the subprocess's stderr.
+     */
+    explicit Subprocess(IOContext &ioc, std::string_view executable, std::span<const std::string> arguments,
+                        bool captureStdin = true, bool captureStdout = true, bool captureStderr = true);
+
+    /**
+     * @copydoc Subprocess
      */
     explicit Subprocess(IOContext &ioc, std::string_view executable, std::span<const std::string_view> arguments,
                         bool captureStdin = true, bool captureStdout = true, bool captureStderr = true);

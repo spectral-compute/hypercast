@@ -124,7 +124,7 @@ private:
 
 struct Subprocess::Subprocess::Process final
 {
-    explicit Process(IOContext &ioc, std::string_view executable, const std::vector<std::string> &arguments,
+    explicit Process(IOContext &ioc, std::string_view executable, const std::span<const std::string> &arguments,
                      boost::asio::writable_pipe *stdinPipe, boost::asio::readable_pipe *stdoutPipe,
                      boost::asio::readable_pipe *stderrPipe) :
         process(ioc, boost::process::v2::environment::find_executable(executable), arguments,
@@ -171,27 +171,46 @@ private:
     }
 };
 
+namespace
+{
+
+/**
+ * Convert a span of string views to a vector of strings.
+ *
+ * For some reason, boost::process::v2::process's constructor doesn't accept std::string_view:
+ * no viable conversion from 'const std::basic_string_view<char>' to 'basic_string_view<char_type>'
+ */
+std::vector<std::string> convertStringViewsToStrings(std::span<const std::string_view> views)
+{
+    std::vector<std::string> strings;
+    strings.reserve(views.size());
+    for (std::string_view arg: views) {
+        strings.emplace_back(arg);
+    }
+    return strings;
+}
+
+} // namespace
+
 Subprocess::Subprocess::~Subprocess() = default;
 
-Subprocess::Subprocess::Subprocess(IOContext &ioc, std::string_view executable,
-                                   std::span<const std::string_view> arguments,
+Subprocess::Subprocess::Subprocess(IOContext &ioc, std::string_view executable, std::span<const std::string> arguments,
                                    bool captureStdin, bool captureStdout, bool captureStderr) :
     stdinPipe(captureStdin ? std::make_unique<InPipe>(ioc) : nullptr),
     stdoutPipe(captureStdout ? std::make_unique<OutPipe>(ioc) : nullptr),
     stderrPipe(captureStderr ? std::make_unique<OutPipe>(ioc) : nullptr)
 {
-    /* For some reason, boost::process::v2::process's constructor doesn't accept std::string_view:
-       no viable conversion from 'const std::basic_string_view<char>' to 'basic_string_view<char_type>' */
-    std::vector<std::string> argumentStrings;
-    argumentStrings.reserve(arguments.size());
-    for (std::string_view arg: arguments) {
-        argumentStrings.emplace_back(arg);
-    }
-
-    /* Create the process */
-    process = std::make_unique<Process>(ioc, executable, argumentStrings, stdinPipe ? &stdinPipe->pipe : nullptr,
+    process = std::make_unique<Process>(ioc, executable, arguments, stdinPipe ? &stdinPipe->pipe : nullptr,
                                         stdoutPipe ? &stdoutPipe->pipe : nullptr,
                                         stderrPipe ? &stderrPipe->pipe : nullptr);
+}
+
+Subprocess::Subprocess::Subprocess(IOContext &ioc, std::string_view executable,
+                                   std::span<const std::string_view> arguments,
+                                   bool captureStdin, bool captureStdout, bool captureStderr) :
+    Subprocess(ioc, executable, std::span(convertStringViewsToStrings(arguments).data(), arguments.size()),
+               captureStdin, captureStdout, captureStderr)
+{
 }
 
 Awaitable<int> Subprocess::Subprocess::wait(bool throwOnNonZero)
