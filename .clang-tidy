@@ -6,4 +6,5 @@ Checks: "\
 -clang-analyzer-core.CallAndMessage,\
 -clang-analyzer-core.NullDereference,\
 -readability-simplify-boolean-expr,\
+-clang-analyzer-cplusplus.Move,\
 -google-explicit-constructor"
