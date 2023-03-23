@@ -1,13 +1,14 @@
 import {useContext} from 'react';
 import './App.sass';
 import {AppContext} from "./index";
-import LoadEstimator from "./LoadEstimator";
+// import LoadEstimator from "./LoadEstimator";
 import PortStatus from "./PortStatus";
 import StreamBox from "./StreamBox";
 import LogoCard from "./LogoCard";
 import {ReactComponent as CPU} from "./assets/icons/cpu.svg";
 import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
 import {AudioCodec, Channel, FrameRateType, H26xPreset, VideoCodec} from "./api/Config";
+import NewChannelButton from "./NewChannelButton";
 
 function App() {
   const appCtx = useContext(AppContext);
@@ -62,6 +63,8 @@ function App() {
       }]
   };
 
+  const channels: Channel[] = [chan, chan];
+
   // TODO: initial state loading crap.
   return <>
       <div className="layout">
@@ -88,14 +91,12 @@ function App() {
           </div>
 
           <div className="streams">
-              <StreamBox config={chan}></StreamBox>
-              <StreamBox config={chan}></StreamBox>
-              <StreamBox config={chan}></StreamBox>
-              <StreamBox config={chan}></StreamBox>
+              {channels.map((c) => <StreamBox config={c}></StreamBox>)}
+              <NewChannelButton clicked={() => {}}/>
           </div>
       </div>
 
-      <LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>
+      {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}
   </>;
 }
 
