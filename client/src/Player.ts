@@ -112,7 +112,7 @@ export class Player {
     /**
      * Start playing video.
      */
-    start = () => {
+    start = (): void => {
         this.stream!.start();
         this.bctrl!.start();
 
@@ -124,20 +124,20 @@ export class Player {
         this.verboseInterval = window.setInterval((): void => {
             this.printVerboseInvervalInfo();
         }, 1000);
-    }
+    };
 
     /**
      * Stop playing video.
      *
      * This resets the player back to the state it was in before start() was called.
      */
-    stop = () => {
+    stop = (): void => {
         if (this.verboseInterval) {
             clearInterval(this.verboseInterval);
         }
         this.stream!.stop();
         this.bctrl!.stop();
-    }
+    };
 
     /**
      * Get the URL from which the info JSON was loaded (or is to be loaded).
@@ -255,14 +255,14 @@ export class Player {
     }
 
     /** Mute the audio. */
-    mute = () => {
+    mute = (): void => {
         this.setMuted(true);
-    }
+    };
 
     /** Unmute the audio. */
-    unmute = () => {
+    unmute = (): void => {
         this.setMuted(false);
-    }
+    };
 
     /**
      * @internal
