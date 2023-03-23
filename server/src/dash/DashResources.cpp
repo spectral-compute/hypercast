@@ -3,6 +3,7 @@
 #include "configuration/configuration.hpp"
 #include "dash/SegmentResource.hpp"
 #include "dash/InterleaveResource.hpp"
+#include "dash/SegmentIndexDescriptorResource.hpp"
 #include "log/Log.hpp"
 #include "resources/ConstantResource.hpp"
 #include "resources/ErrorResource.hpp"
@@ -72,6 +73,19 @@ std::string getInitializerName(unsigned int streamIndex)
 {
     char name[64];
     snprintf(name, sizeof(name), "init-stream%u.m4s", streamIndex);
+    return name;
+}
+
+/**
+ * Get the name of a segment index descriptor file.
+ *
+ * @param streamIndex The interleave stream index.
+ * @return The name of the segment index descriptor file (without directory).
+ */
+std::string getSegmentIndexDescriptorName(unsigned int streamIndex)
+{
+    char name[64];
+    snprintf(name, sizeof(name), "chunk-stream%u-index.json", streamIndex);
     return name;
 }
 
@@ -392,25 +406,41 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
 void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex)
 {
     spawnDetached(ioc, [=, this]() -> Awaitable<void> {
+        /* Update the segment index descriptor. */
         try {
-            /* Wait for the segment to become pre-available. */
+            server.addOrReplaceResource<SegmentIndexResource>(getSegmentIndexDescriptorName(streamIndex), segmentIndex);
+        }
+        catch (const std::exception &e) {
+            logContext << Log::Level::error
+                       << "Exception while creating segment index descriptor " << segmentIndex
+                       << " for stream " << (streamIndex + 1) << ": " << e.what() << ".";
+        }
+        catch (...) {
+            logContext << Log::Level::error
+                       << "Unknown exception while creating segment index descriptor " << segmentIndex
+                       << " for stream " << (streamIndex + 1) << ".";
+        }
+
+        /* Create the next segment's resource once it's time for it to become pre-available. */
+        try {
+            // Wait for the segment to become pre-available.
             boost::asio::steady_timer timer(ioc);
             timer.expires_from_now(std::chrono::milliseconds(config.dash.segmentDuration -
                                                              config.dash.preAvailabilityTime));
             co_await timer.async_wait(boost::asio::use_awaitable);
 
-            /* Create the segment. */
-            createSegment(streamIndex, segmentIndex);
+            // Create the segment.
+            createSegment(streamIndex, segmentIndex + 1);
         }
         catch (const std::exception &e) {
             logContext << Log::Level::error
                        << "Exception while creating pre-available segment " << segmentIndex
-                       << " for stream " << streamIndex << ": " << e.what() << ".";
+                       << " for stream " << (streamIndex + 1) << ": " << e.what() << ".";
         }
         catch (...) {
             logContext << Log::Level::error
                        << "Unknown exception while creating pre-available segment " << segmentIndex
-                       << " for stream " << streamIndex << ".";
+                       << " for stream " << (streamIndex + 1) << ".";
         }
     });
 }
