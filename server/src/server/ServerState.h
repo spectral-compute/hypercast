@@ -14,7 +14,12 @@ public:
     IOContext& ioc;
 
 private:
+    // The configuration currently active on the server. This configuration object is complete.
     Config::Root config;
+
+    // The configuration object that was loaded. This contains only the keys in the config file.
+    Config::Root requestedConfig;
+
     std::unique_ptr<Log::Log> log;
 
     HttpServer server;
@@ -29,6 +34,7 @@ private:
 public:
     /// Perform initial setup/configuration.
     State(
+        const Config::Root& initialCfg,
         IOContext& ioc
     );
 

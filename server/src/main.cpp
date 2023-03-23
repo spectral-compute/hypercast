@@ -40,7 +40,7 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     // Load and populate a config object.
     Config::Root config = loadConfig(argv[1]);
 
-    Server::State st{ioc};
+    Server::State st{config, ioc};
     co_await st.applyConfiguration(config);
 
     // Hang this coroutine forever. Interesting things happen as a result of the server handling requests

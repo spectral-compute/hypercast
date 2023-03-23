@@ -39,6 +39,7 @@ void addFilesystemPathsToServer(Server::Server &server, const std::map<std::stri
 
 /// Perform initial setup/configuration.
 Server::State::State(
+    const Config::Root& initialCfg,
     IOContext& ioc
 ):
     ioc(ioc),
@@ -58,6 +59,8 @@ void Server::State::configCannotChange(bool itChanged, const std::string& name) 
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
 Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
+    requestedConfig = newCfg;
+
     // Fill in the blanks...
     co_await Config::fillInDefaults(ioc, newCfg);
 
