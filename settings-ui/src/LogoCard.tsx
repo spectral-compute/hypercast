@@ -1,15 +1,10 @@
-import {ReactComponent as Logo} from "./logo.svg";
-import BoxThing from "./BoxThing";
+import {ReactComponent as Logo} from "./assets/logo.svg";
 import "./LogoCard.sass";
 
 function LogoCard() {
-    return <div className="logoCard">
-        <BoxThing>
-            <div className="logoCardBody">
-                <Logo width="2em"></Logo>
-                <span>RISE</span>
-            </div>
-        </BoxThing>
+    return <div className="logoCardBody">
+        <Logo width="3em"></Logo>
+        <span>RISE</span>
     </div>;
 }
 

@@ -1,6 +1,14 @@
-.App
-  width: 100%
-  height: 100%
+//html,body
+//  margin: 0
+//  padding: 0
+//
+//body
+//  height: 100vh
+//  width: 100vw
+//
+//#root
+//  width: 100%
+//  height: 100%
 
 .mainCols
   display: flex
@@ -13,21 +21,40 @@
   display: flex
   gap: 1em
 
+.statList
+  display: flex
+  flex-direction: column
+  align-items: flex-end
+
 .streams
   display: flex
-  width: 100%
+  gap: 0.5em
+  margin-left: 0.5em
+  margin-right: 0.5em
 
 .topRow
+  height: 3.1em
+  padding: 0.2em
+  background-color: var(--colour-secondary-bg)
+  border-bottom: var(--colour-primary)
   display: flex
   flex-wrap: nowrap
   justify-content: space-between
+  margin-bottom: 0.5em
 
 .statEntry
   color: var(--colour-primary)
   display: flex
-  flex-direction: column
-  span:first-child
-    font-size: 1.5rem
+  gap: 0.2em
+  align-items: center
+  span
+    font-size: 1em
 
-  span:nth-child(2)
-    font-size: 2rem
+.layout
+  flex-grow: 1
+  height: 97.5%
+  display: flex
+  flex-direction: column
+
+  >:nth-child(2)
+    flex-grow: 1

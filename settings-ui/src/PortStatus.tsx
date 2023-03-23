@@ -1,5 +1,5 @@
 import {ReactComponent as SDI} from "./assets/SDI.svg";
-import {PortDescriptor} from "./modelling/Hardware";
+import {PortDescriptor} from "./api/Hardware";
 import './PortStatus.sass';
 
 export interface PortStatusProps {
@@ -13,7 +13,6 @@ function PortStatus(props: PortStatusProps) {
         <div className={"portStatus" + (props.connected ? " connected" : " disconnected")}>
             <h3>{props.desc.name}</h3>
             <SDI height="3em" width="3em"></SDI>
-            <h4>{props.connected ? "Connected" : "Disconnected"}</h4>
         </div>
     );
 }

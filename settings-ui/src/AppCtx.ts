@@ -1,13 +1,13 @@
 import {Api} from "./api/Api";
-// import {Config} from "./api/ServerConfigSpec";
-import {MachineInfo, PortConnector} from "./modelling/Hardware";
+import {MachineInfo, PortConnector} from "./api/Hardware";
+// import {StreamingConfig} from "./api/Config";
 
 
 export class AppCtx {
     api: Api = new Api();
 
     // The server's config object.
-    // loadedConfiguration: Config;
+    // loadedConfiguration: StreamingConfig;
 
     // The current status of the hardware.
     machineInfo: MachineInfo = {

@@ -1,4 +1,4 @@
-import './LoadEstimator.css';
+import './LoadEstimator.sass';
 import ProgressBar from "./ProgressBar";
 
 export interface LoadEstimatorProps {

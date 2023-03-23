@@ -3,49 +3,97 @@ import './App.sass';
 import {AppContext} from "./index";
 import LoadEstimator from "./LoadEstimator";
 import PortStatus from "./PortStatus";
-import BoxThing from "./BoxThing";
 import StreamBox from "./StreamBox";
 import LogoCard from "./LogoCard";
+import {ReactComponent as CPU} from "./assets/icons/cpu.svg";
+import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
+import {AudioCodec, Channel, FrameRateType, H26xPreset, VideoCodec} from "./api/Config";
 
 function App() {
   const appCtx = useContext(AppContext);
 
+  const chan: Channel = {
+      name: "Channel 1",
+      videoSource: {
+          arguments: [],
+          latency: 0,
+          url: "Herring",
+          loop: true,
+          timestamp: false
+      },
+
+      videoQualities: [{
+          targetLatency: 1000,
+          interleaveTimestampInterval: 10,
+          clientBufferControl: {},
+          width: 1920,
+          height: 1080,
+          frameRate: {
+              numerator: 30,
+              denominator: 1,
+              type: FrameRateType.fps
+          },
+          bitrate: 10000,
+          crf: 5,
+          codec: VideoCodec.h264,
+          h26xPreset: H26xPreset.fast
+      }, {
+          targetLatency: 1000,
+          interleaveTimestampInterval: 10,
+          clientBufferControl: {},
+          width: 1280,
+          height: 720,
+          frameRate: {
+              numerator: 30,
+              denominator: 1,
+              type: FrameRateType.fps
+          },
+          bitrate: 10000,
+          crf: 5,
+          codec: VideoCodec.h264,
+          h26xPreset: H26xPreset.fast
+      }],
+      audioQualities: [{
+          bitrate: 1000,
+          codec: AudioCodec.aac
+      }, {
+          bitrate: 1000,
+          codec: AudioCodec.aac
+      }]
+  };
+
   // TODO: initial state loading crap.
   return <>
-      <LogoCard></LogoCard>
-      <div className="topRow">
-          <BoxThing title="Inputs">
+      <div className="layout">
+          <div className="topRow">
+              <LogoCard/>
               <div className="portList">
                   {
                       appCtx.machineInfo.inputPorts.map(p =>
                           <PortStatus connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
                   )}
               </div>
-          </BoxThing>
 
-          <BoxThing title="Status">
-              <div className="portList">
+              <div className="statList">
                   <div className="statEntry">
-                      <span>Uplink Usage</span>
                       <span>1MB/s</span>
+                      <UplinkIcon/>
                   </div>
 
                   <div className="statEntry">
-                      <span>CPU Usage</span>
                       <span>75%</span>
+                      <CPU/>
                   </div>
               </div>
-          </BoxThing>
-      </div>
-
-      <BoxThing title="Streams">
-          <div className="streams">
-              <StreamBox></StreamBox>
-              <StreamBox></StreamBox>
-              <StreamBox></StreamBox>
-              <StreamBox></StreamBox>
           </div>
-      </BoxThing>
+
+          <div className="streams">
+              <StreamBox config={chan}></StreamBox>
+              <StreamBox config={chan}></StreamBox>
+              <StreamBox config={chan}></StreamBox>
+              <StreamBox config={chan}></StreamBox>
+          </div>
+      </div>
 
       <LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>
   </>;
