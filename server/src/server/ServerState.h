@@ -17,9 +17,11 @@ private:
     // The configuration currently active on the server. This configuration object is complete.
     Config::Root config;
 
+public:
     // The configuration object that was loaded. This contains only the keys in the config file.
     Config::Root requestedConfig;
 
+private:
     std::unique_ptr<Log::Log> log;
 
     HttpServer server;

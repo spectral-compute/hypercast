@@ -296,6 +296,7 @@ Config::Root Config::Root::fromJson(std::string_view jsonString)
     }
 
     /* Finish off. */
+    root.jsonRepresentation = jsonString;
     root.validate();
     return root;
 }

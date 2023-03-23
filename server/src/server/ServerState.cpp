@@ -4,6 +4,7 @@
 #include "resources/FilesystemResource.hpp"
 #include "dash/DashResources.hpp"
 #include "configuration/defaults.hpp"
+#include "api/ConfigResource.h"
 
 namespace {
 
@@ -46,7 +47,9 @@ Server::State::State(
     config(),
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network.port, initialCfg.http)
-{}
+{
+    server.addResource<ConfigAPIResource>("api/config", *this);
+}
 
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
 void Server::State::configCannotChange(bool itChanged, const std::string& name) const {

@@ -260,6 +260,9 @@ public:
      */
     static Root fromJson(std::string_view jsonString);
 
+    // The json this object was originally decoded from. If it was mutated afterwards, this will not be in sync.
+    std::string jsonRepresentation;
+
     Source source;
     std::vector<Quality> qualities;
     Dash dash;
