@@ -9,6 +9,7 @@ import {ReactComponent as CPU} from "./assets/icons/cpu.svg";
 import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
 import {AudioCodec, Channel, FrameRateType, H26xPreset, VideoCodec} from "./api/Config";
 import NewChannelButton from "./NewChannelButton";
+import ChannelConfigModal from "./modal/ChannelConfigModal";
 
 function App() {
   const appCtx = useContext(AppContext);
@@ -95,6 +96,8 @@ function App() {
               <NewChannelButton clicked={() => {}}/>
           </div>
       </div>
+
+      <ChannelConfigModal/>
 
       {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}
   </>;
