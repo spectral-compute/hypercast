@@ -3,6 +3,7 @@
 #include "log/FileLog.hpp"
 #include "resources/FilesystemResource.hpp"
 #include "dash/DashResources.hpp"
+#include "configuration/defaults.hpp"
 
 namespace {
 
@@ -38,16 +39,13 @@ void addFilesystemPathsToServer(Server::Server &server, const std::map<std::stri
 
 /// Perform initial setup/configuration.
 Server::State::State(
-    const Config::Root& initialCfg,
     IOContext& ioc
 ):
     ioc(ioc),
     config(),
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network.port, initialCfg.http)
-{
-    applyConfiguration(initialCfg);
-}
+{}
 
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
 void Server::State::configCannotChange(bool itChanged, const std::string& name) const {
@@ -59,7 +57,10 @@ void Server::State::configCannotChange(bool itChanged, const std::string& name) 
 /// Change the settings. Add as much clever incremental reconfiguration logic here as you like.
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
-void Server::State::applyConfiguration(const Config::Root& newCfg) {
+Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
+    // Fill in the blanks...
+    co_await Config::fillInDefaults(ioc, newCfg);
+
 #define CANT_CHANGE(N) configCannotChange(config.N != newCfg.N, #N)
     // Listen port can be changed only by restarting the process (and will probably break
     // the settings UI if you're doing that on one of the hardware units).
@@ -90,7 +91,7 @@ void Server::State::applyConfiguration(const Config::Root& newCfg) {
 
     // TODO: Start/stop streaming here as needed etc.
 
-    config = newCfg;
+    config = std::move(newCfg);
     performingStartup = false;
 
 #undef CANT_CHANGE

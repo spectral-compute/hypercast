@@ -21,8 +21,6 @@ public:
     virtual ~Resource();
 
     /**
-     * Constructor :)
-     *
      * @param isPublic Whether or not the resource is to be accessible publicly. @see getIsPublic.
      */
     explicit Resource(bool isPublic = false) : isPublic(isPublic) {}

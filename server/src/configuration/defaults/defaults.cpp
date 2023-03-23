@@ -11,6 +11,8 @@ void fillInQuality(Config::Quality &q, const Root &config);
 
 Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
 {
+    // TODO: This is likely no longer correct, since the ffprobeage will need to be changed to cope with
+    //       multiple input ports.
     /* Fill in some simple defaults. */
     if (!config.log.print) {
         config.log.print = config.log.path.empty(); // By default, print if and only if we're not logging to a file.

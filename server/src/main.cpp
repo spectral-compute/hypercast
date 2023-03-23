@@ -40,11 +40,8 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     // Load and populate a config object.
     Config::Root config = loadConfig(argv[1]);
 
-    // TODO: This is likely no longer correct, since the ffprobeage will need to be changed to cope with
-    //       multiple input ports.
-    co_await Config::fillInDefaults(ioc, config);
-
-    Server::State st{config, ioc};
+    Server::State st{ioc};
+    co_await st.applyConfiguration(config);
 
     // Hang this coroutine forever. Interesting things happen as a result of the server handling requests
     // in another coroutine.

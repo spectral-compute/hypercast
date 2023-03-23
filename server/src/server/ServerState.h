@@ -29,7 +29,6 @@ private:
 public:
     /// Perform initial setup/configuration.
     State(
-        const Config::Root& initialCfg,
         IOContext& ioc
     );
 
@@ -43,7 +42,7 @@ public:
     /// Change the settings. Add as much clever incremental reconfiguration logic here as you like.
     /// Various options are re-read every time they're used and don't require explicit reconfiguration,
     /// so they don't appear specifically within this function.
-    void applyConfiguration(const Config::Root& newCfg);
+    Awaitable<void> applyConfiguration(Config::Root newCfg);
 };
 
 
