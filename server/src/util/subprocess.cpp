@@ -72,7 +72,9 @@ struct Subprocess::Subprocess::OutPipe final
             }
 
             /* Find where the line ends, and stash the rest away in . */
-            auto it = std::find(data.begin(), data.end(), (std::byte)'\n');
+            auto it = std::find_if(data.begin(), data.end(), [](std::byte b) {
+                return b == (std::byte)'\n' || b == (std::byte)'\r';
+            });
 
             /* Handle the case where no newline is found. */
             if (it == data.end()) {
@@ -84,7 +86,8 @@ struct Subprocess::Subprocess::OutPipe final
             }
 
             /* Stash everything after the newline in remainder. */
-            remainder.insert(remainder.end(), it + 1, data.end());
+            bool isTwoCharNewline = it < data.end() - 1 && *it == (std::byte)'\r' && *(it + 1) == (std::byte)'\n';
+            remainder.insert(remainder.end(), it + (isTwoCharNewline ? 2 : 1), data.end());
 
             /* Return the result, including everything up to but excluding the newline. */
             result.insert(result.end(), (const char *)data.data(), (const char *)&*it);
