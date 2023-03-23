@@ -1,5 +1,8 @@
 #pragma once
 
+#include "log/Log.hpp"
+#include "util/subprocess.hpp"
+
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +27,24 @@ class Root;
  */
 namespace Ffmpeg
 {
+
+/**
+ * Wraps an ffmpeg process to provide logging.
+ */
+class FfmpegProcess final
+{
+public:
+    /**
+     * Create an ffmpeg subprocess, and log its output.
+     *
+     * @param arguments The arguments to give to ffmpeg.
+     */
+    explicit FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<const std::string> arguments);
+
+private:
+    Log::Context log;
+    Subprocess::Subprocess subprocess;
+};
 
 /**
  * Generate the arguments to ffmpeg.
