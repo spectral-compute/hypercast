@@ -11,8 +11,6 @@
 #include "util/asio.hpp"
 #include "util/util.hpp"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/steady_timer.hpp>
 
 #include <algorithm>
@@ -393,7 +391,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
 
 void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex)
 {
-    boost::asio::co_spawn((boost::asio::io_context &)ioc, [=, this]() -> boost::asio::awaitable<void> {
+    spawnDetached(ioc, [=, this]() -> Awaitable<void> {
         try {
             /* Wait for the segment to become pre-available. */
             boost::asio::steady_timer timer(ioc);
@@ -414,7 +412,7 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
                        << "Unknown exception while creating pre-available segment " << segmentIndex
                        << " for stream " << streamIndex << ".";
         }
-    }, boost::asio::detached);
+    });
 }
 
 void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int segmentIndex)

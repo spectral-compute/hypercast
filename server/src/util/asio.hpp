@@ -1,14 +1,25 @@
 #pragma once
 
+#include "log/Level.hpp"
+
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
+
+#include <functional>
 
 /* This lets us do things like co_await (a && b), where a and b are Awaitable<void>s. */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wheader-hygiene"
 using namespace boost::asio::experimental::awaitable_operators;
 #pragma clang diagnostic pop
+
+namespace Log
+{
+
+class Context;
+
+} // namespace Log
 
 /**
  * @defgroup asio Asynchronous IO
@@ -70,5 +81,20 @@ class IOContext final : public boost::asio::io_context
 public:
     using boost::asio::io_context::io_context;
 };
+
+/**
+ * Spawn a detached coroutine.
+ *
+ * @param fn The function to run in the coroutine.
+ */
+void spawnDetached(IOContext &ioc, std::move_only_function<Awaitable<void>()> fn);
+
+/**
+ * Spawn a detached coroutine.
+ *
+ * @param fn The function to run in the coroutine.
+ */
+void spawnDetached(IOContext &ioc, Log::Context &log, std::move_only_function<Awaitable<void>()> fn,
+                   Log::Level level = Log::Level::error);
 
 /// @}

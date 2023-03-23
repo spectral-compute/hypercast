@@ -8,9 +8,6 @@
 #include "util/util.hpp"
 #include "server/ServerState.h"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
-
 #include <stdexcept>
 
 using namespace std::string_literals;
@@ -57,7 +54,7 @@ int main(int argc, const char * const *argv)
 {
     /* This is just a wrapper around boost::asio and asyncMain. */
     IOContext ioc;
-    boost::asio::co_spawn((boost::asio::io_context &)ioc, [&]() -> boost::asio::awaitable<void> {
+    spawnDetached(ioc, [&]() -> Awaitable<void> {
         try {
             co_await asyncMain(argc, argv, ioc);
         }
@@ -67,7 +64,7 @@ int main(int argc, const char * const *argv)
         catch (...) {
             fprintf(stderr, "Exited with an unknown exception.\n");
         }
-    }, boost::asio::detached);
+    });
     ioc.run();
     return 1; // The program should run indefinitely unless there's an error.
 }

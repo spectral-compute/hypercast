@@ -10,8 +10,6 @@
 #include "util/asio.hpp"
 #include "util/util.hpp"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
 #include <boost/beast/core/flat_buffer.hpp>
@@ -334,18 +332,7 @@ Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, uint16_t port, con
     Log::Context listenContext = log("listen");
 
     /* Start a coroutine in the IO context, so we can return immediately. */
-    boost::asio::co_spawn((boost::asio::io_context &)ioc,
-                          [this, port, &listenContext]() -> boost::asio::awaitable<void> {
-        try {
-            co_await listen(port);
-        }
-        catch (const std::exception &e) {
-            listenContext << Log::Level::error << "Exception while listening: " << e.what() << ".";
-        }
-        catch (...) {
-            listenContext << Log::Level::error << "Unknown exception while listening.";
-        }
-    }, boost::asio::detached);
+    spawnDetached(ioc, listenContext, [this, port]() -> Awaitable<void> { return listen(port); });
 }
 
 Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
@@ -458,11 +445,10 @@ Awaitable<void> Server::HttpServer::listen(uint16_t port)
             boost::asio::ip::tcp::socket socket = co_await acceptor.async_accept(boost::asio::use_awaitable);
 
             // Spawn a detached coroutine to handle the socket, so we can get back to accepting more connections.
-            boost::asio::co_spawn((boost::asio::io_context &)ioc,
-                                  [this, socket = std::move(socket)]() mutable -> boost::asio::awaitable<void> {
+            spawnDetached(ioc, [this, socket = std::move(socket)]() mutable -> Awaitable<void> {
                 Connection connection(std::move(socket));
                 co_await onConnection(connection);
-            }, boost::asio::detached);
+            });
         }
         catch (const std::exception &e) {
             connectionContext << Log::Level::error << "Exception while accepting connection: " << e.what() << ".";

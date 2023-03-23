@@ -2,9 +2,6 @@
 
 #include "util/asio.hpp"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
-
 #include <cassert>
 
 Log::Context::NewItem::~NewItem()
@@ -159,9 +156,7 @@ void Log::Log::scheduleAppend(Item item)
     }
 
     // New coroutine to actually call store, even though scheduleAppend isn't a coroutine.
-    boost::asio::co_spawn((boost::asio::io_context &)ioc, [this]() -> boost::asio::awaitable<void> {
-        return scheduleQueue();
-    }, boost::asio::detached);
+    spawnDetached(ioc, [this]() -> Awaitable<void> { return scheduleQueue(); });
 }
 
 Awaitable<void> Log::Log::scheduleQueue()
