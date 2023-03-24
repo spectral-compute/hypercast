@@ -284,7 +284,7 @@ class SegmentDownloader {
     /**
      * Sets the next segment index to download, and the time to start downloading the segment after.
      *
-     * @param A segment index info object that has just been downloaded.
+     * @param info A segment index info object that has just been downloaded.
      */
     private setSegmentDownloadSchedule(info: API.SegmentIndexDescriptor): void {
         /* Schedule periodic updates to the download scheduler. */
@@ -671,7 +671,6 @@ export class MseWrapper {
     /**
      * Download stream info JSON and initializer stream.
      *
-     * @param baseUrl Base URL for the stream.
      * @param index Stream index.
      */
     private getStreamInfoAndInit(index: number): Promise<[any, ArrayBuffer]> {
