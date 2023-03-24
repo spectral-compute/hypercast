@@ -32,9 +32,6 @@ Dash::InterleaveResource::InterleaveResource(IOContext &ioc, Log::Log &log, unsi
 
 Awaitable<void> Dash::InterleaveResource::getAsync(Server::Response &response, Server::Request &request)
 {
-    /* No request data is expected. */
-    co_await request.readEmpty();
-
     /* Give the response all the data we've got for the interleave so far. */
     for (const auto &chunk: data) {
         response << chunk;

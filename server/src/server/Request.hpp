@@ -85,12 +85,18 @@ public:
         return isPublic;
     }
 
+protected:
     /**
      * Read some data from the request body.
      *
      * @return The data that was read. This returns an empty result when the request body is finished.
      */
-    virtual Awaitable<std::vector<std::byte>> readSome() = 0;
+    virtual Awaitable<std::vector<std::byte>> doReadSome() = 0;
+
+public:
+
+    /// Wraps doReadSome() in a thing that counts the bytes extracted and stores in `bytesRead`
+    Awaitable<std::vector<std::byte>> readSome();
 
     /**
      * Read all the (remaining, if readSome() has already been called) body data.
@@ -106,17 +112,23 @@ public:
      */
     Awaitable<std::string> readAllAsString();
 
-    /**
-     * Calls readAll() to ensure no more body data exists.
-     *
-     * @throws Error if any data remains.
-     */
-    Awaitable<void> readEmpty();
+    /// Get the number of bytes extracted from this request object so far.
+    int getBytesRead() const;
+
+    /// Throw after this many bytes have been extracted. Default is 0.
+    void setMaxLength(int bytes);
 
 private:
     Path path;
     const Type type;
     const bool isPublic;
+
+    // Number of bytes extracted from this Request so far.
+    int bytesRead = 0;
+    int maxLength = 0;
+
+    /// Throw is the maximum body length has been exceeded.
+    void checkMaxLength() const;
 };
 
 } // namespace Server

@@ -225,7 +225,7 @@ public:
     ~ServerTestRequest() override = default;
     using Request::Request;
 
-    Awaitable<std::vector<std::byte>> readSome() override
+    Awaitable<std::vector<std::byte>> doReadSome() override
     {
         co_return std::vector<std::byte>{};
     }

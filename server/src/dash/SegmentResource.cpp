@@ -36,9 +36,6 @@ Awaitable<void> Dash::SegmentResource::getAsync(Server::Response &response, Serv
         throw Server::Error(Server::ErrorKind::Forbidden, "Not a public resource");
     }
 
-    /* No request data is expected. */
-    co_await request.readEmpty();
-
     /* Keep waiting for more data until we've had it all. */
     for (size_t i = 0; ; i++) {
         // Wait for more data to become available if necessary.

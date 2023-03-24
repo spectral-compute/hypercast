@@ -34,6 +34,10 @@ public:
             co_await response.flush();
         }
     }
+
+    int maxRequestLength() const override {
+        return 1000000;
+    }
 };
 
 /**
@@ -56,6 +60,10 @@ public:
         }
         response << std::to_string(size);
     }
+
+    int maxRequestLength() const override {
+        return 500000000;
+    }
 };
 
 /**
@@ -69,7 +77,6 @@ public:
     Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override
     {
         response.setCacheKind(Server::CacheKind::ephemeral);
-        co_await request.readEmpty();
         response << "Cats";
         co_await response.flush();
         response << " are";
@@ -90,7 +97,6 @@ public:
 
     Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override
     {
-        co_await request.readEmpty();
         for (int i = 0; i < 64; i++) {
             constexpr int count = 1 << 20;
             std::vector<std::byte> chunk(sizeof(int) * count);

@@ -24,8 +24,6 @@ class Resource;
 class TestRequest final : public Server::Request
 {
 public:
-    ~TestRequest() override;
-
     /**
      * Constructor :)
      *
@@ -34,52 +32,43 @@ public:
      * @param data The data to send to the resource. For 2D versions of this, the data is sent one piece at a time,
      *             according to the given pieces.
      * @param isPublic Whether to treat the request as though it came from the public Internet.
-     * @param expectPartialRead Whether to expect that the full request body won't be read (as can be the case when an
-     *                          error is expected to occur).
      */
     TestRequest(Server::Path path, Type type = Server::Request::Type::get,
                 std::span<const std::span<const std::byte>> data = {},
-                bool isPublic = false, bool expectPartialRead = false);
+                bool isPublic = false);
 
-    TestRequest(Server::Path path, Type type, std::span<const std::byte> data, bool isPublic = false,
-                bool expectPartialRead = false) :
-        TestRequest(std::move(path), type, std::span<const std::span<const std::byte>>({data}), isPublic,
-                    expectPartialRead)
+    TestRequest(Server::Path path, Type type, std::span<const std::byte> data, bool isPublic = false) :
+        TestRequest(std::move(path), type, std::span<const std::span<const std::byte>>({data}), isPublic)
     {
     }
 
-    TestRequest(Server::Path path, Type type, std::string_view string, bool isPublic = false,
-                bool expectPartialRead = false) :
-        TestRequest(std::move(path), type, std::span((const std::byte *)string.data(), string.size()), isPublic,
-                    expectPartialRead)
+    TestRequest(Server::Path path, Type type, std::string_view string, bool isPublic = false) :
+        TestRequest(std::move(path), type, std::span((const std::byte *)string.data(), string.size()), isPublic)
     {
     }
 
     TestRequest(Type type = Server::Request::Type::get, std::span<const std::span<const std::byte>> data = {},
-                bool isPublic = false,  bool expectPartialRead = false) :
-        TestRequest("", type, data, isPublic, expectPartialRead)
+                bool isPublic = false) :
+        TestRequest("", type, data, isPublic)
     {
     }
 
-    TestRequest(Type type, std::span<const std::byte> data, bool isPublic = false,
-                bool expectPartialRead = false) :
-        TestRequest("", type, std::span<const std::span<const std::byte>>({data}), isPublic, expectPartialRead)
+    TestRequest(Type type, std::span<const std::byte> data, bool isPublic = false) :
+        TestRequest("", type, std::span<const std::span<const std::byte>>({data}), isPublic)
     {
     }
 
-    TestRequest(Type type, std::string_view string, bool isPublic = false,
-                bool expectPartialRead = false) :
-        TestRequest("", type, std::span((const std::byte *)string.data(), string.size()), isPublic, expectPartialRead)
+    TestRequest(Type type, std::string_view string, bool isPublic = false) :
+        TestRequest("", type, std::span((const std::byte *)string.data(), string.size()), isPublic)
     {
     }
 
-    Awaitable<std::vector<std::byte>> readSome() override;
+    Awaitable<std::vector<std::byte>> doReadSome() override;
 
 private:
     std::vector<std::vector<std::byte>> data;
     size_t dataReadIndex = 0;
     bool fullyRead = false;
-    bool expectPartialRead = false;
 };
 
 /**

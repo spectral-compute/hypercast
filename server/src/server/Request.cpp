@@ -7,6 +7,14 @@
 
 Server::Request::~Request() = default;
 
+Awaitable<std::vector<std::byte>> Server::Request::readSome()
+{
+    std::vector<std::byte> data = co_await doReadSome();
+    bytesRead += (int) data.size();
+    checkMaxLength();
+    co_return data;
+}
+
 Awaitable<std::vector<std::byte>> Server::Request::readAll()
 {
     /* Extract all the data. */
@@ -29,9 +37,21 @@ Awaitable<std::string> Server::Request::readAllAsString()
     co_return std::string((const char *)bytes.data(), bytes.size());
 }
 
-Awaitable<void> Server::Request::readEmpty()
+int Server::Request::getBytesRead() const
 {
-    if (!(co_await readAll()).empty()) {
-        throw Error(ErrorKind::BadRequest, "Request not empty.");
+    return bytesRead;
+}
+
+void Server::Request::checkMaxLength() const
+{
+    if (bytesRead > maxLength) {
+        throw Error(ErrorKind::BadRequest, "Request body too long (got >=" + std::to_string(bytesRead) + " bytes, but the limit is " + std::to_string(maxLength) + ")");
     }
+
+}
+
+void Server::Request::setMaxLength(int l)
+{
+    maxLength = l;
+    checkMaxLength();
 }

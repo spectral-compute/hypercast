@@ -10,10 +10,10 @@ void Server::PutResource::getSync(Response &response, const Request&)
 {
     response.setCacheKind(cacheKind);
     if (!requestData.empty()) {
-        throw Error(ErrorKind::BadRequest);
+        throw Error(ErrorKind::BadRequest, "Unexpected request data");
     }
     if (!hasBeenPut) {
-        throw Error(ErrorKind::NotFound);
+        throw Error(ErrorKind::NotFound, "PUT resource was GET'd before being PUT");
     }
     response << data;
 }

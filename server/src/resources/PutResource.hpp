@@ -29,6 +29,10 @@ public:
     void getSync(Response &response, const Request &request) override;
     void putSync(Response &response, const Request &request) override;
 
+    int maxRequestLength() const override {
+        return 500000000;
+    }
+
 private:
     const CacheKind cacheKind;
     std::vector<std::byte> data;

@@ -33,6 +33,5 @@ void Server::SynchronousResource::putSync(Response&, const Request&) { unsupport
 Server::SynchronousNullaryResource::~SynchronousNullaryResource() = default;
 
 Awaitable<std::vector<std::byte>> Server::SynchronousNullaryResource::extractData(Request& request) {
-    co_await request.readEmpty();
     co_return std::vector<std::byte>{};
 }

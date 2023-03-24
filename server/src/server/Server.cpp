@@ -44,7 +44,7 @@ const char *getErrorKindString(Server::ErrorKind kind)
  * @param resource The resource that would handle the request.
  * @param request The request that is to be handled.
  */
-void checkResourceRestrictions(const Server::Resource &resource, const Server::Request &request)
+void checkResourceRestrictions(const Server::Resource &resource, Server::Request &request)
 {
     /* Don't allow public access to non-public resources. */
     if (!resource.getIsPublic() && request.getIsPublic()) {
@@ -60,6 +60,8 @@ void checkResourceRestrictions(const Server::Resource &resource, const Server::R
     if (request.getType() != Server::Request::Type::get && request.getIsPublic()) {
         throw Server::Error(Server::ErrorKind::Forbidden);
     }
+
+    request.setMaxLength(resource.maxRequestLength());
 }
 
 /**

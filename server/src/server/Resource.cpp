@@ -33,6 +33,10 @@ Awaitable<void> Server::Resource::operator()(Response &response, Request &reques
     }
 }
 
+int Server::Resource::maxRequestLength() const {
+    return 0;
+}
+
 void Server::Resource::unsupportedHttpVerb(const std::string& verb) const {
     throw Error(ErrorKind::UnsupportedType, verb + " is not supported by this resource");
 }

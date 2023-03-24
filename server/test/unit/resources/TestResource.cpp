@@ -146,27 +146,27 @@ Awaitable<void> testResourceImpl(Server::Resource &resource, TestRequest &reques
 
 } // namespace
 
-TestRequest::~TestRequest()
+TestRequest::TestRequest(Server::Path path, Type type, std::span<const std::span<const std::byte>> data, bool isPublic) :
+    Request(std::move(path), type, isPublic), data(data.size())
 {
-    EXPECT_EQ(fullyRead, !expectPartialRead);
-}
-
-TestRequest::TestRequest(Server::Path path, Type type, std::span<const std::span<const std::byte>> data, bool isPublic,
-                         bool expectPartialRead) :
-    Request(std::move(path), type, isPublic), data(data.size()), expectPartialRead(expectPartialRead)
-{
+    int acc = 0;
     for (size_t i = 0; i < data.size(); i++) {
         this->data[i].insert(this->data[i].end(), data[i].begin(), data[i].end());
+        acc += (int) this->data[i].size();
     }
+    this->setMaxLength(acc);
 }
 
-Awaitable<std::vector<std::byte>> TestRequest::readSome()
+Awaitable<std::vector<std::byte>> TestRequest::doReadSome()
 {
     std::vector<std::byte> result;
     if (dataReadIndex < data.size()) {
         result = std::move(data[dataReadIndex++]);
     }
     else {
+        // This isn't even necessarily a bug, since the implementation will return empty-vector every time (and it will
+        // only return empty-vector when the end has been reached). It won't hang. It would certainly be slightly odd,
+        // but a Resource could perfectly legitimately hit the end repeatedly.
         EXPECT_FALSE(fullyRead) << "Attempt to read request body after end of request body empty data returned.";
         fullyRead = true;
     }

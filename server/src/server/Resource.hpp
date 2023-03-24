@@ -46,6 +46,9 @@ public:
     /// You probably don't want to override this one, but can if you want.
     virtual Awaitable<void> operator()(Response &response, Request &request);
 
+    /// The maximum number of bytes in the request body. Default is zero.
+    virtual int maxRequestLength() const;
+
     /**
      * Determine whether this resource can be serviced from a public location.
      *

@@ -15,6 +15,7 @@ CORO_TEST(PutResource, Simple, ioc)
         co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {},
                               Server::CacheKind::none);
     }
+
     {
         TestRequest request(Server::Request::Type::get, std::span<const std::span<const std::byte>>(), true);
         co_await testResource(resource, request, "Electron");
@@ -39,8 +40,8 @@ CORO_TEST(PutResource, Ephemeral, ioc)
 CORO_TEST(PutResource, NotFound, ioc)
 {
     Server::PutResource resource;
-    TestRequest request(Server::Request::Type::get, "", true, true);
-    co_await testResourceError(resource, request, Server::ErrorKind::NotFound);
+    TestRequest request(Server::Request::Type::get, "", true);
+    co_await testResourceError(resource, request, "PUT resource was GET'd before being PUT", Server::ErrorKind::NotFound);
 }
 
 CORO_TEST(PutResource, Rewrite, ioc)

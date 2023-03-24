@@ -16,9 +16,6 @@ Awaitable<void> Server::FilesystemResource::getAsync(Response &response, Request
     /* Set up some response properties. */
     response.setCacheKind(cacheKind);
 
-    /* Check that the request properties. */
-    co_await request.readEmpty();
-
     /* Figure out the path. */
     // This is protected from directory traversal attacks by the constructor for the object returned by
     // request.getPath().

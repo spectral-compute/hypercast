@@ -64,19 +64,10 @@ public:
     {
     }
 
-    /**
-     * Determine if the end of the request body has been reached.
-     */
-    bool eof() const
-    {
-        return bodyEof;
-    }
-
-    Awaitable<std::vector<std::byte>> readSome() override
+    Awaitable<std::vector<std::byte>> doReadSome() override
     {
         /* Don't keep reading once we've read the end of the body. */
         if (parser.is_done()) {
-            bodyEof = true;
             co_return std::vector<std::byte>{};
         }
 
@@ -121,11 +112,6 @@ private:
      * By making this a member variable, it can be shared across multiple reads if those reads are short.
      */
     std::vector<std::byte> buffer;
-
-    /**
-     * Whether the body's end of file has been reached.
-     */
-    bool bodyEof = false;
 };
 /**
  * Wraps the boost::beast and boost::asio stuff into a Server::Response.
@@ -390,7 +376,7 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
        1. Triggers any logging we might have turned on.
        2. Prevents the socket from being used for the next request.
        This is reachable if readEmpty was called, but there was actually request data. */
-    if (!request.eof()) {
+    if (!(co_await request.readSome()).empty()) {
         // If there's an error, then we'd expect the end of request body might not have been reached.
         if (!response) {
             co_return false;
