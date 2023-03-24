@@ -77,12 +77,12 @@ function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVide
     const controlsDiv = insertNode(figure, "div", {className: "video-controls"});
 
     // Create and wire up the angle and quality selectors
-    const angle = insertSelector(controlsDiv, idPrefix + "-angle", player.getAngleOptions(), player.getAngle());
+    const angle = insertSelector(controlsDiv, idPrefix + "-angle", "angle", player.getAngleOptions(), player.getAngle());
     angle.onchange = (): void => {
         player.setAngle(parseInt(angle.value));
     };
     const qualityOptionNames = getQualityOptionNames(player.getQualityOptions());
-    const quality = insertSelector(controlsDiv, idPrefix + "-quality", qualityOptionNames, player.getQuality());
+    const quality = insertSelector(controlsDiv, idPrefix + "-quality", "quality", qualityOptionNames, player.getQuality());
     quality.onchange = (): void => {
         player.setQuality(parseInt(quality.value));
     };
@@ -109,7 +109,7 @@ function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVide
 
     // Fullscreen button
     const fullscreen = insertNode(controlsDiv, "button", {
-        className: "fullscreen-btn",
+        className: "fullscreen",
         innerText: "Fullscreen"
     });
     fullscreen.onclick = (): void => {
@@ -117,7 +117,7 @@ function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVide
     };
 
     // Start/stop button
-    const startStop = insertNode(controlsDiv, "button", {className: "start-stop-btn", innerText: "Stop"});
+    const startStop = insertNode(controlsDiv, "button", {className: "start-stop", innerText: "Stop"});
     startStop.classList.add("stop");
     let isPlaying = true;
     startStop.onclick = (): void => {
@@ -135,10 +135,9 @@ function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVide
 }
 
 // Create a selector input with specified options and wire it up
-function insertSelector(parent: HTMLElement, id: string, options: string[], index: number): HTMLSelectElement {
-    const label = insertNode(parent, "label", {className: id + "-label"});
-    const selector = insertNode(parent, "select", {id});
-    label.htmlFor = id;
+function insertSelector(parent: HTMLElement, id: string, className: string, options: string[], index: number): HTMLSelectElement {
+    const label = insertNode(parent, "label", {id: id + "-label", className});
+    const selector = insertNode(label, "select", {id});
     options.forEach((name: string, nameIndex: number): void => {
         selector.innerHTML += `<option value="${nameIndex}">${name}</option>`;
     });

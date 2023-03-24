@@ -14,4 +14,36 @@
         width: 100%;
         aspect-ratio: 16 / 9;
     }
+
+    & .video-controls {
+        display: grid;
+
+        grid-template-columns: auto 1fr auto auto auto;
+        $start-stop: 1;
+        $angle: 3;
+        $quality: 4;
+        $fullscreen: 5;
+
+        gap: 1em;
+
+        & > * {
+            grid-row: 1;
+        }
+
+        & button.start-stop {
+            grid-column: $start-stop;
+        }
+
+        & label.angle {
+            grid-column: $angle;
+        }
+
+        & label.quality {
+            grid-column: $quality;
+        }
+
+        & button.fullscreen {
+            grid-column: $fullscreen;
+        }
+    }
 }
