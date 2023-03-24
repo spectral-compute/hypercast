@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ServerState.h"
 #include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
 
