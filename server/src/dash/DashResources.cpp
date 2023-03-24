@@ -386,7 +386,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
         unsigned int audioIndex = (unsigned int)config.qualities.size();
         for (const Config::Quality &q: config.qualities) {
             // Add the first video segment and corresponding interleave.
-            createSegment(videoIndex, 0);
+            createSegment(videoIndex, 1);
 
             // Add the initializer segment.
             server.addResource<Server::PutResource>(basePath / getInitializerName(videoIndex), Server::CacheKind::fixed,
@@ -399,7 +399,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
             if (!q.audio) {
                 continue;
             }
-            createSegment(audioIndex, 0);
+            createSegment(audioIndex, 1);
             server.addResource<Server::PutResource>(basePath / getInitializerName(audioIndex), Server::CacheKind::fixed,
                                                     true);
             audioIndex++;
