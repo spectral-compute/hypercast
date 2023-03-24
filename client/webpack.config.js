@@ -3,7 +3,7 @@ const path = require("path");
 
 var config = {
     target: "browserslist",
-    entry: "./src/index.ts",
+    entry: "./src/Dom.ts",
     output: {
         filename: "live-video-streamer-client.js",
         clean: true,
