@@ -3,13 +3,17 @@
 #include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
 
+#include <memory>
 
 namespace Server {
 
 
 /// A place to keep the server's per-instance state.
-struct State {
+struct State final
+{
 public:
+    ~State();
+
     IOContext& ioc;
 
 private:
@@ -21,9 +25,19 @@ public:
     Config::Root requestedConfig;
 
 private:
+    struct Channel;
+
     std::unique_ptr<Log::Log> log;
 
     HttpServer server;
+
+    /**
+     * The state for the channel that's streaming.
+     *
+     * TODO: Currently, this is a single channel. Eventually, we'll want to make this a map from configuration channel
+     *       to channel state.
+     */
+    std::unique_ptr<Channel> channel;
 
     // Flag to suppress "you can't change that" for the first run of `applyConfiguration`, allowing us to use
     // `applyConfiguration` for initial configuration.

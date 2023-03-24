@@ -1,4 +1,5 @@
 #include "ServerState.h"
+#include "ffmpeg/ffmpeg.hpp"
 #include "log/MemoryLog.hpp"
 #include "log/FileLog.hpp"
 #include "resources/FilesystemResource.hpp"
@@ -37,6 +38,32 @@ void addFilesystemPathsToServer(Server::Server &server, const std::map<std::stri
 
 } // Anonymous namespace
 
+/**
+ * Represents state for a single channel.
+ */
+struct Server::State::Channel final
+{
+    /**
+     * Start streaming.
+     */
+    explicit Channel(IOContext &ioc, Log::Log &log, const Config::Root &config, Server &server) :
+        dash(ioc, log, config, server),
+        ffmpeg(ioc, log, Ffmpeg::getFfmpegArguments(config, (std::string)dash.getBasePath()))
+    {
+    }
+
+    /**
+     * The set of resources that the ffmpeg process streams to (and that converts this from DASH to RISE).
+     */
+    Dash::DashResources dash;
+
+    /**
+     * The ffmpeg subprocess that's streaming to the server.
+     */
+    Ffmpeg::FfmpegProcess ffmpeg;
+};
+
+Server::State::~State() = default;
 
 /// Perform initial setup/configuration.
 Server::State::State(
@@ -62,6 +89,7 @@ void Server::State::configCannotChange(bool itChanged, const std::string& name) 
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
 Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
+    // TODO: We probably need a mutex to stop this method from running in parallel with itself in another coroutine.
     requestedConfig = newCfg;
 
     // Fill in the blanks...
@@ -92,10 +120,14 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     // dash.expose is currently only read during the constructor.
     CANT_CHANGE(dash.expose);
 
-    // TODO: Something not-wrong here (I don't understand this object properly).
-    Dash::DashResources dash(ioc, *log, config, server);
-
     // TODO: Start/stop streaming here as needed etc.
+    if (channel) {
+        // TODO: Add a method to Dash::DashResources() to remove its resources, and to Ffmpeg::FfmpegProcess() to
+        //       terminate the process. Until then, development of the UI may require commenting out the creation of
+        //       channel.
+        throw std::runtime_error("Restarting the stream is not yet supported.");
+    }
+    channel = std::make_unique<Channel>(ioc, *log, newCfg, server);
 
     config = std::move(newCfg);
     performingStartup = false;
