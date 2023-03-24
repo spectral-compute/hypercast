@@ -3,10 +3,10 @@ import {Player} from "./Main";
 type ControlsType = "native" | "js";
 
 export interface PlayerOptions {
-    // The DOM element into which the video player will be inserted. Pass the DOM element itself, it is created in JS.
-    // Otherwise, pass its ID.
+    // The DOM element into which the video player will be inserted. Pass a DOM element that was created in JS.
+    // Otherwise, pass the ID of an html element.
     container: HTMLElement | string;
-    source: string;
+    sourceURL: string;
     secondarySource?: string;
     controls?: ControlsType;
     // An optional string with which the IDs of all video player elements will be prefixed. Prefixing prevents ID
@@ -51,7 +51,7 @@ export default async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(options.source, video, process.env.NODE_ENV === "development");
+    const player = new Player(options.sourceURL, video, process.env.NODE_ENV === "development");
 
     // Error handling
     player.onError = (e: string): void => {
