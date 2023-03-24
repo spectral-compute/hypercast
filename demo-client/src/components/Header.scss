@@ -1,0 +1,11 @@
+@use "../styles/variables" as *;
+
+header {
+    min-height: 10em;
+
+    & .content-width {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+}

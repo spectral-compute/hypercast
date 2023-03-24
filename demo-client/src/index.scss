@@ -1,3 +1,5 @@
+@use "styles/variables" as *;
+
 video {
     border-color: #000000;
     border-style: solid;
@@ -42,12 +44,33 @@ a:hover {
     background-color: #7f7fff;
 }
 
-.timeis {
-    font-size: 36px;
-    text-align: right;
-    width: 525px;
-}
 
 .description {
     font-size: 20px;
+}
+
+
+
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family: sans-serif;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+
+    min-height: 100vh;
+    min-height: 100dvh; // For browsers that support this.
+
+    & main {
+        flex: 1;
+    }
+}
+
+.content-width {
+    margin: 0 auto;
+    max-width: $content-width;
 }

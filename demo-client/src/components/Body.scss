@@ -1,0 +1,9 @@
+@use "../styles/variables" as *;
+
+main {
+    & .content-width {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+    }
+}
