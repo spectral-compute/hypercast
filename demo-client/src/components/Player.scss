@@ -1,6 +1,17 @@
-.video-container video {
-    border: 1px solid black;
+@use "../styles/colors" as c;
 
-    width: 100%;
-    aspect-ratio: 16 / 9;
+
+
+
+.video-container {
+    border-radius: 0.5em;
+
+    background-color: c.$secondary-bg;
+
+    & video {
+        border: 1px solid c.$border;
+
+        width: 100%;
+        aspect-ratio: 16 / 9;
+    }
 }

@@ -1,4 +1,6 @@
 @use "../styles/variables" as *;
+@use "../styles/colors" as c;
+
 
 main {
     & .content-width {

@@ -1,7 +1,9 @@
 @use "../styles/variables" as *;
+@use "../styles/colors" as c;
+
 
 header {
-    min-height: 10em;
+    background-color: c.$content-bg;
 
     & .content-width {
         display: flex;

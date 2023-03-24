@@ -1,0 +1,16 @@
+@use "sass:color";
+
+$primary: #E2E2E2;
+$primary-bg: #0E1118;
+
+$secondary: #0E56AB;
+$secondary-bg: rgba(14, 86, 171, 0.8);
+
+$content-bg: #0D2847;
+
+$link: #7f7fff;
+$link-visited: $link;
+$link-hover: color.scale($link, $lightness: 20%);
+$link-active: color.scale($link, $lightness: -20%);
+
+$border: grey;
