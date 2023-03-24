@@ -15,9 +15,9 @@ namespace {
 std::unique_ptr<Log::Log> createLog(const Config::Log &config, IOContext &ioc)
 {
     if (config.path.empty()) {
-        return std::make_unique<Log::MemoryLog>(ioc, config.level, *config.print);
+        return std::make_unique<Log::MemoryLog>(ioc, config.level, config.print ? *config.print : true);
     }
-    return std::make_unique<Log::FileLog>(ioc, config.path, config.level, *config.print);
+    return std::make_unique<Log::FileLog>(ioc, config.path, config.level, config.print ? *config.print : false);
 }
 
 /**
