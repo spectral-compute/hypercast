@@ -1,6 +1,9 @@
 import React, {useEffect, useRef} from "react";
 import createPlayer from "live-video-streamer-client";
 
+import "./Player.scss";
+
+
 export interface PlayerProps {
     sourceURL: string;
 }

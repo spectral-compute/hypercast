@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import Body from "./components/Body";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
-import Player from "./Player";
+import Player from "./components/Player";
 
 import "./index.scss";
 

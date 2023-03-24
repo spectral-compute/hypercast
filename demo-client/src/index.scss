@@ -1,63 +1,35 @@
 @use "styles/variables" as *;
 
-video {
-    border-color: #000000;
-    border-style: solid;
-    border-width: 1px;
-    width: 1600px;
-    height: 900px;
-}
-
-a {
-    color: #0000cf;
-    text-decoration: none;
-}
-
-a:hover {
-    color: #7f7fff;
-}
-
-.controls {
-    font-size: 16px;
-}
-
-.button {
-    background-color: #cfcfff;
-    border-color: #000000;
-    border-radius: 8px;
-    border-style: solid;
-    border-width: 1px;
-    display: inline-block;
-    font-size: 20px;
-    margin: 2px;
-    text-align: center;
-    min-width: 128px;
-    height: 48px;
-    line-height: 48px;
-}
-
-.button:hover {
-    background-color: #efefff;
-}
-
-.button:active {
-    background-color: #7f7fff;
-}
-
-
-.description {
-    font-size: 20px;
-}
-
-
+/*
+    Global overrides
+*/
 
 body {
     margin: 0;
     padding: 0;
 
     font-family: sans-serif;
+
+    &.debug * {
+        outline: 1px dashed grey;
+    }
 }
 
+
+a {
+    color: #0000cf;
+    text-decoration: none;
+
+    &:hover {
+        color: #7f7fff;
+    }
+}
+
+/*
+    Layout
+*/
+
+// React root
 #root {
     display: flex;
     flex-direction: column;
@@ -68,8 +40,13 @@ body {
     & main {
         flex: 1;
     }
+
+    & > * {
+        padding: 0.5em;
+    }
 }
 
+// Limit the width of the content and center it.
 .content-width {
     margin: 0 auto;
     max-width: $content-width;
