@@ -357,7 +357,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     ioc(ioc), log(log), logContext(log("dash")), config(config), server(server),
     basePath(Util::replaceAll(config.paths.liveStream, "{uid}", getUid()))
 {
-    /* Create an object to represent  */
+    /* Create an object to represent each stream and interleave. */
     {
         unsigned int numAudioStreams = 0;
         for (const Config::Quality &q: config.qualities) {
@@ -366,6 +366,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
             }
         }
         streams.resize(config.qualities.size() + numAudioStreams);
+        interleaves.resize(config.qualities.size());
     }
 
     /* Add resources. */
