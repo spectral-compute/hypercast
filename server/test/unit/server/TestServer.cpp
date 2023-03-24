@@ -249,8 +249,6 @@ public:
         EXPECT_TRUE(awaitedAllWrites);
         EXPECT_TRUE(getWriteStarted());
         EXPECT_EQ(expectedRecord, written);
-        std::cerr  << "Expected: " << formatErrorKind(errorKind)
-                      << ", actual: " << formatErrorKind(getErrorKind());
         EXPECT_EQ(errorKind, getErrorKind()) << "Expected: " << formatErrorKind(errorKind)
                                              << ", actual: " << formatErrorKind(getErrorKind());
         EXPECT_EQ(refRecord.getType() == ServerTestRecord::errorType ? "text/plain" : "",
