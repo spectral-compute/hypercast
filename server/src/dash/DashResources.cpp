@@ -10,6 +10,7 @@
 #include "resources/PutResource.hpp"
 #include "server/Server.hpp"
 #include "util/asio.hpp"
+#include "util/json.hpp"
 #include "util/util.hpp"
 
 #include <boost/asio/steady_timer.hpp>
@@ -357,6 +358,8 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     ioc(ioc), log(log), logContext(log("dash")), config(config), server(server),
     basePath(Util::replaceAll(config.paths.liveStream, "{uid}", getUid()))
 {
+    logContext << "basePath" << Log::Level::info << (std::string)getBasePath();
+
     /* Create an object to represent each stream and interleave. */
     {
         unsigned int numAudioStreams = 0;
@@ -406,6 +409,11 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
 
 void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex)
 {
+    logContext << "segmentStart" << Log::Level::info << Json::dump({
+        { "streamIndex", streamIndex },
+        { "segmentIndex", segmentIndex }
+    });
+
     spawnDetached(ioc, [=, this]() -> Awaitable<void> {
         /* Update the segment index descriptor. */
         try {
@@ -448,6 +456,11 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
 
 void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int segmentIndex)
 {
+    logContext << "segmentPreavailable" << Log::Level::info << Json::dump({
+        { "streamIndex", streamIndex },
+        { "segmentIndex", segmentIndex }
+    });
+
     assert(streamIndex < streams.size());
     bool isAudio = streamIndex >= config.qualities.size();
     unsigned int lifetimeMs = config.history.historyLength;
