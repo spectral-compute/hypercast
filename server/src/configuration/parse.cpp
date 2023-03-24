@@ -217,10 +217,10 @@ static void from_json(const nlohmann::json &j, Directory &out)
 
     /* Deserialize the long form. */
     Json::ObjectDeserializer d(j, "paths.directories");
-    d(out.localPath, "qualities");
-    d(out.index, "http");
-    d(out.secure, "paths");
-    d(out.ephemeral, "history");
+    d(out.localPath, "localPath");
+    d(out.index, "index");
+    d(out.secure, "secure");
+    d(out.ephemeral, "ephemeral");
     d();
 }
 
