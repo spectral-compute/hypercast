@@ -523,7 +523,7 @@ std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::stri
         "-remove_at_exit", "1",
 
         // The actual manifest output.
-        "http://localhost:" + std::to_string(config.network.port) + std::string(basePath) + "manifest.mpd"
+        "http://localhost:" + std::to_string(config.network.port) + std::string(basePath) + "/manifest.mpd"
     });
     return result;
 }

@@ -130,7 +130,7 @@ TEST(GetFfmpegArguments, Simple)
         "-tcp_nodelay", "1",
         "-method", "PUT",
         "-remove_at_exit", "1",
-        "http://localhost:8080/live/uidmanifest.mpd",
+        "http://localhost:8080/live/uid/manifest.mpd",
     }, Ffmpeg::getFfmpegArguments(config, "/live/uid"));
 }
 
@@ -271,6 +271,6 @@ TEST(GetFfmpegArguments, TwoVideoStreams)
         "-tcp_nodelay", "1",
         "-method", "PUT",
         "-remove_at_exit", "1",
-        "http://localhost:8080/live/uidmanifest.mpd",
+        "http://localhost:8080/live/uid/manifest.mpd",
     }, Ffmpeg::getFfmpegArguments(config, "/live/uid"));
 }
