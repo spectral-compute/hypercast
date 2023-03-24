@@ -6,35 +6,22 @@
 
 Server::PutResource::~PutResource() = default;
 
-void Server::PutResource::operator()(Response &response, const Request &request, std::vector<std::byte> requestData)
+void Server::PutResource::getSync(Response &response, const Request&)
 {
-    switch (request.getType()) {
-        case Request::Type::get:
-            response.setCacheKind(cacheKind);
-            if (!requestData.empty()) {
-                throw Error(ErrorKind::BadRequest);
-            }
-            if (!hasBeenPut) {
-                throw Error(ErrorKind::NotFound);
-            }
-            response << data;
-            return;
-        case Request::Type::put:
-            assert(!request.getIsPublic());
-            response.setCacheKind(CacheKind::none);
-            data = std::move(requestData);
-            hasBeenPut = true;
-            return;
-        default: unreachable();
+    response.setCacheKind(cacheKind);
+    if (!requestData.empty()) {
+        throw Error(ErrorKind::BadRequest);
     }
+    if (!hasBeenPut) {
+        throw Error(ErrorKind::NotFound);
+    }
+    response << data;
 }
 
-bool Server::PutResource::getAllowGet() const noexcept
+void Server::PutResource::putSync(Response &response, const Request &request)
 {
-    return true;
-}
-
-bool Server::PutResource::getAllowPut() const noexcept
-{
-    return true;
+    assert(!request.getIsPublic());
+    response.setCacheKind(CacheKind::none);
+    data = std::move(requestData);
+    hasBeenPut = true;
 }

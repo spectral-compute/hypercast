@@ -30,29 +30,11 @@ Dash::SegmentResource::SegmentResource(IOContext &ioc, Log::Log &log, const Conf
     });
 }
 
-Awaitable<void> Dash::SegmentResource::operator()(Server::Response &response, Server::Request &request)
+Awaitable<void> Dash::SegmentResource::getAsync(Server::Response &response, Server::Request &request)
 {
-    switch (request.getType()) {
-        case Server::Request::Type::get: return handleGet(response, request);
-        case Server::Request::Type::put: return handlePut(response, request);
-        default: break;
+    if (!getIsPublic()) {
+        throw Server::Error(Server::ErrorKind::Forbidden, "Not a public resource");
     }
-    unreachable();
-}
-
-bool Dash::SegmentResource::getAllowGet() const noexcept
-{
-    return getIsPublic();
-}
-
-bool Dash::SegmentResource::getAllowPut() const noexcept
-{
-    return true;
-}
-
-Awaitable<void> Dash::SegmentResource::handleGet(Server::Response &response, Server::Request &request)
-{
-    assert(getAllowGet());
 
     /* No request data is expected. */
     co_await request.readEmpty();
@@ -76,7 +58,7 @@ Awaitable<void> Dash::SegmentResource::handleGet(Server::Response &response, Ser
     }
 }
 
-Awaitable<void> Dash::SegmentResource::handlePut(Server::Response &response, Server::Request &request)
+Awaitable<void> Dash::SegmentResource::putAsync(Server::Response &response, Server::Request &request)
 {
     assert(!request.getIsPublic());
     response.setCacheKind(Server::CacheKind::none);
@@ -97,7 +79,7 @@ Awaitable<void> Dash::SegmentResource::handlePut(Server::Response &response, Ser
 
         // Record the data if it's useful, and notify anything waiting for it.
         bool isEmpty = dataPart.empty();
-        if (getAllowGet()) {
+        if (getIsPublic()) {
             data.emplace_back(std::move(dataPart));
             event.notifyAll();
         }

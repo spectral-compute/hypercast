@@ -21,7 +21,7 @@ class EchoResource final : public Server::Resource
 public:
     EchoResource() : Resource(true) {}
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override
+    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override
     {
         response.setCacheKind(Server::CacheKind::none);
         std::string path = request.getPath();
@@ -34,8 +34,6 @@ public:
             co_await response.flush();
         }
     }
-
-    bool getAllowGet() const noexcept override { return true; }
 };
 
 /**
@@ -46,7 +44,7 @@ class LengthResource final : public Server::Resource
 public:
     LengthResource() : Resource(true) {}
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override
+    Awaitable<void> postAsync(Server::Response &response, Server::Request &request) override
     {
         size_t size = 0;
         while (true) {
@@ -58,8 +56,6 @@ public:
         }
         response << std::to_string(size);
     }
-
-    bool getAllowPost() const noexcept override { return true; }
 };
 
 /**
@@ -70,7 +66,7 @@ class ShortChunkResource final : public Server::Resource
 public:
     ShortChunkResource() : Resource(true) {}
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override
+    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override
     {
         response.setCacheKind(Server::CacheKind::ephemeral);
         co_await request.readEmpty();
@@ -82,8 +78,6 @@ public:
         co_await response.flush();
         response << " :D";
     }
-
-    bool getAllowGet() const noexcept override { return true; }
 };
 
 /**
@@ -94,7 +88,7 @@ class LongResource final : public Server::Resource
 public:
     LongResource(bool chunked) : Resource(true), chunked(chunked) {}
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override
+    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override
     {
         co_await request.readEmpty();
         for (int i = 0; i < 64; i++) {
@@ -110,8 +104,6 @@ public:
             }
         }
     }
-
-    bool getAllowGet() const noexcept override { return true; }
 
 private:
     bool chunked;

@@ -11,7 +11,7 @@
 
 Server::FilesystemResource::~FilesystemResource() = default;
 
-Awaitable<void> Server::FilesystemResource::operator()(Response &response, Request &request)
+Awaitable<void> Server::FilesystemResource::getAsync(Response &response, Request &request)
 {
     /* Set up some response properties. */
     response.setCacheKind(cacheKind);
@@ -62,11 +62,6 @@ Awaitable<void> Server::FilesystemResource::operator()(Response &response, Reque
             throw std::runtime_error("Error reading file " + filePath.string() + ": " + e.message());
         }
     }
-}
-
-bool Server::FilesystemResource::getAllowGet() const noexcept
-{
-    return true;
 }
 
 bool Server::FilesystemResource::getAllowNonEmptyPath() const noexcept

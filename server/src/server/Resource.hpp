@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 template <typename> class Awaitable;
 class IOContext;
 
@@ -17,6 +19,10 @@ class Response;
  */
 class Resource
 {
+protected:
+    // Throw an error describing that the given HTTP verb is not supported.
+    [[noreturn]] void unsupportedHttpVerb(const std::string& verb) const;
+
 public:
     virtual ~Resource();
 
@@ -26,13 +32,19 @@ public:
     explicit Resource(bool isPublic = false) : isPublic(isPublic) {}
 
     /**
-     * Service a request for the resource.
+     * Service a request for the resource. Override the one(s) for the HTTP verbs you want to support.
      *
      * @param response The response stream to (set up to) write to.
      * @param request The request to service. The path in the request should be relative to this resource. This method
      *                should register at least one of the callbacks of the request if it needs its body.
      */
-    virtual Awaitable<void> operator()(Response &response, Request &request) = 0;
+    virtual Awaitable<void> getAsync(Response &response, Request &request);
+    virtual Awaitable<void> postAsync(Response &response, Request &request);
+    virtual Awaitable<void> putAsync(Response &response, Request &request);
+
+    /// Dispatches a request to one of the above.
+    /// You probably don't want to override this one, but can if you want.
+    virtual Awaitable<void> operator()(Response &response, Request &request);
 
     /**
      * Determine whether this resource can be serviced from a public location.
@@ -55,25 +67,6 @@ public:
      * The default is false.
      */
     virtual bool getAllowNonEmptyPath() const noexcept;
-
-    /**
-     * Determine whether this resource can service a request of type Request::Type::get (e.g: an HTTP GET request).
-     *
-     * If this returns false, then operator() will not be called for requests of type Request::Type::get.
-     *
-     * The default is false.
-     */
-    virtual bool getAllowGet() const noexcept;
-
-    /**
-     * Like getAllowGet(), for Request::Type::post.
-     */
-    virtual bool getAllowPost() const noexcept;
-
-    /**
-     * Like getAllowPut(), for Request::Type::put.
-     */
-    virtual bool getAllowPut() const noexcept;
 
 private:
     /**

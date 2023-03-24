@@ -45,9 +45,8 @@ public:
     {
     }
 
-    Awaitable<void> operator()(Response &response, Request &request) override;
+    Awaitable<void> getAsync(Response &response, Request &request) override;
 
-    bool getAllowGet() const noexcept override;
     bool getAllowNonEmptyPath() const noexcept override;
 
 private:

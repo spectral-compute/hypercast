@@ -59,7 +59,7 @@ public:
      */
     Awaitable<void> operator()(::Server::Path path, int expectedResourceIndex = 0, bool isPublic = false,
                                ::Server::Request::Type type = ::Server::Request::Type::get,
-                               std::string_view expectedPath = {}, bool expectedError = false);
+                               std::string_view expectedPath = {}, std::optional<::Server::ErrorKind> expectedError = std::nullopt);
 
     /**
      * Try a request, and expect an error that does not originate from a resource.

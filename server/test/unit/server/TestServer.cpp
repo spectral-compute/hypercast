@@ -150,8 +150,12 @@ public:
     ServerTestResource(int testResourceIndex, bool isPublic, bool allowNonEmptyPath, bool allowGet, bool allowPost,
                        bool allowPut) :
         SynchronousNullaryResource(isPublic),
-        testResourceIndex(testResourceIndex), isAlwaysError(false),
-        allowNonEmptyPath(allowNonEmptyPath), allowGet(allowGet), allowPost(allowPost), allowPut(allowPut)
+        testResourceIndex(testResourceIndex),
+        isAlwaysError(false),
+        allowNonEmptyPath(allowNonEmptyPath),
+        allowGet(allowGet),
+        allowPost(allowPost),
+        allowPut(allowPut)
     {
     }
 
@@ -166,18 +170,41 @@ public:
     {
     }
 
-    void operator()(Server::Response &response, const Server::Request &request) override
+    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override
     {
         if (isAlwaysError) {
             throw Server::Error(Server::ErrorKind::Internal, ServerTestRecord(testResourceIndex));
         }
+
+        return Server::SynchronousNullaryResource::operator()(response, request);
+    }
+
+    void getSync(Server::Response &response, const Server::Request &request) override {
+        if (!allowGet) {
+            unsupportedHttpVerb("GET");
+        }
+        sendPayload(request, response);
+    }
+
+    void postSync(Server::Response &response, const Server::Request &request) override {
+        if (!allowPost) {
+            unsupportedHttpVerb("POST");
+        }
+        sendPayload(request, response);
+    }
+
+    void putSync(Server::Response &response, const Server::Request &request) override {
+        if (!allowPut) {
+            unsupportedHttpVerb("PUT");
+        }
+        sendPayload(request, response);
+    }
+
+    void sendPayload(const Server::Request& request, Server::Response& response) {
         response << ServerTestRecord(request.getType(), testResourceIndex, request.getPath());
     }
 
     bool getAllowNonEmptyPath() const noexcept override { return allowNonEmptyPath; }
-    bool getAllowGet() const noexcept override { return allowGet; }
-    bool getAllowPost() const noexcept override { return allowPost; }
-    bool getAllowPut() const noexcept override { return allowPut; }
 
 private:
     const int testResourceIndex;
@@ -222,6 +249,8 @@ public:
         EXPECT_TRUE(awaitedAllWrites);
         EXPECT_TRUE(getWriteStarted());
         EXPECT_EQ(expectedRecord, written);
+        std::cerr  << "Expected: " << formatErrorKind(errorKind)
+                      << ", actual: " << formatErrorKind(getErrorKind());
         EXPECT_EQ(errorKind, getErrorKind()) << "Expected: " << formatErrorKind(errorKind)
                                              << ", actual: " << formatErrorKind(getErrorKind());
         EXPECT_EQ(refRecord.getType() == ServerTestRecord::errorType ? "text/plain" : "",
@@ -311,14 +340,14 @@ void TestServer::addOrReplaceResource(const ::Server::Path &path, std::nullptr_t
 }
 
 Awaitable<void> TestServer::operator()(::Server::Path path, int expectedResourceIndex, bool isPublic,
-                                       ::Server::Request::Type type, std::string_view expectedPath, bool expectedError)
+                                       ::Server::Request::Type type, std::string_view expectedPath, std::optional<::Server::ErrorKind> expectedError)
 {
     ServerTestRequest request(std::move(path), type, isPublic);
     ServerTestResponse response;
     co_await Server::operator()(response, request);
     response.check(expectedError ? expectedResourceIndex :
                                    ServerTestRecord(type, expectedResourceIndex, std::string(expectedPath)),
-                   true, expectedError ? std::optional(::Server::ErrorKind::Internal) : std::nullopt);
+                   true, expectedError);
 }
 
 Awaitable<void> TestServer::operator()(::Server::Path path, ::Server::ErrorKind errorKind, bool isPublic,

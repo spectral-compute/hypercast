@@ -6,23 +6,28 @@
 
 Server::ErrorResource::~ErrorResource() = default;
 
-Awaitable<void> Server::ErrorResource::operator()(Response &response, Request &)
+void Server::ErrorResource::sendError(Response &response)
 {
     response.setCacheKind(cacheKind);
     throw Error(error);
 }
 
-bool Server::ErrorResource::getAllowGet() const noexcept
-{
-    return allowGet;
-}
 
-bool Server::ErrorResource::getAllowPost() const noexcept
-{
-    return allowPost;
+void Server::ErrorResource::getSync(Response& response, const Request&) {
+    if (!allowGet) {
+        unsupportedHttpVerb("GET");
+    }
+    sendError(response);
 }
-
-bool Server::ErrorResource::getAllowPut() const noexcept
-{
-    return allowPut;
+void Server::ErrorResource::postSync(Response& response, const Request&) {
+    if (!allowPost) {
+        unsupportedHttpVerb("POST");
+    }
+    sendError(response);
+}
+void Server::ErrorResource::putSync(Response& response, const Request&) {
+    if (!allowPut) {
+        unsupportedHttpVerb("PUT");
+    }
+    sendError(response);
 }

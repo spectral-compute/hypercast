@@ -55,25 +55,6 @@ void checkResourceRestrictions(const Server::Resource &resource, const Server::R
         throw Server::Error(Server::ErrorKind::NotFound);
     }
 
-    /* Make sure the resource type can handle the request type. */
-    switch (request.getType()) {
-        case Server::Request::Type::get:
-            if (!resource.getAllowGet()) {
-                throw Server::Error(Server::ErrorKind::UnsupportedType);
-            }
-            break;
-        case Server::Request::Type::post:
-            if (!resource.getAllowPost()) {
-                throw Server::Error(Server::ErrorKind::UnsupportedType);
-            }
-            break;
-        case Server::Request::Type::put:
-            if (!resource.getAllowPut()) {
-                throw Server::Error(Server::ErrorKind::UnsupportedType);
-            }
-            break;
-    }
-
     /* The only request type that is OK for public requesters is GET. */
     if (request.getType() != Server::Request::Type::get && request.getIsPublic()) {
         throw Server::Error(Server::ErrorKind::Forbidden);
@@ -147,21 +128,6 @@ public:
     }
 
     bool getAllowNonEmptyPath() const noexcept override
-    {
-        return true;
-    }
-
-    bool getAllowGet() const noexcept override
-    {
-        return true;
-    }
-
-    bool getAllowPost() const noexcept override
-    {
-        return true;
-    }
-
-    bool getAllowPut() const noexcept override
     {
         return true;
     }

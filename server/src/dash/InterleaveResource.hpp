@@ -29,8 +29,7 @@ public:
     explicit InterleaveResource(IOContext &ioc, Log::Log &log, unsigned int numStreams,
                                 unsigned int timestampIntervalMs = ~0u);
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override;
-    bool getAllowGet() const noexcept override;
+    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override;
 
     /**
      * Append data to a stream in the interleave.

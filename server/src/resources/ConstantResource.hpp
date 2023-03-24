@@ -54,9 +54,7 @@ public:
     {
     }
 
-    void operator()(Response &response, const Request &request) override;
-
-    bool getAllowGet() const noexcept override;
+    void getSync(Response &response, const Request &request) override;
 
 private:
     std::vector<std::byte> content;

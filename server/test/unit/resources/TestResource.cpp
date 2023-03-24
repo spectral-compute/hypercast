@@ -116,9 +116,6 @@ Awaitable<void> testResourceImpl(Server::Resource &resource, TestRequest &reques
 {
     /* Check that the test is valid. */
     assert(request.getPath().empty() || resource.getAllowNonEmptyPath());
-    assert(request.getType() != Server::Request::Type::get || resource.getAllowGet());
-    assert(request.getType() != Server::Request::Type::post || resource.getAllowPost());
-    assert(request.getType() != Server::Request::Type::put || resource.getAllowPut());
 
     /* Perform the test itself. */
     TestResponse response;

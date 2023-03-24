@@ -30,7 +30,7 @@ Dash::InterleaveResource::InterleaveResource(IOContext &ioc, Log::Log &log, unsi
 {
 }
 
-Awaitable<void> Dash::InterleaveResource::operator()(Server::Response &response, Server::Request &request)
+Awaitable<void> Dash::InterleaveResource::getAsync(Server::Response &response, Server::Request &request)
 {
     /* No request data is expected. */
     co_await request.readEmpty();
@@ -54,11 +54,6 @@ Awaitable<void> Dash::InterleaveResource::operator()(Server::Response &response,
         response << data[i];
         co_await response.flush();
     }
-}
-
-bool Dash::InterleaveResource::getAllowGet() const noexcept
-{
-    return true;
 }
 
 void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart, unsigned int streamIndex)

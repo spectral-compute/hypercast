@@ -9,7 +9,9 @@ namespace Server
 {
 
 /**
- * Like Resource, but with an operator() that is not a coroutine.
+ * Like Resource, but with request handlers that are not coroutines.
+ *
+ * Nevertheless, does not block the event loop.
  */
 class SynchronousResource : public Resource
 {
@@ -17,30 +19,14 @@ public:
     ~SynchronousResource() override;
     using Resource::Resource;
 
-    Awaitable<void> operator()(Response &response, Request &request) final;
+protected:
+    // The request body.
+    std::vector<std::byte> requestData;
 
-    /**
-     * Service a request for the resource.
-     *
-     * @param response The response stream to write to.
-     * @param request The request to service. The path in the request should be relative to this resource. The request
-     *                is const because the asynchronous callbacks of the request are not available to subclasses of this
-     *                class. Instead, the request data is provided as an argument to this method.
-     * @param requestData The request's body data.
-     */
-    virtual void operator()(Response &response, const Request &request, std::vector<std::byte> requestData) = 0;
-};
+    virtual Awaitable<std::vector<std::byte>> extractData(Request& request);
 
-/**
- * Like SynchronousResource, but the body is converted to a string.
- */
-class SynchronousStringResource : public Resource
-{
 public:
-    ~SynchronousStringResource() override;
-    using Resource::Resource;
-
-    Awaitable<void> operator()(Response &response, Request &request) final;
+    Awaitable<void> operator()(Response &response, Request &request) override;
 
     /**
      * Service a request for the resource.
@@ -49,31 +35,22 @@ public:
      * @param request The request to service. The path in the request should be relative to this resource. The request
      *                is const because the asynchronous callbacks of the request are not available to subclasses of this
      *                class. Instead, the request data is provided as an argument to this method.
-     * @param requestData The request's body data.
      */
-    virtual void operator()(Response &response, const Request &request, std::string_view requestData) = 0;
+    virtual void getSync(Response &response, const Request &request);
+    virtual void postSync(Response &response, const Request &request);
+    virtual void putSync(Response &response, const Request &request);
 };
 
 /**
  * Like SynchronousResource, but checks that the request body data is empty.
  */
-class SynchronousNullaryResource : public Resource
+class SynchronousNullaryResource : public SynchronousResource
 {
 public:
     ~SynchronousNullaryResource() override;
-    using Resource::Resource;
+    using SynchronousResource::SynchronousResource;
 
-    Awaitable<void> operator()(Response &response, Request &request) final;
-
-    /**
-     * Service a request for the resource.
-     *
-     * @param response The response stream to write to.
-     * @param request The request to service. The path in the request should be relative to this resource. The request
-     *                is const because the asynchronous callbacks of the request are not available to subclasses of this
-     *                class. Instead, resources of this type do not accept any request body data.
-     */
-    virtual void operator()(Response &response, const Request &request) = 0;
+    Awaitable<std::vector<std::byte>> extractData(Request &request) override;
 };
 
 } //namespace Server

@@ -7,7 +7,7 @@
 
 Server::ConstantResource::~ConstantResource() = default;
 
-void Server::ConstantResource::operator()(Response &response, [[maybe_unused]] const Request &request)
+void Server::ConstantResource::getSync(Response &response, [[maybe_unused]] const Request &request)
 {
     assert(request.getPath().empty());
     assert(request.getType() == Request::Type::get);
@@ -15,9 +15,4 @@ void Server::ConstantResource::operator()(Response &response, [[maybe_unused]] c
     response.setCacheKind(cacheKind);
     response.setMimeType(mimeType);
     response << content;
-}
-
-bool Server::ConstantResource::getAllowGet() const noexcept
-{
-    return true;
 }

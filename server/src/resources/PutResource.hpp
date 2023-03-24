@@ -26,10 +26,8 @@ public:
     {
     }
 
-    void operator()(Response &response, const Request &request, std::vector<std::byte> requestData) override;
-
-    bool getAllowGet() const noexcept override;
-    bool getAllowPut() const noexcept override;
+    void getSync(Response &response, const Request &request) override;
+    void putSync(Response &response, const Request &request) override;
 
 private:
     const CacheKind cacheKind;

@@ -43,21 +43,16 @@ public:
                              std::shared_ptr<InterleaveResource> interleave,
                              unsigned int interleaveIndex, unsigned int indexInInterleave);
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override;
-
-    bool getAllowGet() const noexcept override;
-    bool getAllowPut() const noexcept override;
-
 private:
     /**
      * Handle GET requests for this segment.
      */
-    Awaitable<void> handleGet(Server::Response &response, Server::Request &request);
+    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override;
 
     /**
      * Handle the PUT request for this segment.
      */
-    Awaitable<void> handlePut(Server::Response &response, Server::Request &request);
+    Awaitable<void> putAsync(Server::Response &response, Server::Request &request) override;
 
     Log::Context log;
 
