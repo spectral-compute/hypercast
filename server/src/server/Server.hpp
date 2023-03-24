@@ -2,16 +2,10 @@
 
 #include "Resource.hpp"
 
+#include "log/Log.hpp"
+
 #include <memory>
 #include <string>
-
-namespace Log
-{
-
-class Context;
-class Log;
-
-} // namespace Log
 
 /**
  * @defgroup server Server
@@ -89,7 +83,7 @@ public:
     void removeResource(const Path &path);
 
 protected:
-    explicit Server(Log::Log &log) : log(log) {}
+    explicit Server(Log::Log &log) : log(log), logContext(log("server")) {}
 
     /**
      * Handle a request.
@@ -107,6 +101,11 @@ protected:
      * The log to write to.
      */
     Log::Log &log;
+
+    /**
+     * Where to log things that come out of the generic server.
+     */
+    Log::Context logContext;
 
 private:
     /**
@@ -128,6 +127,9 @@ private:
         /* Create the resource. */
         auto resource = std::make_shared<ResourceType>(std::forward<Args>(args)...); // Create the resource.
 
+        /* Log. */
+        logResourceChange(path, true, (bool)node);
+
         /* Insert it into the tree and return a reference to it. */
         node = resource;
         return resource;
@@ -143,6 +145,15 @@ private:
      * @return A pointer to the node. Or nullptr if it doesn't exist and isn't allowed to be created.
      */
     std::shared_ptr<Resource> &getOrCreateLeafNode(const Path &path, bool existing);
+
+    /**
+     * Log that a resource was changed.
+     *
+     * @param path The path to which the operation applies.
+     * @param added Whether a resource was added.
+     * @param removed Whether a resource was removed.
+     */
+    void logResourceChange(const Path &path, bool added, bool removed);
 
     /**
      * The root node in the resource tree.

@@ -5,6 +5,7 @@
 
 #include "log/Log.hpp"
 #include "util/asio.hpp"
+#include "util/debug.hpp"
 
 #include <algorithm>
 #include <map>
@@ -169,6 +170,16 @@ private:
     std::map<std::string, std::shared_ptr<Server::Resource>> children;
 };
 
+const char *getRequestTypeString(Server::Request::Type type)
+{
+    switch (type) {
+        case Server::Request::Type::get: return "get";
+        case Server::Request::Type::post: return "post";
+        case Server::Request::Type::put: return "put";
+    }
+    unreachable();
+}
+
 } // namespace
 
 /// @}
@@ -178,6 +189,9 @@ Server::Server::~Server() = default;
 Awaitable<void> Server::Server::operator()(Response &response, Request &request) const
 {
     Log::Context requestLog = log("request");
+    requestLog << "what" << Log::Level::info << (std::string)request.getPath() << ", "
+               << (request.getIsPublic() ? "public" : "private") << ", "
+               << getRequestTypeString(request.getType());
 
     bool waitForResponse = false; // Call response.wait after the try/catch block, and then return.
     const char *what = nullptr; // Somewhere to put the internal error message if we can get one.
@@ -211,6 +225,10 @@ Awaitable<void> Server::Server::operator()(Response &response, Request &request)
             co_return;
         }
         else {
+            // Log the error.
+            requestLog << "error" << Log::Level::info << getErrorKindString(e.kind)
+                       << (e.message.empty() ? "" : ": ") << e.message;
+
             // Return the error to the client.
             response.setErrorAndMessage(e.kind, e.message);
             waitForResponse = true;
@@ -288,6 +306,22 @@ std::shared_ptr<Server::Resource> &Server::Server::getOrCreateLeafNode(const Pat
     return *node;
 }
 
+void Server::Server::logResourceChange(const Path &path, bool added, bool removed)
+{
+    assert(added || removed);
+    const char *type = "nop";
+    if (added && removed) {
+        type = "replaced";
+    }
+    else if (added) {
+        type = "added";
+    }
+    else if (removed) {
+        type = "removed";
+    }
+    logContext << type << Log::Level::info << (std::string)path;
+}
+
 void Server::Server::removeResource(const Path &path)
 {
     /* Tree traversal to find the tree node path to the leaf to remove. */
@@ -324,6 +358,9 @@ void Server::Server::removeResource(const Path &path)
     if (dynamic_cast<TreeResource *>(node->get())) {
         throw std::runtime_error("Cannot remove intermediate server tree node.");
     }
+
+    /* Once we get here, we know we're doing the removal. Log it. */
+    logResourceChange(path, false, true);
 
     /* Iterate backwards, removing the resource and any consequently empty trees. */
     for (size_t j = 0; j < path.size(); ++j) {
