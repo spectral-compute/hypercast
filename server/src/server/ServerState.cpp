@@ -71,7 +71,8 @@ Server::State::State(
     IOContext& ioc
 ):
     ioc(ioc),
-    config(),
+    config(initialCfg),
+    requestedConfig(initialCfg),
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network.port, initialCfg.http)
 {
@@ -109,27 +110,37 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     // Reconfigure the static file server.
     // TODO: Sort out `liveInfo` and `liveStream`: perhaps by making them not exist. Why aren't they just
     //       hardcoded to be computed based on name of a stream?
-    if (config.paths.directories != newCfg.paths.directories) {
-        // Delete all the static file resources, and then add all the new ones.
-        for (const auto &[path, directory]: config.paths.directories) {
-            server.removeResource(path);
-        }
+    CANT_CHANGE(paths.directories); // TODO: More intelligent determination of which directories to delete.
+    if (performingStartup) {
         addFilesystemPathsToServer(server, newCfg.paths.directories, ioc);
     }
 
     // dash.expose is currently only read during the constructor.
     CANT_CHANGE(dash.expose);
 
-    // TODO: Start/stop streaming here as needed etc.
+    /* Now we've decided we can apply the configuration, stop streaming things we're about to update the configuration
+       for. */
+    // TODO: Stop streaming here as needed.
     if (channel) {
         // TODO: Add a method to Dash::DashResources() to remove its resources, and to Ffmpeg::FfmpegProcess() to
         //       terminate the process. Until then, development of the UI may require commenting out the creation of
         //       channel.
         throw std::runtime_error("Restarting the stream is not yet supported.");
     }
-    channel = std::make_unique<Channel>(ioc, *log, newCfg, server);
 
+    /* Move the configuration to its final location so  */
+    // TODO: Do we need to keep requestedConfig around? If not, then we can requestedConfig = std::move(newConfig) at
+    //       the start, and then config = std::move(requestedConfig) here.
+    // TODO: Either this needs to update only the channels we stopped above, or the channels need a copy of the
+    //       configuration. Exactly what we do here depends on how we hand over a channel from one ffmpeg/DashResources
+    //       to the next. If we do it by having both in parallel, then it'll need to be a copy.
     config = std::move(newCfg);
+
+    /* Start streaming. */
+    channel = std::make_unique<Channel>(ioc, *log, config, server);
+
+    /* Mark that we're done performing setup. */
+    // TODO: This field might need to be replaced with a mutex.
     performingStartup = false;
 
 #undef CANT_CHANGE
