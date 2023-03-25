@@ -336,13 +336,13 @@ void Server::Server::removeResource(const Path &path)
 
         // Make sure we're not erasing a non-existent node.
         if (!*node) {
-            throw std::runtime_error("Cannot erase non-existent server resource.");
+            throw std::runtime_error("Cannot erase non-existent server resource \"" + (std::string)path + "\".");
         }
 
         // Make sure we're not trying to erase the child of a leaf node.
         auto *tree = dynamic_cast<TreeResource *>(node->get());
         if (!tree) {
-            throw std::runtime_error("Cannot erase child of leaf server tree node.");
+            throw std::runtime_error("Cannot erase child \"" + (std::string)path + "\" of leaf server tree node.");
         }
 
         // Save this node in the list of intermediates and get the next one.
@@ -350,7 +350,7 @@ void Server::Server::removeResource(const Path &path)
 
         node = (*tree).at(path[i]);
         if (!node) {
-            throw std::runtime_error("Cannot remove non-existing server tree node.");
+            throw std::runtime_error("Cannot remove non-existing server tree node \"" + (std::string)path + "\".");
         }
     }
     assert(node);
@@ -358,7 +358,7 @@ void Server::Server::removeResource(const Path &path)
 
     /* Check that we're not trying to remove an intermediate node. */
     if (dynamic_cast<TreeResource *>(node->get())) {
-        throw std::runtime_error("Cannot remove intermediate server tree node.");
+        throw std::runtime_error("Cannot remove intermediate server tree node \"" + (std::string)path + "\".");
     }
 
     /* Once we get here, we know we're doing the removal. Log it. */
