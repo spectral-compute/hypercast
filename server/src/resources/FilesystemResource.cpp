@@ -19,8 +19,7 @@ Awaitable<void> Server::FilesystemResource::getAsync(Response &response, Request
     /* Figure out the path. */
     // This is protected from directory traversal attacks by the constructor for the object returned by
     // request.getPath().
-    Path requestPath = request.getPath();
-    std::filesystem::path filePath = (requestPath.empty() && !index.empty()) ?
+    std::filesystem::path filePath = (request.getPath().empty() && !index.empty()) ?
                                      path / index : (path / request.getPath());
 
     /* Check that the path exists and that it's not a directory. */
