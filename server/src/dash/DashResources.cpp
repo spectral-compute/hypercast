@@ -349,7 +349,46 @@ std::string getLiveInfo(const Config::Root &config, const Server::Path &basePath
 
 } // namespace Dash
 
-class Dash::DashResources::Interleave final : public StreamSegmentSet<InterleaveExpiringResource> {};
+class Dash::DashResources::Interleave final : public StreamSegmentSet<InterleaveExpiringResource>
+{
+public:
+    explicit Interleave(Server::Server &server, const Server::Path &basePath, unsigned int interleaveIndex,
+                        const Config::Root &config) :
+        server(server), basePath(basePath), interleaveIndex(interleaveIndex),
+        numEphemeralNotFoundSegments(config.http.cacheNonLiveTime * 1000 / config.dash.segmentDuration + 1)
+    {
+    }
+
+    /**
+     * Add ephemeral not-found interleave segments, that haven't already been added, to cover the period after the given
+     * segment index.
+     *
+     * These not-found error segments have ephemeral caching so that the not-found is not still cached by the time they
+     * become pre-available.
+     */
+    void addEphemeralNotFoundSegments(unsigned int segmentIndex)
+    {
+        /* Figure out the start and end range of the not-found segments to create. */
+        unsigned int firstEphemeralNotFoundSegment = std::max(segmentIndex + 1, nextEphemeralNotFoundSegment);
+        nextEphemeralNotFoundSegment = std::max(segmentIndex + numEphemeralNotFoundSegments + 1,
+                                                nextEphemeralNotFoundSegment);
+
+        /* Create the resources for the not-found segments. */
+        for (unsigned int i = firstEphemeralNotFoundSegment; i < nextEphemeralNotFoundSegment; i++) {
+            Server::Path path = basePath / getInterleaveName(interleaveIndex, i);
+            server.addResource<Server::ErrorResource>(path, Server::ErrorKind::NotFound, Server::CacheKind::ephemeral,
+                                                      true);
+        }
+    }
+
+private:
+    Server::Server &server;
+    const Server::Path &basePath;
+    const unsigned int interleaveIndex;
+    const unsigned int numEphemeralNotFoundSegments; ///< The number of not-found to create after the last live segment.
+    unsigned int nextEphemeralNotFoundSegment = 0; ///< The first not-found segment that's not been created yet.
+};
+
 class Dash::DashResources::Stream final : public StreamSegmentSet<SegmentExpiringResource> {};
 
 Dash::DashResources::~DashResources() = default;
@@ -362,14 +401,22 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
 
     /* Create an object to represent each stream and interleave. */
     {
+        // Figure out how many audio streams there are.
         unsigned int numAudioStreams = 0;
         for (const Config::Quality &q: config.qualities) {
             if (q.audio) {
                 numAudioStreams++;
             }
         }
+
+        // Create DASH stream tracking for each audio and video stream.
         streams.resize(config.qualities.size() + numAudioStreams);
-        interleaves.resize(config.qualities.size());
+
+        // Create RISE interleave tracking. There are currently as many interleaves as video streams.
+        interleaves.reserve(config.qualities.size());
+        for (unsigned int i = 0; i < (unsigned int)config.qualities.size(); i++) {
+            interleaves.emplace_back(server, getBasePath(), i, config);
+        }
     }
 
     /* Add resources. */
@@ -494,12 +541,7 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
 
     /* Set the caching for the following interleave segments (up to however many could be reached with fixed caching) to
        ephemeral. */
-    unsigned int ephemeralNotFoundSegments = config.http.cacheNonLiveTime * 1000 / config.dash.segmentDuration + 1;
-    for (unsigned int i = 1; i <= ephemeralNotFoundSegments; i++) {
-        Server::Path path = basePath / getInterleaveName(interleaveIndex, segmentIndex + i);
-        server.addOrReplaceResource<Server::ErrorResource>(path, Server::ErrorKind::NotFound,
-                                                           Server::CacheKind::ephemeral, true);
-    }
+    interleaves[interleaveIndex].addEphemeralNotFoundSegments(segmentIndex);
 }
 
 void Dash::DashResources::gcSegments()
