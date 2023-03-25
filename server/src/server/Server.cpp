@@ -283,7 +283,7 @@ std::shared_ptr<Server::Resource> &Server::Server::getOrCreateLeafNode(const Pat
                 // traversal in the non-exceptional case to be able to find where we might have created tree nodes.
                 rootTree->prune();
             }
-            throw std::runtime_error("Cannot get/create child of server resource.");
+            throw std::runtime_error("Cannot get/create child \"" + (std::string)path + "\" of server resource.");
         }
 
         // Get/create the next node.
@@ -295,13 +295,13 @@ std::shared_ptr<Server::Resource> &Server::Server::getOrCreateLeafNode(const Pat
     // None of the nodes we return from this should be a TreeResource.
     if (dynamic_cast<TreeResource *>(node->get())) {
         // This cannot happen by the node creation operation above.
-        throw std::runtime_error("Path points to intermediate server tree node.");
+        throw std::runtime_error("Path \"" + (std::string)path + "\" points to intermediate server tree node.");
     }
 
     // Check that the node is not an existing node if we're not allowed it.
     if (!existing && *node) {
         // This cannot happen by the node creation operation above.
-        throw std::runtime_error("Path points to existing server resource.");
+        throw std::runtime_error("Path \"" + (std::string)path + "\" points to existing server resource.");
     }
 
     /* Done :) */
