@@ -1,6 +1,20 @@
 #include "configuration/configuration.hpp"
 
-/* These are expensive and used repeatedly in the tests, so don't keep code-generating them repeatedly. */
+/**
+ * @file
+ *
+ * These are expensive and used repeatedly (in the tests, and elsewhere), so don't keep code-generating them repeatedly.
+ */
+
+#ifndef WITH_TESTING
+Config::Root::~Root() = default;
+
+Config::Root::Root(const Root &) = default;
+Config::Root::Root(Root &&) noexcept = default;
+Config::Root &Config::Root::operator=(const Root &) = default;
+Config::Root &Config::Root::operator=(Root &&) noexcept = default;
+#endif // WITH_TESTING
+
 bool Config::Source::operator==(const Source &) const = default;
 bool Config::FrameRate::operator==(const FrameRate &) const = default;
 bool Config::VideoQuality::operator==(const VideoQuality &) const = default;

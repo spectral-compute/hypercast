@@ -250,7 +250,14 @@ class Root final
 {
 public:
 #ifndef WITH_TESTING
+    // These methods are incompatible with designated initialization, which is useful for testing. But their presence
+    // here when not testing avoids generating complicated code automatically in lots of places.
     ~Root();
+
+    Root(const Root &);
+    Root(Root &&) noexcept;
+    Root &operator=(const Root &);
+    Root &operator=(Root &&) noexcept;
 #endif // WITH_TESTING
 
     /**
@@ -276,8 +283,8 @@ public:
 
 private:
 #ifndef WITH_TESTING
-    // These methods (and the destructor) are incompatible with designated initialization, which is useful for testing.
-    // But their presence here when not testing is useful to enforce that fromJson() has to be used for construction.
+    // Making this private enforces the use of fromJson for construction, but is also incompatible with the tests' use
+    // of designated initializers.
 
     /**
      * Perform initial construction with a lot of defaults already filled in.
@@ -285,11 +292,6 @@ private:
      * This is used by fromJson().
      */
     Root() = default;
-
-    /**
-     * Used by fromJson().
-     */
-    Root(Root &&) = default;
 #endif // WITH_TESTING
 
     /**
