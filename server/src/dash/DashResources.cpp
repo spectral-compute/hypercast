@@ -171,7 +171,6 @@ protected:
     }
 
 private:
-
     /**
      * The server to remove the resource from in the destructor.
      */
@@ -182,7 +181,7 @@ private:
      *
      * This is useful to be able to delete the resource.
      */
-    const Server::Path path;
+    Server::Path path;
 
     /**
      * The lifetime of the interleave once the last stream has started writing to it.
