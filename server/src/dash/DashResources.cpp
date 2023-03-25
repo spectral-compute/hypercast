@@ -487,7 +487,7 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
 
     /* Add the new segment. */
     streams[streamIndex].get(segmentIndex, server,
-                             basePath / getSegmentName(segmentIndex, segmentIndex), lifetimeMs,
+                             basePath / getSegmentName(streamIndex, segmentIndex), lifetimeMs,
                              ioc, log, config.dash, *this, streamIndex, segmentIndex, interleave, interleaveIndex,
                              isAudio ? 1 : 0);
     ++interleave; // The stream now has been given the interleave.
