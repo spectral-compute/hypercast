@@ -128,8 +128,6 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     }
 
     /* Move the configuration to its final location so  */
-    // TODO: Do we need to keep requestedConfig around? If not, then we can requestedConfig = std::move(newConfig) at
-    //       the start, and then config = std::move(requestedConfig) here.
     // TODO: Either this needs to update only the channels we stopped above, or the channels need a copy of the
     //       configuration. Exactly what we do here depends on how we hand over a channel from one ffmpeg/DashResources
     //       to the next. If we do it by having both in parallel, then it'll need to be a copy.
@@ -139,7 +137,6 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     channel = std::make_unique<Channel>(ioc, *log, config, server);
 
     /* Mark that we're done performing setup. */
-    // TODO: This field might need to be replaced with a mutex.
     performingStartup = false;
 
 #undef CANT_CHANGE
