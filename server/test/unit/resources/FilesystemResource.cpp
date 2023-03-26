@@ -36,4 +36,16 @@ CORO_TEST(FilesystemResource, Index, ioc)
     co_await testResource(resource, request, Util::readFile(absolutePath), "video/x-matroska");
 }
 
+CORO_TEST(FilesystemResource, Twice, ioc)
+{
+    auto absolutePath = getSmpteDataPath(1920, 1080, 25, 1, 48000);
+    auto relativePath = std::filesystem::relative(absolutePath, getTestDataPath());
+
+    Server::FilesystemResource resource(ioc, getTestDataPath());
+    for (int i = 0; i < 2; i++) {
+        TestRequest request(Server::Path(relativePath.string()), Server::Request::Type::get);
+        co_await testResource(resource, request, Util::readFile(absolutePath), "video/x-matroska");
+    }
+}
+
 } // namespace
