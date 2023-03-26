@@ -254,6 +254,14 @@ public:
     // here when not testing avoids generating complicated code automatically in lots of places.
     ~Root();
 
+    /**
+     * Perform initial construction with a lot of defaults already filled in, but still missing a lot of defaults and
+     * the required values.
+     *
+     * This is useful as a starting point for fromJson and also allows default construction.
+     */
+    Root() = default;
+
     Root(const Root &);
     Root(Root &&) noexcept;
     Root &operator=(const Root &);
@@ -282,18 +290,6 @@ public:
     bool operator==(const Root &) const;
 
 private:
-#ifndef WITH_TESTING
-    // Making this private enforces the use of fromJson for construction, but is also incompatible with the tests' use
-    // of designated initializers.
-
-    /**
-     * Perform initial construction with a lot of defaults already filled in.
-     *
-     * This is used by fromJson().
-     */
-    Root() = default;
-#endif // WITH_TESTING
-
     /**
      * Validate a loaded configuration.
      */

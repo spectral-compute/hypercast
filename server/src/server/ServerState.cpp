@@ -71,7 +71,6 @@ Server::State::State(
     IOContext& ioc
 ):
     ioc(ioc),
-    config(initialCfg),
     requestedConfig(initialCfg),
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network.port, initialCfg.http)
