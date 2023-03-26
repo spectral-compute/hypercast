@@ -45,7 +45,7 @@ nlohmann::json getAngle(const Server::Path &basePath)
 {
     return {
         { "name", "Main" },
-        { "path", basePath / "manifest.mpd" }
+        { "path", "/" + (std::string)basePath }
     };
 }
 

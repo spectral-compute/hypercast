@@ -463,7 +463,8 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
     spawnDetached(ioc, [=, this]() -> Awaitable<void> {
         /* Update the segment index descriptor. */
         try {
-            server.addOrReplaceResource<SegmentIndexResource>(getSegmentIndexDescriptorName(streamIndex), segmentIndex);
+            server.addOrReplaceResource<SegmentIndexResource>(basePath / getSegmentIndexDescriptorName(streamIndex),
+                                                              segmentIndex);
         }
         catch (const std::exception &e) {
             logContext << Log::Level::error
