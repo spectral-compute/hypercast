@@ -44,7 +44,7 @@ find_library(URING uring REQUIRED)
 add_library(uring UNKNOWN IMPORTED)
 set_property(TARGET uring PROPERTY IMPORTED_LOCATION "${URING}")
 target_link_libraries(${TARGET} PRIVATE uring)
-target_compile_definitions(${TARGET} PUBLIC BOOST_ASIO_HAS_IO_URING)
+target_compile_definitions(${TARGET} PUBLIC BOOST_ASIO_HAS_IO_URING BOOST_ASIO_DISABLE_EPOLL)
 
 # nlohmann::json.
 find_package(nlohmann_json REQUIRED)
