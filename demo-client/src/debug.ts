@@ -23,6 +23,7 @@ export class AppDebugHandler {
                         data: [],
 
                         type: "scatter" as const,
+                        pointStyle: "circle",
                         pointRadius: 4
                     }, {
                         label: "Initial Seek Event",
@@ -31,6 +32,7 @@ export class AppDebugHandler {
                         data: [],
 
                         type: "scatter" as const,
+                        pointStyle: "circle",
                         pointRadius: 4
                     }, {
                         label: "Segment Start",
@@ -39,6 +41,7 @@ export class AppDebugHandler {
                         data: [],
 
                         type: "scatter" as const,
+                        pointStyle: "circle",
                         pointRadius: 2
                     }
                 ]
@@ -63,6 +66,13 @@ export class AppDebugHandler {
                             maxTicksLimit: 25
                         }
                     }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            usePointStyle: true
+                        }
+                    }
                 }
             }
         };
@@ -75,6 +85,7 @@ export class AppDebugHandler {
         const appendTimelineDataset = (c: chart.Chart, label: string, colour: string): void => {
             c.data.datasets.splice(c.data.datasets.length - copyTimelineConfig().data.datasets.length, 0, {
                 label: label,
+                pointStyle: "line",
                 backgroundColor: colour,
                 borderColor: colour,
                 data: []
