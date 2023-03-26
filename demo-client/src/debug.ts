@@ -62,18 +62,13 @@ export class AppDebugHandler {
                             format: {minimumFractionDigits: 1, maximumFractionDigits: 1},
                             maxTicksLimit: 25
                         }
-                    },
-                    y: {
-                        type: "linear" as const,
-                        position: "left" as const,
-                        beginAtZero: true
                     }
                 }
             }
         };
-        const copyTimelineConfig = (): typeof timelineConfig => {
+        const copyTimelineConfig = (): chart.ChartConfiguration => {
             // Javascript needs a better deep copy.
-            return JSON.parse(JSON.stringify(timelineConfig)) as typeof timelineConfig;
+            return JSON.parse(JSON.stringify(timelineConfig)) as chart.ChartConfiguration;
         };
 
         /* Function to append a dataset to a timeline chart. */
@@ -87,16 +82,43 @@ export class AppDebugHandler {
         };
 
         /* Latency chart. */
-        this.latencyChart = new chart.Chart(document.getElementById("latency_timeline")! as HTMLCanvasElement,
-                                            copyTimelineConfig());
+        const latencyConfig = copyTimelineConfig();
+        latencyConfig.options!.scales = {
+            ...latencyConfig.options!.scales,
+            y: {
+                title: {
+                    text: "milliseconds",
+                    display: true
+                },
+                position: "left" as const,
+                type: "linear" as const,
+                beginAtZero: true
+            }
+        };
+        this.latencyChart = new chart.Chart(
+            document.getElementById("latency_timeline")! as HTMLCanvasElement,
+            latencyConfig
+        );
         appendTimelineDataset(this.latencyChart, "Target Buffer", "rgb(255, 127, 0)");
-        appendTimelineDataset(this.latencyChart, "Actual Buffer", "rgb(0, 255, 0)");
-        appendTimelineDataset(this.latencyChart, "Network Latency", "rgb(255,233,64)");
+        appendTimelineDataset(this.latencyChart, "Actual Buffer", "rgb(255, 233, 63)");
+        appendTimelineDataset(this.latencyChart, "Network Latency", "rgb(0, 255, 0)");
         this.latencyChart.update();
 
         /* Download rate chart. */
-        this.dlChart = new chart.Chart(document.getElementById("dlrate_timeline")! as HTMLCanvasElement,
-                                       copyTimelineConfig());
+        const dlConfig = copyTimelineConfig();
+        dlConfig.options!.scales = {
+            ...dlConfig.options!.scales,
+            y: {
+                title: {
+                    text: "kilobits per second",
+                    display: true
+                },
+                type: "linear" as const,
+                position: "left" as const,
+                beginAtZero: true
+            }
+        };
+        this.dlChart = new chart.Chart(document.getElementById("dlrate_timeline")! as HTMLCanvasElement, dlConfig);
         appendTimelineDataset(this.dlChart, "Download Rate", "rgb(127, 127, 255)");
         appendTimelineDataset(this.dlChart, "Average Download Rate", "rgb(0,127,106)");
         this.dlChart.update();
