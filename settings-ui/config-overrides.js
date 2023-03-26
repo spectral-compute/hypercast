@@ -30,40 +30,40 @@ module.exports = function override(config, env) {
 
     // - Switch off typescript transpilation in babel.
     // - Add ts-loader to do typescript compilation before babel runs. This will respect our tsconfig.json.
-    for (let i = 0; i < rules.length; i++) {
-        const r = rules[i];
-        if (matchesAny(r.test, ".mjs") && matchesAny(r.test, ".tsx")) {
-            r.options.presets[0][1] = {
-                runtime: 'automatic',
-                typescript: false
-            };
-
-            rules[i] = {
-                test: /\.(js|mjs|jsx|ts|tsx)$/,
-                include: r.include,
-                use: [{
-                    // ... Then babel-ify it.
-                    loader: r.loader,
-                    options: r.options,
-                }, {
-                    loader: srcmapLoader
-                }, {
-                    // Compile TS first.
-                    loader: "ts-loader",
-                    options: {
-                        "projectReferences": true
-                    }
-                }]
-            }
-
-            break;
-        }
-    }
+    // for (let i = 0; i < rules.length; i++) {
+    //     const r = rules[i];
+    //     if (matchesAny(r.test, ".mjs") && matchesAny(r.test, ".tsx")) {
+    //         r.options.presets[0][1] = {
+    //             runtime: 'automatic',
+    //             typescript: false
+    //         };
+    //
+    //         rules[i] = {
+    //             test: /\.(js|mjs|jsx|ts|tsx)$/,
+    //             include: r.include,
+    //             use: [{
+    //                 // ... Then babel-ify it.
+    //                 loader: r.loader,
+    //                 options: r.options,
+    //             }, {
+    //                 loader: srcmapLoader
+    //             }, {
+    //                 // Compile TS first.
+    //                 loader: "ts-loader",
+    //                 options: {
+    //                     "projectReferences": true
+    //                 }
+    //             }]
+    //         }
+    //
+    //         break;
+    //     }
+    // }
 
     // Delete the async typecheck plugin because we now do it synchronously through ts-loader.
     // It would make sense to use ts-loader in transpileOnly mode and keep this one, but that doesn't.
     // work since transpileOnly also disables transformers :D.
-    config.plugins.splice(config.plugins.findIndex((p => p instanceof ForkTsCheckerWebpackPlugin)), 1);
+    // config.plugins.splice(config.plugins.findIndex((p => p instanceof ForkTsCheckerWebpackPlugin)), 1);
 
     // Polyfill for nodejs `util`, since ts-is uses it. Can perhaps be removed...?
     if (!config.resolve) {

@@ -18,6 +18,8 @@
     "eslint-plugin-react-i18n": "^1.0.3",
     "i18next": "^22.4.12",
     "live-video-streamer-common": "workspace:^",
+    "mobx": "^6.9.0",
+    "mobx-react-lite": "^3.4.3",
     "react": "^18.2.0",
     "react-app-rewired": "^2.2.1",
     "react-dom": "^18.2.0",

@@ -1,4 +1,4 @@
-import {Config} from "./ServerConfigSpec";
+import {StreamingConfig} from "./Config";
 
 export interface BaseResponse {
     // Undefined if everything was OK.
@@ -15,6 +15,5 @@ export type SetStreamingStateResponse = BaseResponse;
 // Server should send the entire loaded config object
 export interface GetCurrentConfigRequest {}
 export interface GetCurrentConfigResponse extends BaseResponse {
-    cfg: Config;
+    cfg: StreamingConfig;
 }
-

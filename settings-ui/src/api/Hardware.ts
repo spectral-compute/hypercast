@@ -28,3 +28,15 @@ export interface MachineInfo {
     // Whether or not streaming is actually turned on.
     isStreaming: boolean;
 }
+
+export function inputUrlToSDIPortNumber(url: string) {
+    // TODO: Fill in.
+    if (url == "herring") {
+        return 0;
+    }
+
+    console.log(url);
+
+    // If it isn't an SDI input...
+    return null;
+}

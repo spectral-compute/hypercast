@@ -5,14 +5,25 @@ import './PortStatus.sass';
 export interface PortStatusProps {
     desc: PortDescriptor;
     connected: boolean;
+    size?: number;
+    shortLabel?: boolean;
 }
 
-function PortStatus(props: PortStatusProps) {
+function PortStatus(p: PortStatusProps) {
+    const props = {
+        size: 3,
+        ...p
+    };
+
+    let label = props.desc.name;
+    if (props.shortLabel) {
+        label = label.slice(4);
+    }
 
     return (
         <div className={"portStatus" + (props.connected ? " connected" : " disconnected")}>
-            <h3>{props.desc.name}</h3>
-            <SDI height="3em" width="3em"></SDI>
+            <h3>{label}</h3>
+            <SDI height={props.size + "em"} width={props.size + "em"}></SDI>
         </div>
     );
 }

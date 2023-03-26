@@ -45,62 +45,74 @@ export interface FrameRate {
     denominator: number;
 }
 
-export interface VideoQuality {
-    targetLatency: number;
-    minInterleaveRate?: number | null;
-    minInterleaveWindow?: number | null;
-    interleaveTimestampInterval: number;
-    clientBufferControl: ClientBufferControl;
+export type FrameRateSpecial = "native" | "half" | "half+";
+export type FrameRateCfg = FrameRate | FrameRateSpecial;
+
+export interface VideoVariant {
     width: number;
     height: number;
-    frameRate: FrameRate;
+    frameRate?: FrameRateCfg;
     bitrate?: number | null;
     minBitrate?: number | null;
-    crf: number;
+    crf?: number;
     rateControlBufferLength?: number | null;
-    codec: VideoCodec;
-    h26xPreset: H26xPreset;
+    codec?: VideoCodec;
+    h26xPreset?: H26xPreset;
     vpXSpeed?: number | null;
     gop?: number | null;
 }
 
 
-export interface AudioQuality {
+export interface AudioVariant {
     sampleRate?: number | null;
     bitrate: number;
     codec: AudioCodec;
 }
 
+export interface StreamVariantConfig {
+    // The audio/video variants selected for this stream.
+    video: string;
+    audio: string;
+
+    targetLatencyMs: number;
+    minInterleaveRate?: number;
+    minInterleaveWindow?: number;
+    interleaveTimestampInterval?: number;
+    clientBufferControl?: ClientBufferControl;
+}
+
 
 export interface Channel {
-    name?: string;
     videoSource: MediaSource;
 
-    // These two must be the same length.
-    videoQualities: VideoQuality[];
-    audioQualities: AudioQuality[];
+    // Define stream variants that exist.
+    videoVariants: {[name: string]: VideoVariant};
+    audioVariants: {[name: string]: AudioVariant};
+
+    // Defines each stream, in terms of selected variants and other options.
+    streams: {[name: string]: StreamVariantConfig};
 }
 
 export interface HttpConfig {
     origin?: string | null;
-    cacheNonLiveTime: number;
+    cacheNonLiveTime?: number;
 }
 
 export interface DashConfig {
-    segmentDuration: number;
-    expose: boolean;
-    preAvailabilityTime: number;
+    segmentDuration?: number;
+    expose?: boolean;
+    preAvailabilityTime?: number;
 }
 
 export interface NetworkConfig {
-    port: number;
-    transitLatency: number;
-    transitJitter: number;
-    transitBufferSize: number;
+    port?: number;
+    transitLatency?: number;
+    transitJitter?: number;
+    transitBufferSize?: number;
 }
 
 export interface HistoryConfig {
-    historyLength: number;
+    historyLength?: number;
 }
 
 export interface Directory {
@@ -117,13 +129,13 @@ export interface PathsConfig {
 }
 
 export interface LogConfig {
-    path: string;
+    path?: string;
     print?: boolean | null;
     level: LogLevel;
 }
 
 export interface StreamingConfig {
-    channels: Channel[];
+    channels: {[name: string]: Channel};
     dash: DashConfig;
     network: NetworkConfig;
     http: HttpConfig;

@@ -1,4 +1,4 @@
-import {useContext} from 'react';
+import {useContext, useState} from 'react';
 import './App.sass';
 import {AppContext} from "./index";
 // import LoadEstimator from "./LoadEstimator";
@@ -7,64 +7,31 @@ import StreamBox from "./StreamBox";
 import LogoCard from "./LogoCard";
 import {ReactComponent as CPU} from "./assets/icons/cpu.svg";
 import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
-import {AudioCodec, Channel, FrameRateType, H26xPreset, VideoCodec} from "./api/Config";
+import {Channel} from "./api/Config";
 import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
+
 
 function App() {
   const appCtx = useContext(AppContext);
 
-  const chan: Channel = {
-      name: "Channel 1",
-      videoSource: {
-          arguments: [],
-          latency: 0,
-          url: "Herring",
-          loop: true,
-          timestamp: false
-      },
+  let [modalOpen, setModalOpen] = useState<boolean>(false);
+  let [channelBeingEdited, setChannelBeingEdited] = useState<[string, Channel] | null>(null);
 
-      videoQualities: [{
-          targetLatency: 1000,
-          interleaveTimestampInterval: 10,
-          clientBufferControl: {},
-          width: 1920,
-          height: 1080,
-          frameRate: {
-              numerator: 30,
-              denominator: 1,
-              type: FrameRateType.fps
-          },
-          bitrate: 10000,
-          crf: 5,
-          codec: VideoCodec.h264,
-          h26xPreset: H26xPreset.fast
-      }, {
-          targetLatency: 1000,
-          interleaveTimestampInterval: 10,
-          clientBufferControl: {},
-          width: 1280,
-          height: 720,
-          frameRate: {
-              numerator: 30,
-              denominator: 1,
-              type: FrameRateType.fps
-          },
-          bitrate: 10000,
-          crf: 5,
-          codec: VideoCodec.h264,
-          h26xPreset: H26xPreset.fast
-      }],
-      audioQualities: [{
-          bitrate: 1000,
-          codec: AudioCodec.aac
-      }, {
-          bitrate: 1000,
-          codec: AudioCodec.aac
-      }]
-  };
+  const channels = appCtx.loadedConfiguration.channels;
 
-  const channels: Channel[] = [chan, chan];
+  function openChannelModal(name: string) {
+    const c = appCtx.loadedConfiguration.channels[name]!;
+    setChannelBeingEdited([name, JSON.parse(JSON.stringify(c))]);
+    setModalOpen(true);
+  }
+
+  function saveChannel(name: string, newValue: Channel) {
+      console.log("New channel");
+      console.log(newValue);
+      appCtx.loadedConfiguration.channels[name] = newValue;
+      console.log(appCtx.loadedConfiguration);
+  }
 
   // TODO: initial state loading crap.
   return <>
@@ -92,12 +59,22 @@ function App() {
           </div>
 
           <div className="streams">
-              {channels.map((c) => <StreamBox config={c}></StreamBox>)}
-              <NewChannelButton clicked={() => {}}/>
+              {Array.from(Object.entries(channels)).map((c) =>
+                  <StreamBox
+                      onClick={() => openChannelModal(c[0])}
+                      name={c[0]}
+                      config={c[1]}
+                  ></StreamBox>)}
+              <NewChannelButton clicked={() => {setModalOpen(true);}}/>
           </div>
       </div>
 
-      <ChannelConfigModal/>
+      {modalOpen ? <ChannelConfigModal
+          channel={channelBeingEdited![1]}
+          channelName={channelBeingEdited![0]}
+          onClose={() => setModalOpen(false)}
+          onSave={saveChannel}
+      /> : null}
 
       {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}
   </>;

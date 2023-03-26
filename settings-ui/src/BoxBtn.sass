@@ -1,0 +1,27 @@
+.boxBtn
+    user-select: none
+    background-color: var(--colour-secondary)
+    display: flex
+    justify-content: center
+    flex-direction: column
+    align-items: center
+    border-radius: 1em
+
+    &.active
+        border: 4px solid #4C8CD4
+        padding: -5px
+
+    &.disabled
+        filter: saturate(0)
+        pointer-events: none
+
+    &:hover
+        filter: brightness(1.3)
+
+.boxBtnLabel
+    color: var(--colour-primary)
+    font-weight: bold
+
+.btnRow
+    display: flex
+    gap: 1em

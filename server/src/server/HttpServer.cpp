@@ -134,15 +134,10 @@ public:
         response.keep_alive(keepAlive);
     }
 
-    /**
-     * Determine if the response is an OK response.
-     *
-     * @return True if the response is OK, and false if there's an error.
-     */
-    operator bool() const
-    {
-        return !(bool)getErrorKind();
-    }
+//    operator bool() const
+//    {
+//        return !(bool)getErrorKind();
+//    }
 
     /**
      * Don't send any response body back to the client.
@@ -376,15 +371,15 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
        1. Triggers any logging we might have turned on.
        2. Prevents the socket from being used for the next request.
        This is reachable if readEmpty was called, but there was actually request data. */
-    if (!(co_await request.readSome()).empty()) {
-        // If there's an error, then we'd expect the end of request body might not have been reached.
-        if (!response) {
-            co_return false;
-        }
-
-        // Otherwise, this is incorrect.
-        throw std::runtime_error("End of request body not reached.");
-    }
+//    if (!(co_await request.readSome()).empty()) {
+//        // If there's an error, then we'd expect the end of request body might not have been reached.
+//        if (!response) {
+//            co_return false;
+//        }
+//
+//        // Otherwise, this is incorrect.
+//        throw std::runtime_error("End of request body not reached.");
+//    }
 
     /* Tell the caller if the connection can accept another request. */
     co_return parser.keep_alive();

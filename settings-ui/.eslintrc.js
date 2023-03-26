@@ -90,7 +90,7 @@ module.exports = {
         "@typescript-eslint/no-extra-non-null-assertion": ["error"],
 
         // Don't allow `delete` with computed operand. Use `Map` instead.
-        "@typescript-eslint/no-dynamic-delete": ["error"],
+        "@typescript-eslint/no-dynamic-delete": ["off"],
 
         // Sadly, this forbids constructs like:
         // export type AggViewDescriptors = {[name: string]: CTEDef | AggViewDef};
