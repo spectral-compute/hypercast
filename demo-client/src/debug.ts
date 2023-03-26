@@ -248,7 +248,7 @@ export class AppDebugHandler {
     private updateTimelines(time: number): void {
         /* Figure out the start and end times. */
         this.timelineLatest = Math.max(this.timelineLatest, time - this.start);
-        const max = this.timelineLatest / 1000;
+        const max = Math.max(this.timelineLatest / 1000, 120);
         const min = max - 120;
 
         /* Update the charts' data. */
