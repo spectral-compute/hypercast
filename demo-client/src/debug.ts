@@ -3,6 +3,9 @@ import {BufferControl, BufferControlTickInfo, ReceivedInfo, TimestampInfo} from 
 
 chart.Chart.register(...chart.registerables);
 
+chart.Chart.defaults.borderColor = "rgb(32, 32, 32)"; // TODO maybe not the best idea...
+chart.Chart.defaults.color = "rgb(191, 191, 191)";
+
 /**
  * Class for showing information for debugging performance/etc.
  */
@@ -23,8 +26,8 @@ export class AppDebugHandler {
                         pointRadius: 4
                     }, {
                         label: "Initial Seek Event",
-                        backgroundColor: "rgb(0, 127, 0)",
-                        borderColor: "rgb(0, 127, 0)",
+                        backgroundColor: "rgb(123,0,127)",
+                        borderColor: "rgb(95,0,127)",
                         data: [],
 
                         type: "scatter" as const,
@@ -88,14 +91,14 @@ export class AppDebugHandler {
                                             copyTimelineConfig());
         appendTimelineDataset(this.latencyChart, "Target Buffer", "rgb(255, 127, 0)");
         appendTimelineDataset(this.latencyChart, "Actual Buffer", "rgb(0, 255, 0)");
-        appendTimelineDataset(this.latencyChart, "Network Latency", "rgb(0, 0, 255)");
+        appendTimelineDataset(this.latencyChart, "Network Latency", "rgb(255,233,64)");
         this.latencyChart.update();
 
         /* Download rate chart. */
         this.dlChart = new chart.Chart(document.getElementById("dlrate_timeline")! as HTMLCanvasElement,
                                        copyTimelineConfig());
         appendTimelineDataset(this.dlChart, "Download Rate", "rgb(127, 127, 255)");
-        appendTimelineDataset(this.dlChart, "Average Download Rate", "rgb(0, 0, 127)");
+        appendTimelineDataset(this.dlChart, "Average Download Rate", "rgb(0,127,106)");
         this.dlChart.update();
 
         /* Offset all timestamps by this amount. */
@@ -184,8 +187,8 @@ export class AppDebugHandler {
 
         /* Figure out the total data transferred in the history. This skips the first element's data because its
            timestamp is the end of the download. */
-        const totalData = this.avgDlRateHistory.slice(1).map((e: ReceivedInfo): number => e.length).
-                          reduce((a: number, b: number): number => a + b);
+        const totalData = this.avgDlRateHistory.slice(1).map((e: ReceivedInfo): number => e.length)
+            .reduce((a: number, b: number): number => a + b);
 
         /* Time window over which the total data was received. */
         const timeWindow = this.avgDlRateHistory[this.avgDlRateHistory.length - 1]!.timestamp -
@@ -202,7 +205,7 @@ export class AppDebugHandler {
     /**
      * Get the data array for the given chart/label pair.
      *
-     * @param chart The chart to get the data array from.
+     * @param c The chart to get the data array from.
      * @param label The dataset label to get the data array for.
      * @return The data array.
      */

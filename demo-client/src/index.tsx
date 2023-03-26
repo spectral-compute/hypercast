@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import {AppDebugHandler} from "./debug";
+
 import Body from "./components/Body";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
@@ -23,7 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
         <Header/>
         <Body>
-            <Player sourceURL={process.env.REACT_APP_INFO_URL!}/>
+            <Player sourceURL={process.env.REACT_APP_INFO_URL!} debugHandler={new AppDebugHandler()}/>
         </Body>
         <Footer/>
     </React.StrictMode>

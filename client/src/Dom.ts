@@ -1,4 +1,5 @@
 import {Player} from "./Main";
+import {DebugHandler} from "./Debug";
 
 type ControlsType = "native" | "js";
 
@@ -13,6 +14,7 @@ export interface PlayerOptions {
     // collisions if multiple players are created on one page. If omitted, a random integer will be used, so supply a
     // prefix if you want to select these elements by ID.
     idPrefix?: string;
+    debugHandler?: DebugHandler;
     // TODO event listeners
 }
 export default async function createPlayer(
@@ -52,6 +54,11 @@ export default async function createPlayer(
 
     // Create the player
     const player = new Player(options.sourceURL, video, process.env.NODE_ENV === "development");
+
+    /* Performance/debug event handling. */
+    if (process.env.NODE_ENV === "development" && options.debugHandler) {
+        player.setDebugHandler(options.debugHandler);
+    }
 
     // Error handling
     player.onError = (e: string): void => {
