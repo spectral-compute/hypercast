@@ -8,11 +8,14 @@
     border-radius: 1em
 
     &.active
-        border: 4px solid #4C8CD4
+        border: 4px solid darken(#4C8CD4, 10%)
         padding: -5px
+        filter: brightness(130%)
 
     &.disabled
-        filter: saturate(0)
+        span
+            color: #7c7c7c
+        background-color: #353844
         pointer-events: none
 
     &:hover

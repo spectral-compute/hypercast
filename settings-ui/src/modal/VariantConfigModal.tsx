@@ -1,30 +1,14 @@
 import './ChannelConfigModal.sass';
-import Modal from "./Modal";
 import BoxBtn from "../BoxBtn";
+import {AudioVariant, VideoVariant} from "../api/Config";
 
-export interface ChannelConfigModalProps {
-    onClose: () => void;
+export interface VariantConfigModalProps {
+    audio: AudioVariant;
+    video: VideoVariant;
 }
 
-function ChannelConfigModal(props: ChannelConfigModalProps) {
-    return <Modal
-        title="Configuring Channel 1"
-        onClose={props.onClose}
-        onSave={() => {}}
-    >
-        <hr/>
-
-        <div className="btnRow">
-            <div className="btnDesc">
-                <span>Resolution</span>
-            </div>
-            <BoxBtn label="4k"></BoxBtn>
-            <BoxBtn label="1080p"></BoxBtn>
-            <BoxBtn label="720p"></BoxBtn>
-            <BoxBtn label="480p"></BoxBtn>
-        </div>
-
-
+export default (_props: VariantConfigModalProps) => {
+    return <>
         <div className="btnRow">
             <div className="btnDesc">
                 <span>Image Quality</span>
@@ -53,6 +37,19 @@ function ChannelConfigModal(props: ChannelConfigModalProps) {
 
         <div className="btnRow">
             <div className="btnDesc">
+                <span>Frame Rate</span>
+                Do you want to halve the framerate compared to the source material in this stream variant?
+                This can improve the experience for viewers on poor connections.
+            </div>
+
+            <BoxBtn label="Native"></BoxBtn>
+            <BoxBtn label="Half"></BoxBtn>
+        </div>
+
+        <hr/>
+
+        <div className="btnRow">
+            <div className="btnDesc">
                 <span>Target Latency</span>
 
                 The target amount of time between an event being seen by the camera, and it reaching viewers.
@@ -64,8 +61,5 @@ function ChannelConfigModal(props: ChannelConfigModalProps) {
             <BoxBtn label="3s"></BoxBtn>
             <BoxBtn label="5s"></BoxBtn>
         </div>
-
-    </Modal>;
-}
-
-export default ChannelConfigModal;
+    </>;
+};

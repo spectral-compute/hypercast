@@ -1,18 +1,21 @@
 import "./BoxBtn.sass";
+import {CSSProperties} from "react";
 
 export interface BoxBtnProps {
     active?: boolean;
     disabled?: boolean;
     label: string;
     size?: number;
+    visible?: boolean;
     children?: any;
     onClick?: () => void;
 }
 
-function getStyle(props: BoxBtnProps) {
+function getStyle(props: BoxBtnProps): CSSProperties {
     return {
         width: props.size + "em",
-        height: props.size + "em"
+        height: props.size + "em",
+        visibility: props.visible! ? "visible" : "hidden"
     };
 }
 
@@ -31,6 +34,7 @@ function getClasses(props: BoxBtnProps) {
 function BoxBtn(p: BoxBtnProps) {
     const props = {
         onClick: () => {},
+        visible: true,
         size: 5,
         ...p
     };

@@ -10,6 +10,7 @@ import {inputUrlToSDIPortNumber} from "../api/Hardware";
 import {AppCtx} from "../AppCtx";
 import {ReactComponent as Cog} from "../assets/icons/settings.svg";
 import {RES_1080p, RES_480p, RES_4k, RES_720p} from "../Constants";
+import VariantConfigModal from "./VariantConfigModal";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
@@ -84,6 +85,7 @@ export default observer((props: ChannelConfigModalProps) => {
     const appCtx = useContext(AppContext);
 
     const [channel, setChannel] = useState<Channel>(props.channel);
+    const [variantBeingEdited, setVariantBeingEdited] = useState<[VideoVariant, AudioVariant, string] | null>(null);
 
     function modifyChannel(c: Channel) {
         setChannel({...c});
@@ -113,109 +115,123 @@ export default observer((props: ChannelConfigModalProps) => {
     }
 
     function openSettingsFor(w: number, h: number) {
-        const name = variantNameFor(w, h);
-        console.log(name);
+        const name = hasStreamWithResolution(channel, w, h)!;
+        setVariantBeingEdited([channel.videoVariants[name]!, channel.audioVariants[name]!, name]);
     }
 
+    function saveVariantBeingEdited() {
+        const n = variantBeingEdited![2];
+        channel.videoVariants[n] = variantBeingEdited![0];
+        channel.audioVariants[n] = variantBeingEdited![1];
+        setVariantBeingEdited(null);
+    }
+
+    // Such hacks, very wow.
+    const showVariantEditor = variantBeingEdited != null;
+    const closeFn = showVariantEditor ? () => setVariantBeingEdited(null) : props.onClose;
+    const saveFn = showVariantEditor ? () => saveVariantBeingEdited() : () => {
+        props.onSave(props.channelName, channel);
+        props.onClose();
+    };
+
     return <Modal
-        title={"Configuring Channel " + props.channelName}
-        onClose={props.onClose}
-        onSave={() => {
-            props.onSave(props.channelName, channel);
-            props.onClose();
-        }}
+        title={"Configuring " + (showVariantEditor ? variantBeingEdited[2] : props.channelName)}
+        onClose={closeFn}
+        onSave={saveFn}
     >
+        {variantBeingEdited != null ? <VariantConfigModal
+            video={variantBeingEdited![0]}
+            audio={variantBeingEdited![1]}
+        /> : <>
+            <div className="btnRow">
+                <div className="btnDesc">
+                    <span>Media Source</span>
 
-        <div className="btnRow">
-            <div className="btnDesc">
-                <span>Media Source</span>
+                    What to stream. Ports with nothing connected are disabled.
+                </div>
 
-                What to stream. Ports with nothing connected are disabled.
+                <div className="portList">
+                    {
+                        appCtx.machineInfo.inputPorts.map(p =>
+                            <BoxBtn
+                                label=""
+                                active={getInputPort(appCtx, channel) == p}
+                                disabled={p.connectedMediaInfo == null}
+                            >
+                                <PortStatus connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
+                            </BoxBtn>
+                        )}
+                </div>
             </div>
 
-            <div className="portList">
-                {
-                    appCtx.machineInfo.inputPorts.map(p =>
-                        <BoxBtn
-                            label=""
-                            active={getInputPort(appCtx, channel) == p}
-                            disabled={p.connectedMediaInfo == null}
-                        >
-                            <PortStatus connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
-                        </BoxBtn>
-                    )}
-            </div>
-        </div>
-
-        <hr/>
+            <hr/>
 
 
-        <div className="btnRow">
-            <div className="btnDesc">
-                <span>Variants</span>
-                Select which resolutions this stream should be made available in.
-                Each one can be configured separately.
-            </div>
+            <div className="btnRow">
+                <div className="btnDesc">
+                    <span>Variants</span>
+                    Select which resolutions this stream should be made available in.
+                    Each one can be configured separately.
+                </div>
 
-            <BoxBtn
-                label="4k"
-                active={hasStreamWithResolution(channel, ...RES_4k) != null}
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_4k)}
-                onClick={() => toggleStreamExistence(...RES_4k)}
-            ></BoxBtn>
-            <BoxBtn
-                label="1080p"
-                active={hasStreamWithResolution(channel, ...RES_1080p) != null}
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_1080p)}
-                onClick={() => toggleStreamExistence(...RES_1080p)}
-            ></BoxBtn>
-            <BoxBtn
-                label="720p"
-                active={hasStreamWithResolution(channel, ...RES_720p) != null}
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_720p)}
-                onClick={() => toggleStreamExistence(...RES_720p)}
-            ></BoxBtn>
-            <BoxBtn
-                label="480p"
-                active={hasStreamWithResolution(channel, ...RES_480p) != null}
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_480p)}
-                onClick={() => toggleStreamExistence(...RES_480p)}
-            ></BoxBtn>
-        </div>
-
-        <div className="btnRow">
-            <div className="btnDesc">
-                <span></span>
+                <BoxBtn
+                    label="4k"
+                    active={hasStreamWithResolution(channel, ...RES_4k) != null}
+                    disabled={!inputIsAtLeast(appCtx, channel, ...RES_4k)}
+                    onClick={() => toggleStreamExistence(...RES_4k)}
+                ></BoxBtn>
+                <BoxBtn
+                    label="1080p"
+                    active={hasStreamWithResolution(channel, ...RES_1080p) != null}
+                    disabled={!inputIsAtLeast(appCtx, channel, ...RES_1080p)}
+                    onClick={() => toggleStreamExistence(...RES_1080p)}
+                ></BoxBtn>
+                <BoxBtn
+                    label="720p"
+                    active={hasStreamWithResolution(channel, ...RES_720p) != null}
+                    disabled={!inputIsAtLeast(appCtx, channel, ...RES_720p)}
+                    onClick={() => toggleStreamExistence(...RES_720p)}
+                ></BoxBtn>
+                <BoxBtn
+                    label="480p"
+                    active={hasStreamWithResolution(channel, ...RES_480p) != null}
+                    disabled={!inputIsAtLeast(appCtx, channel, ...RES_480p)}
+                    onClick={() => toggleStreamExistence(...RES_480p)}
+                ></BoxBtn>
             </div>
 
-            <BoxBtn
-                label=""
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_4k) || hasStreamWithResolution(channel, ...RES_4k) == null}
-                onClick={() => openSettingsFor(...RES_4k)}
-            ><Cog/></BoxBtn>
-            <BoxBtn
-                label=""
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_1080p) || hasStreamWithResolution(channel, ...RES_1080p) == null}
-                onClick={() => openSettingsFor(...RES_1080p)}
-            >
-                <Cog/>
-            </BoxBtn>
-            <BoxBtn
-                label=""
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_720p) || hasStreamWithResolution(channel, ...RES_720p) == null}
-                onClick={() => openSettingsFor(...RES_720p)}
-            >
-                <Cog/>
-            </BoxBtn>
-            <BoxBtn
-                label=""
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_480p) || hasStreamWithResolution(channel, ...RES_480p) == null}
-                onClick={() => openSettingsFor(...RES_480p)}
-            >
-                <Cog/>
-            </BoxBtn>
-        </div>
+            <div className="btnRow">
+                <div className="btnDesc">
+                    <span></span>
+                </div>
 
-
+                <BoxBtn
+                    label=""
+                    visible={hasStreamWithResolution(channel, ...RES_4k) != null}
+                    onClick={() => openSettingsFor(...RES_4k)}
+                ><Cog/></BoxBtn>
+                <BoxBtn
+                    label=""
+                    visible={hasStreamWithResolution(channel, ...RES_1080p) != null}
+                    onClick={() => openSettingsFor(...RES_1080p)}
+                >
+                    <Cog/>
+                </BoxBtn>
+                <BoxBtn
+                    label=""
+                    visible={hasStreamWithResolution(channel, ...RES_720p) != null}
+                    onClick={() => openSettingsFor(...RES_720p)}
+                >
+                    <Cog/>
+                </BoxBtn>
+                <BoxBtn
+                    label=""
+                    visible={hasStreamWithResolution(channel, ...RES_480p) != null}
+                    onClick={() => openSettingsFor(...RES_480p)}
+                >
+                    <Cog/>
+                </BoxBtn>
+            </div>
+        </>}
      </Modal>;
 });
