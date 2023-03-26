@@ -5,7 +5,7 @@
 
 void testCoSpawn(std::function<Awaitable<void>()> fn, IOContext &ioc)
 {
-    boost::asio::co_spawn((boost::asio::io_context &)ioc, [&fn]() -> boost::asio::awaitable<void> {
+    boost::asio::co_spawn((boost::asio::io_context &)ioc, [fn = std::move(fn)]() -> boost::asio::awaitable<void> {
         try {
             co_await fn();
         }
