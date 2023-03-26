@@ -21,16 +21,11 @@ Awaitable<void> Server::Resource::putAsync(Response&, Request&) {
 
 Awaitable<void> Server::Resource::operator()(Response &response, Request &request) {
     switch (request.getType()) {
-        case Server::Request::Type::get:
-            co_await this->getAsync(response, request);
-            break;
-        case Server::Request::Type::post:
-            co_await this->postAsync(response, request);
-            break;
-        case Server::Request::Type::put:
-            co_await this->putAsync(response, request);
-            break;
+        case Server::Request::Type::get: return getAsync(response, request);
+        case Server::Request::Type::post: return postAsync(response, request);
+        case Server::Request::Type::put: return putAsync(response, request);
     }
+    unreachable();
 }
 
 int Server::Resource::maxRequestLength() const {
