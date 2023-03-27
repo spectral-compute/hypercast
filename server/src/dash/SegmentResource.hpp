@@ -43,6 +43,8 @@ public:
                              std::shared_ptr<InterleaveResource> interleave,
                              unsigned int interleaveIndex, unsigned int indexInInterleave);
 
+    size_t getMaxRequestLength() const noexcept override;
+
 private:
     /**
      * Handle GET requests for this segment.
