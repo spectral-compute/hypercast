@@ -61,7 +61,7 @@ void checkResourceRestrictions(const Server::Resource &resource, Server::Request
         throw Server::Error(Server::ErrorKind::Forbidden);
     }
 
-    request.setMaxLength(resource.maxRequestLength());
+    request.setMaxLength(resource.getMaxRequestLength());
 }
 
 /**

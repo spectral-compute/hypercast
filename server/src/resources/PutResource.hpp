@@ -29,7 +29,8 @@ public:
     void getSync(Response &response, const Request &request) override;
     void putSync(Response &response, const Request &request) override;
 
-    int maxRequestLength() const override {
+    size_t getMaxRequestLength() const noexcept override
+    {
         return 500000000;
     }
 

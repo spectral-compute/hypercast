@@ -28,7 +28,8 @@ Awaitable<void> Server::Resource::operator()(Response &response, Request &reques
     unreachable();
 }
 
-int Server::Resource::maxRequestLength() const {
+size_t Server::Resource::getMaxRequestLength() const noexcept
+{
     return 0;
 }
 

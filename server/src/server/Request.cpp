@@ -37,21 +37,10 @@ Awaitable<std::string> Server::Request::readAllAsString()
     co_return std::string((const char *)bytes.data(), bytes.size());
 }
 
-int Server::Request::getBytesRead() const
-{
-    return bytesRead;
-}
-
 void Server::Request::checkMaxLength() const
 {
     if (bytesRead > maxLength) {
         throw Error(ErrorKind::BadRequest, "Request body too long (got >=" + std::to_string(bytesRead) + " bytes, but the limit is " + std::to_string(maxLength) + ")");
     }
 
-}
-
-void Server::Request::setMaxLength(int l)
-{
-    maxLength = l;
-    checkMaxLength();
 }

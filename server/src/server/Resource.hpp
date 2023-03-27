@@ -47,7 +47,7 @@ public:
     virtual Awaitable<void> operator()(Response &response, Request &request);
 
     /// The maximum number of bytes in the request body. Default is zero.
-    virtual int maxRequestLength() const;
+    virtual size_t getMaxRequestLength() const noexcept;
 
     /**
      * Determine whether this resource can be serviced from a public location.

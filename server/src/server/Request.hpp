@@ -113,10 +113,17 @@ public:
     Awaitable<std::string> readAllAsString();
 
     /// Get the number of bytes extracted from this request object so far.
-    int getBytesRead() const;
+    size_t getBytesRead() const
+    {
+        return bytesRead;
+    }
 
     /// Throw after this many bytes have been extracted. Default is 0.
-    void setMaxLength(int bytes);
+    void setMaxLength(size_t bytes)
+    {
+        maxLength = bytes;
+        checkMaxLength();
+    }
 
 private:
     Path path;
@@ -124,8 +131,8 @@ private:
     const bool isPublic;
 
     // Number of bytes extracted from this Request so far.
-    int bytesRead = 0;
-    int maxLength = 0;
+    size_t bytesRead = 0;
+    size_t maxLength = 0;
 
     /// Throw is the maximum body length has been exceeded.
     void checkMaxLength() const;

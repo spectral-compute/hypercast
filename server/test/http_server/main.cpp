@@ -35,7 +35,8 @@ public:
         }
     }
 
-    int maxRequestLength() const override {
+    size_t getMaxRequestLength() const noexcept override
+    {
         return 1000000;
     }
 };
@@ -61,7 +62,8 @@ public:
         response << std::to_string(size);
     }
 
-    int maxRequestLength() const override {
+    size_t getMaxRequestLength() const noexcept override
+    {
         return 500000000;
     }
 };
