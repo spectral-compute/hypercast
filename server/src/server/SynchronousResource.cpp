@@ -7,7 +7,7 @@
 Server::SynchronousResource::~SynchronousResource() = default;
 
 Awaitable<std::vector<std::byte>> Server::SynchronousResource::extractData(Request& request) {
-    co_return co_await request.readAll();
+    return request.readAll();
 }
 
 Awaitable<void> Server::SynchronousResource::operator()(Response &response, Request &request) {
