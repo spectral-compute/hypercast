@@ -172,6 +172,12 @@ protected:
 
 private:
     /**
+     * The largest value that the steady clock can represent.
+     */
+    static constexpr auto maxSteadyTime =
+        std::chrono::steady_clock::duration(std::numeric_limits<std::chrono::steady_clock::duration::rep>::max());
+
+    /**
      * The server to remove the resource from in the destructor.
      */
     Server::Server &server;
@@ -191,7 +197,7 @@ private:
     /**
      * When the segment is to expire.
      */
-    std::chrono::steady_clock::time_point expiry{std::chrono::steady_clock::duration(0)};
+    std::chrono::steady_clock::time_point expiry{maxSteadyTime};
 };
 
 /**
@@ -510,7 +516,7 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
 
     assert(streamIndex < streams.size());
     bool isAudio = streamIndex >= config.qualities.size();
-    unsigned int lifetimeMs = config.history.historyLength;
+    unsigned int lifetimeMs = config.history.historyLength * 1000;
 
     /* Garbage collect existing segments. */
     gcSegments();
