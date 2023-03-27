@@ -104,7 +104,7 @@ public:
         /* Pop the outer-most path component and try to call the resource.  */
         request.popPathPart();
         checkResourceRestrictions(resource, request);
-        return resource(response, request);
+        co_await resource(response, request); // Wait for the resource to finish so the shared pointer keeps it alive.
     }
 
     /**
