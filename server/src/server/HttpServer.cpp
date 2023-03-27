@@ -82,19 +82,20 @@ public:
         body.size = buffer.size();
         co_await boost::beast::http::async_read_some(connection.socket, connection.buffer, parser,
                                                      boost::asio::use_awaitable);
+        size_t readBodySize = buffer.size() - body.size;
 
         /* Return the buffer by moving if most of it was used. */
         // The idea is to avoid the copy. If most of it is unused, then it could be inefficient to the entire memory
         // allocation for just a small amount of data.
-        if (body.size < buffer.size() / 2) {
-            buffer.resize(buffer.size() - body.size);
+        if (readBodySize >= buffer.size() / 2) {
+            buffer.resize(readBodySize);
             co_return std::move(buffer);
         }
 
         /* Return a copy of the data in the buffer. */
         // This keeps the original buffer for reuse.
         std::vector<std::byte> result;
-        result.insert(result.end(), buffer.begin(), buffer.begin() + buffer.size() - body.size);
+        result.insert(result.end(), buffer.begin(), buffer.begin() + readBodySize);
         co_return result;
     }
 
