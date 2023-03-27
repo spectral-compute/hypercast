@@ -500,7 +500,7 @@ std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::stri
         "-dash_segment_type", "mp4",
         "-single_file", "0",
         "-media_seg_name", "chunk-stream$RepresentationID$-$Number%09d$.$ext$",
-        "-seg_duration", std::to_string(config.dash.segmentDuration/1000),
+        "-seg_duration", std::to_string(config.dash.segmentDuration) + "/1000",
         "-format_options", "movflags=cmaf",
         "-frag_type", "every_frame",
 
