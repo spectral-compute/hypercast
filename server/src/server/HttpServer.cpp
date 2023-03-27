@@ -313,7 +313,7 @@ Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, uint16_t port, con
     Log::Context listenContext = log("listen");
 
     /* Start a coroutine in the IO context, so we can return immediately. */
-    spawnDetached(ioc, listenContext, [this, port]() -> Awaitable<void> { return listen(port); });
+    spawnDetached(ioc, listenContext, [this, port]() -> Awaitable<void> { return listen(port); }, Log::Level::fatal);
 }
 
 Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
