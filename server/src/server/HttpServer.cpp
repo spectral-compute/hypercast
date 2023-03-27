@@ -66,37 +66,43 @@ public:
 
     Awaitable<std::vector<std::byte>> doReadSome() override
     {
+        /* Keep trying to read something until we get a non-empty result or end of body. */
+        while (!parser.is_done()) {
+            // Allocate a buffer if one doesn't already exist.
+            if (buffer.empty()) {
+                buffer = std::vector<std::byte>(1 << 16);
+            }
+
+            // Read some data from the request body.
+            boost::beast::http::buffer_body::value_type &body = parser.get().body();
+            body.data = buffer.data();
+            body.size = buffer.size();
+            co_await boost::beast::http::async_read_some(connection.socket, connection.buffer, parser,
+                                                         boost::asio::use_awaitable);
+            size_t readBodySize = buffer.size() - body.size;
+
+            // Don't return a zero-length read, which boost::beast::http::async_read_some can sometimes falsely emit.
+            if (readBodySize == 0) {
+                continue;
+            }
+
+            // Return the buffer by moving if most of it was used.
+            // The idea is to avoid the copy. If most of it is unused, then it could be inefficient to the entire memory
+            // allocation for just a small amount of data.
+            if (readBodySize >= buffer.size() / 2) {
+                buffer.resize(readBodySize);
+                co_return std::move(buffer);
+            }
+
+            // Return a copy of the data in the buffer.
+            // This keeps the original buffer for reuse.
+            std::vector<std::byte> result;
+            result.insert(result.end(), buffer.begin(), buffer.begin() + readBodySize);
+            co_return result;
+        }
+
         /* Don't keep reading once we've read the end of the body. */
-        if (parser.is_done()) {
-            co_return std::vector<std::byte>{};
-        }
-
-        /* Allocate a buffer if one doesn't already exist. */
-        if (buffer.empty()) {
-            buffer = std::vector<std::byte>(1 << 16);
-        }
-
-        /* Read some data from the request body. */
-        boost::beast::http::buffer_body::value_type &body = parser.get().body();
-        body.data = buffer.data();
-        body.size = buffer.size();
-        co_await boost::beast::http::async_read_some(connection.socket, connection.buffer, parser,
-                                                     boost::asio::use_awaitable);
-        size_t readBodySize = buffer.size() - body.size;
-
-        /* Return the buffer by moving if most of it was used. */
-        // The idea is to avoid the copy. If most of it is unused, then it could be inefficient to the entire memory
-        // allocation for just a small amount of data.
-        if (readBodySize >= buffer.size() / 2) {
-            buffer.resize(readBodySize);
-            co_return std::move(buffer);
-        }
-
-        /* Return a copy of the data in the buffer. */
-        // This keeps the original buffer for reuse.
-        std::vector<std::byte> result;
-        result.insert(result.end(), buffer.begin(), buffer.begin() + readBodySize);
-        co_return result;
+        co_return std::vector<std::byte>{};
     }
 
 private:
