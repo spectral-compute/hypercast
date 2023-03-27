@@ -28,6 +28,14 @@ namespace
 {
 
 /**
+ * Format an endpoint to a human-readable string.
+ */
+std::string formatEndpoint(const boost::asio::ip::tcp::endpoint &endpoint)
+{
+    return endpoint.address().to_string() + ":" + std::to_string(endpoint.port());
+}
+
+/**
  * Implementation of Server::HttpServer::Connection, but as a base class so it can be used by the other HTTP classes,
  * while still allowing it to be used by methods of Server::HttpServer without putting lots of boost stuff in its
  * header.
@@ -398,6 +406,9 @@ Awaitable<void> Server::HttpServer::onConnection(Connection &connection)
 
     /* Keep handling requests until either an exception happens or onRequest returns false. */
     try {
+        connectionContext << "endpoints" << Log::Level::info
+                          << formatEndpoint(connection.socket.remote_endpoint()) << " -> "
+                          << formatEndpoint(connection.socket.local_endpoint());
         while (co_await onRequest(connection)) {}
     }
     catch (const std::exception &e) {
