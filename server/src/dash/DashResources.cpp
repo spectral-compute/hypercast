@@ -424,7 +424,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
                                                  "application/json", Server::CacheKind::ephemeral, true);
 
     // The manifest.mpd file.
-    server.addResource<Server::PutResource>(basePath / "manifest.mpd", Server::CacheKind::fixed, true);
+    server.addResource<Server::PutResource>(basePath / "manifest.mpd", Server::CacheKind::fixed, 1 << 16, true);
 
     // For now, each video quality has a single corresponding audio quality.
     {
@@ -436,7 +436,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
 
             // Add the initializer segment.
             server.addResource<Server::PutResource>(basePath / getInitializerName(videoIndex), Server::CacheKind::fixed,
-                                                    true);
+                                                    1 << 14, true);
 
             // Next video stream.
             videoIndex++;
@@ -447,7 +447,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
             }
             createSegment(audioIndex, 1);
             server.addResource<Server::PutResource>(basePath / getInitializerName(audioIndex), Server::CacheKind::fixed,
-                                                    true);
+                                                    1 << 14, true);
             audioIndex++;
         }
     }

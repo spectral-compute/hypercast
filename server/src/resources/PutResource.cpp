@@ -25,3 +25,8 @@ void Server::PutResource::putSync(Response &response, const Request &request)
     data = std::move(requestData);
     hasBeenPut = true;
 }
+
+size_t Server::PutResource::getMaxRequestLength() const noexcept
+{
+    return maxRequestLength;
+}

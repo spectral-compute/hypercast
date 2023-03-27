@@ -20,21 +20,22 @@ public:
      * Construct a resource with constant content.
      *
      * @param cacheKind The caching to use for the resource when GET is used.
+     * @param maxRequestLength The maximum length of resource that can be PUT to this resource (i.e: the value to be
+     *                         returned by getMaxRequestLength).
      */
-    explicit PutResource(CacheKind cacheKind = CacheKind::fixed, bool isPublic = false) :
-        SynchronousResource(isPublic), cacheKind(cacheKind)
+    explicit PutResource(CacheKind cacheKind = CacheKind::fixed, size_t maxRequestLength = 1 << 20,
+                         bool isPublic = false) :
+        SynchronousResource(isPublic), maxRequestLength(maxRequestLength), cacheKind(cacheKind)
     {
     }
 
     void getSync(Response &response, const Request &request) override;
     void putSync(Response &response, const Request &request) override;
 
-    size_t getMaxRequestLength() const noexcept override
-    {
-        return 500000000;
-    }
+    size_t getMaxRequestLength() const noexcept override;
 
 private:
+    const size_t maxRequestLength;
     const CacheKind cacheKind;
     std::vector<std::byte> data;
     bool hasBeenPut = false; ///< Whether anything has been put.
