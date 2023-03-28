@@ -283,12 +283,12 @@ Due to HTTP cache timing resolution limitations, this should be greater than 100
 
 Low level (or at least low-ish level) network configuration.
 
-| Field               | Default | Type    | Description                                                               |
-|---------------------|---------|---------|---------------------------------------------------------------------------|
-| `port`              | 8080    | Integer | The TCP port to listen on.                                                |
-| `transitLatency`    | 50      | Integer | Minimum network latency, in ms, to assume, excluding `transitBufferSize`. |
-| `transitJitter`     | 200     | Integer | Network latency jitter, in ms, to assume, excluding `transitBufferSize`.  |
-| `transitBufferSize` | 32768   | Integer | Buffer size, in bytes, to assume during transit.                          |
+| Field               | Default | Type    | Description                                                       |
+|---------------------|---------|---------|------------------------------------------------------------- -----|
+| `port`              | 8080    | Integer | The TCP port to listen on.                                        |
+| `transitLatency`    | 50      | Integer | Network latency, in ms, to assume, excluding `transitBufferSize`. |
+| `transitJitter`     | 200     | Integer | Network jitter, in ms, to assume, excluding `transitBufferSize`.  |
+| `transitBufferSize` | 32768   | Integer | Buffer size, in bytes, to assume during transit.                  |
 
 
 ## `http`
