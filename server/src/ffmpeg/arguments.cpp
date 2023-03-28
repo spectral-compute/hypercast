@@ -480,6 +480,39 @@ bool hasAudio(std::span<const Config::Quality> qualities)
 }
 
 /**
+ * Format a decimal fixed-point number as a string.
+ *
+ * Unfortunately, -seg_duration supports decimal numbers, but not fractions.
+ *
+ * @param n The number, as a decimal fixed-point value.
+ * @param dp The number of decimal places in the number.
+ * @return The formatted string.
+ */
+std::string formatDecimalFixedPoint(unsigned int n, unsigned int dp)
+{
+    /* Figure out the multiplicative factor. */
+    unsigned int factor = 1;
+    for (unsigned int i = 0; i < dp; i++) {
+        factor *= 10;
+    }
+
+    /* Return the integer component if there's no fractional component. */
+    std::string integer = std::to_string(n / factor);
+    if (n % factor == 0) {
+        return integer;
+    }
+
+    /* Return a full decimal point result. */
+    std::string fractional = std::to_string(n % factor);
+    std::string result = std::move(integer);
+    result += '.';
+    for (size_t i = fractional.size(); i < dp; i++) {
+        result += '0';
+    }
+    return result + fractional;
+}
+
+/**
  * Arguments that apply to DASH outputs.
  */
 std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::string_view basePath)
@@ -500,7 +533,7 @@ std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::stri
         "-dash_segment_type", "mp4",
         "-single_file", "0",
         "-media_seg_name", "chunk-stream$RepresentationID$-$Number%09d$.$ext$",
-        "-seg_duration", std::to_string(config.dash.segmentDuration) + "/1000",
+        "-seg_duration", formatDecimalFixedPoint(config.dash.segmentDuration, 3),
         "-format_options", "movflags=cmaf",
         "-frag_type", "every_frame",
 
