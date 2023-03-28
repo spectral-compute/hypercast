@@ -227,6 +227,7 @@ struct Paths final
 struct History final
 {
     unsigned int historyLength = 90;
+    std::string persistentStorage;
 
     bool operator==(const History &) const;
 };

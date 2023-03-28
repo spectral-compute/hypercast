@@ -348,9 +348,10 @@ short notice. It's also useful for debugging.
 
 ## `history`
 
-| Field           | Default | Type    | Description                                                            |
-|-----------------|---------|---------|------------------------------------------------------------------------|
-| `historyLength` | 90      | Integer | The amount of time, in seconds, to make historical segments available. |
+| Field               | Default | Type    | Description                                                               |
+|---------------------|---------|---------|---------------------------------------------------------------------------|
+| `historyLength`     | 90      | Integer | The amount of time, in seconds, to make historical segments available.    |
+| `persistentStorage` |         | String  | Where to store the DASH files permanently. They're not stored if not set. |
 
 
 ## `log`

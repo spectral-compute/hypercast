@@ -239,6 +239,7 @@ static void from_json(const nlohmann::json &j, History &out)
 {
     Json::ObjectDeserializer d(j, "history");
     d(out.historyLength, "historyLength");
+    d(out.persistentStorage, "persistentStorage");
     d();
 }
 

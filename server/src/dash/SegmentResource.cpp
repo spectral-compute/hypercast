@@ -16,10 +16,12 @@ Dash::SegmentResource::SegmentResource(IOContext &ioc, Log::Log &log, const Conf
                                        Dash::DashResources &resources,
                                        unsigned int streamIndex, unsigned int segmentIndex,
                                        std::shared_ptr<InterleaveResource> interleave,
-                                       unsigned int interleaveIndex, unsigned int indexInInterleave) :
+                                       unsigned int interleaveIndex, unsigned int indexInInterleave,
+                                       std::filesystem::path path) :
     Resource(config.expose), log(log("segment")), event(ioc), resources(resources),
     streamIndex(streamIndex), segmentIndex(segmentIndex), interleave(std::move(interleave)),
-    indexInInterleave(indexInInterleave)
+    indexInInterleave(indexInInterleave),
+    file(path.empty() ? Util::File() : Util::File(ioc, std::move(path), true, false))
 {
     /* Log information about this segment. */
     this->log << "new" << Log::Level::info << Json::dump({
@@ -73,6 +75,11 @@ Awaitable<void> Dash::SegmentResource::putAsync(Server::Response &response, Serv
 
         // Hand the data over to the interleave.
         interleave->addStreamData(dataPart, indexInInterleave);
+
+        // Write to the file if we're given one.
+        if (file) {
+            co_await file.write(dataPart);
+        }
 
         // Record the data if it's useful, and notify anything waiting for it.
         bool isEmpty = dataPart.empty();

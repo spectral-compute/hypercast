@@ -3,6 +3,7 @@
 #include "log/Log.hpp"
 #include "server/Path.hpp"
 
+#include <filesystem>
 #include <vector>
 
 class IOContext;
@@ -86,6 +87,11 @@ private:
      */
     void gcSegments();
 
+    /**
+     * Get the full path to save the given DASH file to, if we're saving persistently.
+     */
+    std::filesystem::path getPersistencePath(std::string_view fileName) const;
+
     IOContext &ioc;
     Log::Log &log;
     Log::Context logContext;
@@ -96,6 +102,11 @@ private:
      * The base path for all the resources this object manages.
      */
     const Server::Path basePath;
+
+    /**
+     * The directory to store persistent DASH streams to.
+     */
+    const std::filesystem::path persistenceDirectory;
 
     /**
      * Tracks state for each non-interleave stream.

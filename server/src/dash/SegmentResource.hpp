@@ -3,6 +3,7 @@
 #include "log/Log.hpp"
 #include "server/Resource.hpp"
 #include "util/Event.hpp"
+#include "util/File.hpp"
 
 #include <vector>
 
@@ -37,11 +38,12 @@ public:
      * @param interleaveIndex The index of the interleave (not the interleave segment, which is the same as the segment
      *                        index).
      * @param indexInInterleave The index of this stream in the interleave.
+     * @param path The path of the file to write the received data to.
      */
     explicit SegmentResource(IOContext &ioc, Log::Log &log, const Config::Dash &config, DashResources &resources,
                              unsigned int streamIndex, unsigned int segmentIndex,
                              std::shared_ptr<InterleaveResource> interleave,
-                             unsigned int interleaveIndex, unsigned int indexInInterleave);
+                             unsigned int interleaveIndex, unsigned int indexInInterleave, std::filesystem::path path);
 
     size_t getMaxRequestLength() const noexcept override;
 
@@ -92,6 +94,11 @@ private:
      * The data we've received for this segment.
      */
     std::vector<std::vector<std::byte>> data;
+
+    /**
+     * The file to write the segment to as it's received.
+     */
+    Util::File file;
 };
 
 } // namespace Dash

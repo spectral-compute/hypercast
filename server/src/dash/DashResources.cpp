@@ -51,6 +51,27 @@ std::string getUid()
 }
 
 /**
+ * Format the current time as a lexicographically sortable human readable timestamp.
+ */
+std::string formatPersistenceTimestamp()
+{
+    /* Get the current time as a UTC timezoned timestamp. */
+    time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    const tm *utc = gmtime(&now);
+
+    // If we couldn't convert the timestamp to a UTC timezone, return the integer representation.
+    if (!utc) {
+        return std::to_string(now);
+    }
+
+    /* Format the timezoned timestamp. */
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%04i-%02i-%02i %02i-%02i-%02i",
+             utc->tm_year, utc->tm_mon, utc->tm_mday, utc->tm_hour, utc->tm_min, utc->tm_sec);
+    return buffer;
+}
+
+/**
  * Get the name of a segment file.
  *
  * @param streamIndex The interleave stream index.
@@ -400,9 +421,21 @@ Dash::DashResources::~DashResources() = default;
 
 Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Root &config, Server::Server &server) :
     ioc(ioc), log(log), logContext(log("dash")), config(config), server(server),
-    basePath(Util::replaceAll(config.paths.liveStream, "{uid}", getUid()))
+    basePath(Util::replaceAll(config.paths.liveStream, "{uid}", getUid())),
+    persistenceDirectory(config.history.persistentStorage.empty() ? std::filesystem::path{} :
+                         std::filesystem::path(config.history.persistentStorage) / formatPersistenceTimestamp())
 {
     logContext << "basePath" << Log::Level::info << (std::string)getBasePath();
+
+    /* Create the persistence directory. */
+    if (!persistenceDirectory.empty()) {
+        logContext << "persistence" << Log::Level::info << persistenceDirectory;
+        if (std::filesystem::exists(persistenceDirectory)) {
+            logContext << Log::Level::error << "Persistence directory exists.";
+            throw std::runtime_error("Persistence directory exists.");
+        }
+        std::filesystem::create_directory(persistenceDirectory);
+    }
 
     /* Create an object to represent each stream and interleave. */
     {
@@ -430,19 +463,24 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
                                                  "application/json", Server::CacheKind::ephemeral, true);
 
     // The manifest.mpd file.
-    server.addResource<Server::PutResource>(basePath / "manifest.mpd", Server::CacheKind::fixed, 1 << 16, true);
+    server.addResource<Server::PutResource>(basePath / "manifest.mpd", ioc, getPersistencePath("manifest.mpd"),
+                                            Server::CacheKind::fixed, 1 << 16, true);
 
     // For now, each video quality has a single corresponding audio quality.
     {
         unsigned int videoIndex = 0;
         unsigned int audioIndex = (unsigned int)config.qualities.size();
         for (const Config::Quality &q: config.qualities) {
+            // Add the initializer segment.
+            {
+                std::string initializerSegmentName = getInitializerName(videoIndex);
+                server.addResource<Server::PutResource>(basePath / initializerSegmentName, ioc,
+                                                        getPersistencePath(initializerSegmentName),
+                                                        Server::CacheKind::fixed,
+                                                        1 << 14, true);
+            }
             // Add the first video segment and corresponding interleave.
             createSegment(videoIndex, 1);
-
-            // Add the initializer segment.
-            server.addResource<Server::PutResource>(basePath / getInitializerName(videoIndex), Server::CacheKind::fixed,
-                                                    1 << 14, true);
 
             // Next video stream.
             videoIndex++;
@@ -451,9 +489,14 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
             if (!q.audio) {
                 continue;
             }
+            {
+                std::string initializerSegmentName = getInitializerName(audioIndex);
+                server.addResource<Server::PutResource>(basePath / initializerSegmentName, ioc,
+                                                        getPersistencePath(initializerSegmentName),
+                                                        Server::CacheKind::fixed,
+                                                        1 << 14, true);
+            }
             createSegment(audioIndex, 1);
-            server.addResource<Server::PutResource>(basePath / getInitializerName(audioIndex), Server::CacheKind::fixed,
-                                                    1 << 14, true);
             audioIndex++;
         }
     }
@@ -539,10 +582,12 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
                                          config.qualities[interleaveIndex].interleaveTimestampInterval);
 
     /* Add the new segment. */
-    streams[streamIndex].get(segmentIndex, server,
-                             basePath / getSegmentName(streamIndex, segmentIndex), lifetimeMs,
-                             ioc, log, config.dash, *this, streamIndex, segmentIndex, interleave, interleaveIndex,
-                             isAudio ? 1 : 0);
+    {
+        std::string segmentName = getSegmentName(streamIndex, segmentIndex);
+        streams[streamIndex].get(segmentIndex, server, basePath / segmentName, lifetimeMs,
+                                 ioc, log, config.dash, *this, streamIndex, segmentIndex, interleave, interleaveIndex,
+                                 isAudio ? 1 : 0, getPersistencePath(segmentName));
+    }
     ++interleave; // The stream now has been given the interleave.
 
     /* Set the caching for the following interleave segments (up to however many could be reached with fixed caching) to
@@ -559,4 +604,12 @@ void Dash::DashResources::gcSegments()
     for (Interleave &i: interleaves) {
         i.gc(now);
     }
+}
+
+std::filesystem::path Dash::DashResources::getPersistencePath(std::string_view fileName) const
+{
+    if (persistenceDirectory.empty()) {
+        return {};
+    }
+    return persistenceDirectory / fileName;
 }
