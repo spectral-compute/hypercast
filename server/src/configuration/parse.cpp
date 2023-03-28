@@ -46,7 +46,7 @@ namespace
 namespace Config
 {
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Source &out)
 {
     Json::ObjectDeserializer d(j, "source");
@@ -58,7 +58,7 @@ static void from_json(const nlohmann::json &j, Source &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, FrameRate &out)
 {
     constexpr const char *key = "qualities.video.frameRate";
@@ -103,7 +103,7 @@ static void from_json(const nlohmann::json &j, FrameRate &out)
     }
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, VideoQuality &out)
 {
     Json::ObjectDeserializer d(j, "qualities.video");
@@ -138,7 +138,7 @@ static void from_json(const nlohmann::json &j, VideoQuality &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, AudioQuality &out)
 {
     Json::ObjectDeserializer d(j, "qualities.audio");
@@ -151,7 +151,7 @@ static void from_json(const nlohmann::json &j, AudioQuality &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, ClientBufferControl &out)
 {
     Json::ObjectDeserializer d(j, "qualities.clientBufferControl");
@@ -162,7 +162,7 @@ static void from_json(const nlohmann::json &j, ClientBufferControl &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Quality &out)
 {
     Json::ObjectDeserializer d(j, "qualities");
@@ -176,7 +176,7 @@ static void from_json(const nlohmann::json &j, Quality &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Dash &out)
 {
     Json::ObjectDeserializer d(j, "dash");
@@ -186,18 +186,19 @@ static void from_json(const nlohmann::json &j, Dash &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Network &out)
 {
     Json::ObjectDeserializer d(j, "network");
     d(out.port, "port");
+    d(out.privateNetworks, "privateNetworks");
     d(out.transitLatency, "transitLatency");
     d(out.transitJitter, "transitJitter");
     d(out.transitBufferSize, "transitBufferSize");
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Http &out)
 {
     Json::ObjectDeserializer d(j, "http");
@@ -206,7 +207,7 @@ static void from_json(const nlohmann::json &j, Http &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Directory &out)
 {
     /* Deserialize the short-hand form. */
@@ -224,7 +225,7 @@ static void from_json(const nlohmann::json &j, Directory &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Paths &out)
 {
     Json::ObjectDeserializer d(j, "paths");
@@ -234,7 +235,7 @@ static void from_json(const nlohmann::json &j, Paths &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, History &out)
 {
     Json::ObjectDeserializer d(j, "history");
@@ -243,7 +244,7 @@ static void from_json(const nlohmann::json &j, History &out)
     d();
 }
 
-/// @ingroup implementation
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Log &out)
 {
     Json::ObjectDeserializer d(j, "log");
