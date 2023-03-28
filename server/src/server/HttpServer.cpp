@@ -340,8 +340,16 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     boost::beast::http::request_parser<boost::beast::http::buffer_body> parser;
     parser.header_limit(1 << 20); // Plenty of space for headers.
     parser.body_limit((size_t)1 << 32); // We might receive large files.
-    co_await boost::beast::http::async_read_header(connection.socket, connection.buffer, parser,
-                                                   boost::asio::use_awaitable);
+    try {
+        co_await boost::beast::http::async_read_header(connection.socket, connection.buffer, parser,
+                                                       boost::asio::use_awaitable);
+    }
+    catch (const boost::system::system_error &e) {
+        if (e.code() == boost::beast::http::error::end_of_stream && !parser.got_some()) {
+            co_return false;
+        }
+        throw;
+    }
     assert(parser.is_header_done());
 
     /* Create a Response object. Create this earlier, so we can use its error transmission code. */
@@ -358,7 +366,10 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     if (!requestType) {
         response.setErrorAndMessage(ErrorKind::UnsupportedType);
         co_await response.flush(true);
-        co_return false; // We didn't handle the input, so the TCP stream will now be messed up.
+
+        // We didn't handle the input, so the TCP stream will now be messed up.
+        connection.buffer.clear(); // Don't generate an error about excess data in the buffer.
+        co_return false;
     }
 
     // Figure out the resource path.
@@ -370,7 +381,10 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     if (!path) {
         response.setErrorAndMessage(ErrorKind::Forbidden);
         co_await response.flush(true); // Annoyingly, this cannot be in the catch block.
-        co_return false; // We didn't handle the input, so the TCP stream will now be messed up.
+
+        // We didn't handle the input, so the TCP stream will now be messed up.
+        connection.buffer.clear(); // Don't generate an error about excess data in the buffer.
+        co_return false;
     }
 
     // Actually create the request.
@@ -381,7 +395,7 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     co_await (*this)(response, request);
 
     /* If the body hasn't been fully read, then its contents (or absence) can't have been checked, which is not
-       idea. The real badness, though, is that the TCP stream may still have data for the request in its buffer,
+       ideal. The real badness, though, is that the TCP stream may still have data for the request in its buffer,
        which would confuse further message processing on the same stream. Throwing here:
        1. Triggers any logging we might have turned on.
        2. Prevents the socket from being used for the next request.
@@ -389,6 +403,7 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     if (!(co_await request.readSome()).empty()) {
         // If there's an error, then we'd expect the end of request body might not have been reached.
         if (!response) {
+            connection.buffer.clear(); // Don't generate an error about excess data in the buffer.
             co_return false;
         }
 
@@ -409,7 +424,14 @@ Awaitable<void> Server::HttpServer::onConnection(Connection &connection)
         connectionContext << "endpoints" << Log::Level::info
                           << formatEndpoint(connection.socket.remote_endpoint()) << " -> "
                           << formatEndpoint(connection.socket.local_endpoint());
+
+        // Keep handling requests while we're allowed to keep the connection alive.
         while (co_await onRequest(connection)) {}
+
+        // See if we had stuff at the end of the stream. If so, that's an error.
+        if (connection.buffer.size() > 0) {
+            throw std::runtime_error("Excess data in buffer after handling request.");
+        }
     }
     catch (const std::exception &e) {
         connectionContext << Log::Level::error << "Exception while handling request: " << e.what() << ".";
