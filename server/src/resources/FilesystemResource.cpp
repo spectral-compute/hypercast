@@ -3,11 +3,8 @@
 #include "server/Request.hpp"
 #include "server/Response.hpp"
 #include "util/asio.hpp"
+#include "util/File.hpp"
 #include "util/subprocess.hpp"
-
-#include <boost/asio/as_tuple.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/stream_file.hpp>
 
 Server::FilesystemResource::~FilesystemResource() = default;
 
@@ -41,22 +38,13 @@ Awaitable<void> Server::FilesystemResource::getAsync(Response &response, Request
     }
 
     /* Write the file to the response. */
-    boost::asio::stream_file f(ioc, filePath, boost::asio::stream_file::read_only);
+    Util::File file(ioc, std::move(filePath));
     while (true) {
-        std::byte buffer[4096];
-        auto [e, n] = co_await f.async_read_some(boost::asio::buffer(buffer),
-                                                 boost::asio::as_tuple(boost::asio::use_awaitable));
-        if (n > 0) {
-            response << std::span(buffer, n);
-        }
-
-        if (e == boost::asio::error::eof) {
-            f.close();
+        std::vector<std::byte> data = co_await file.readSome();
+        if (data.empty()) {
             co_return;
         }
-        else if (e) {
-            throw std::runtime_error("Error reading file " + filePath.string() + ": " + e.message());
-        }
+        response << std::move(data);
     }
 }
 

@@ -1,8 +1,7 @@
 #include "Log.hpp"
 
+#include "util/File.hpp"
 #include "util/Mutex.hpp"
-
-#include <boost/asio/stream_file.hpp>
 
 #include <filesystem>
 #include <deque>
@@ -31,7 +30,7 @@ private:
     /**
      * The file the log is written to (and read from).
      */
-    mutable boost::asio::stream_file f;
+    mutable Util::File file;
 
     /**
      * File offsets for the start of every loadCacheSize log items.

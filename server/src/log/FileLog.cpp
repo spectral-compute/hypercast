@@ -2,19 +2,12 @@
 
 #include "util/asio.hpp"
 
-#include <boost/asio/write.hpp>
-
-Log::FileLog::~FileLog()
-{
-    f.close();
-}
+Log::FileLog::~FileLog() = default;
 
 Log::FileLog::FileLog(IOContext &ioc, const std::filesystem::path &path, Level minLevel, bool print,
                       size_t endCacheSize, size_t loadCacheSize) :
     Log(minLevel, print, ioc), mutex(ioc),
-    f(ioc, path,
-      boost::asio::stream_file::create | boost::asio::stream_file::truncate | boost::asio::stream_file::read_write),
-    endCacheSize(endCacheSize), loadCacheSize(loadCacheSize)
+    file(ioc, path, true, true), endCacheSize(endCacheSize), loadCacheSize(loadCacheSize)
 {
     assert(loadCacheSize > 0);
     offsets.emplace_back(0);
@@ -46,17 +39,9 @@ Awaitable<Log::Item> Log::FileLog::load(size_t index) const
     size_t endFileOffset = offsets[indexIntoOffsets + 1];
     assert(endFileOffset > startFileOffset);
 
-    // Seek.
-    [[maybe_unused]] uint64_t offset = f.seek(startFileOffset, boost::asio::stream_file::seek_basis::seek_set);
-    assert(offset == startFileOffset);
-
     // Load the data from the file.
-    std::vector<char> data(endFileOffset - startFileOffset);
-    for (size_t i = 0; i < data.size();) {
-        // This shouldn't hit the end of the file, as we should only be loading what actually exists.
-        i += co_await f.async_read_some(boost::asio::buffer(data.data() + i, data.size() - i),
-                                        boost::asio::use_awaitable);
-    }
+    file.seek(startFileOffset);
+    std::vector<std::byte> data = co_await file.readExact(endFileOffset - startFileOffset);
 
     /* Remove the current contents of the load cache, so we can replace it. */
     loadCache.clear();
@@ -66,7 +51,7 @@ Awaitable<Log::Item> Log::FileLog::load(size_t index) const
     loadCacheStart = indexIntoOffsets * loadCacheSize;
 
     /* Split the loaded data into strings (one string per line), and decode them into the load cache. */
-    std::string_view lines(data.data(), data.size());
+    std::string_view lines((const char *)data.data(), data.size());
     while (!lines.empty()) {
         // If the load cache is already full, the log file must have had an extra newline we didn't expect.
         if (loadCache.size() == loadCacheSize) {
@@ -110,14 +95,8 @@ Awaitable<void> Log::FileLog::store(Item item)
     Mutex::LockGuard lock = co_await mutex.lockGuard();
 
     /* Write the item to the log file. The co_awaits are the point at which load on this item could be called. */
-    // Seek to the end of the file.
-    [[maybe_unused]] uint64_t offset = f.seek(0, boost::asio::stream_file::seek_basis::seek_end);
-    assert(!offsets.empty());
-    assert(offset == offsets.back());
-
-    // Write the JSON string.
-    co_await boost::asio::async_write(f, boost::asio::const_buffer(jsonString.data(), jsonString.size()),
-                                      boost::asio::use_awaitable);
+    file.seekToEnd();
+    co_await file.write({(const std::byte *)jsonString.data(), jsonString.size()});
 
     /* Update the end cache. */
     size_t index = endCacheStart + endCache.size();
