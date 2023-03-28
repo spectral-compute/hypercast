@@ -4,39 +4,43 @@ import {DebugHandler} from "./Debug";
 type ControlsType = "native" | "js";
 
 export interface PlayerOptions {
-    // The DOM element into which the video player will be inserted. Pass a DOM element that was created in JS.
-    // Otherwise, pass the ID of an html element.
-    container: HTMLElement | string;
-    sourceURL: string;
     secondarySource?: string;
     controls?: ControlsType;
-    // An optional string with which the IDs of all video player elements will be prefixed. Prefixing prevents ID
-    // collisions if multiple players are created on one page. If omitted, a random integer will be used, so supply a
-    // prefix if you want to select these elements by ID.
+    /** An optional string with which the IDs of all video player elements will be prefixed. Prefixing prevents ID
+     * collisions if multiple players are created on one page. If omitted, a random integer will be used, so supply a
+     * prefix if you want to select these elements by ID. */
     idPrefix?: string;
     debugHandler?: DebugHandler;
+    onInitialisation?: (player: Player) => void;
     // TODO event listeners
 }
-export default async function createPlayer(
+
+/**
+ * Construct an instance of the LLVS player
+ * @param sourceURL the URL of the video stream
+ * @param containerElement The DOM element into which the video player will be inserted. Pass either a DOM element that was created in JS, or else pass the ID of an html element.
+ * @param options
+ */
+export default function createPlayer(
+    sourceURL: string,
+    containerElement: HTMLElement | string,
     options: PlayerOptions
-): Promise<HTMLElement> {
+): Player {
     // Defaults
     const controlsType = options?.controls ?? "js";
 
     // Try to find the container if necessary
-    let container: HTMLElement;
-    if (typeof options.container === "string") {
-        const maybeContainer = document.getElementById(options.container);
-        if (!maybeContainer) {
-            const errorMessage = `No DOM element exists with ID ${options.container}. Failed to create video player!`;
-            return createDomErrorMessage(errorMessage);
+    if (typeof containerElement === "string") {
+        const maybeContainer = document.getElementById(containerElement);
+        if (maybeContainer) {
+            containerElement = maybeContainer;
+        } else {
+            console.error(`No DOM element exists with ID ${containerElement}. Appending video to document body!`);
+            containerElement = insertNode(document.querySelector("body")!, "div", {className: "llvs-video"});
         }
-        container = maybeContainer;
-    } else {
-        container = options.container;
     }
 
-    const figure = insertNode(container, "figure", {className: "video-figure"});
+    const figure = insertNode(containerElement, "figure", {className: "video-figure"});
     const video = insertNode(figure, "video", {className: "video"});
     video.controls = controlsType === "native";
 
@@ -53,7 +57,7 @@ export default async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(options.sourceURL, video, process.env.NODE_ENV === "development");
+    const player = new Player(sourceURL, video, process.env.NODE_ENV === "development");
 
     /* Performance/debug event handling. */
     if (process.env.NODE_ENV === "development" && options.debugHandler) {
@@ -65,18 +69,21 @@ export default async function createPlayer(
         console.error("An error happened: " + e);
     };
 
-    await player.init();
+    player.init().then(() => {
+        // Hook up the controls if necessary
+        if (controlsType === "js") {
+            // In case multiple videos are shown on the same page, we need IDs to be unique...
+            const idPrefix = options?.idPrefix ?? (Math.random() * 100_000).toFixed(0);
+            createControlPanel(figure, player, video, idPrefix);
+        }
 
-    // Hook up the controls if necessary
-    if (controlsType === "js") {
-        // In case multiple videos are shown on the same page, we need IDs to be unique...
-        const idPrefix = options?.idPrefix ?? (Math.random() * 100_000).toFixed(0);
-        createControlPanel(figure, player, video, idPrefix);
-    }
+        options?.onInitialisation?.(player);
+        player.start();
+    }).catch((e) => {
+        console.error(e instanceof Error ? "Failed to initialise player: " + e.message : "Failed to initialise player");
+    });
 
-    player.start();
-
-    return figure;
+    return player;
 }
 
 // Set up the control panel using JS (in place of the browsers' native controls)
@@ -170,13 +177,6 @@ function insertNode(parent: HTMLElement, node: string, options?: NodeOptions): H
     child.innerText = options?.innerText ?? "";
     parent.appendChild(child);
     return child;
-}
-
-function createDomErrorMessage(errorMessage: string): HTMLDivElement {
-    const errorNode = document.createElement("p");
-    errorNode.className = "video-error";
-    errorNode.innerText = errorMessage;
-    return errorNode;
 }
 
 /**
