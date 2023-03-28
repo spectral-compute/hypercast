@@ -9,6 +9,7 @@ namespace Config
 {
 
 struct Http;
+struct Network;
 
 } // namespace Config
 
@@ -29,10 +30,11 @@ public:
      * @note The server never terminates.
      *
      * @param ioc The server is created as a detached coroutine in this context.
-     * @param port The TCP port to listen on.
+     * @param networkConfig The server's network configuration object.
      * @param httpConfig The server's HTTP configuration object.
      */
-    explicit HttpServer(IOContext &ioc, Log::Log &log, uint16_t port, const Config::Http &httpConfig);
+    explicit HttpServer(IOContext &ioc, Log::Log &log, const Config::Network &networkConfig,
+                        const Config::Http &httpConfig);
 
 private:
     /**
@@ -56,9 +58,10 @@ private:
     /**
      * Called by the constructor as a worker coroutine.
      */
-    Awaitable<void> listen(uint16_t port);
+    Awaitable<void> listen();
 
     IOContext &ioc;
+    const Config::Network &networkConfig;
     const Config::Http &httpConfig;
 };
 

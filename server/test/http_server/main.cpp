@@ -123,7 +123,7 @@ int main()
 {
     IOContext ioc;
     ExpectNeverLog log(ioc);
-    Server::HttpServer server(ioc, log, 12480, {});
+    Server::HttpServer server(ioc, log, { .port = 12480 }, {});
     server.addResource<EchoResource>("Echo");
     server.addResource<LengthResource>("Length");
     server.addResource<LongResource>("Long", false);

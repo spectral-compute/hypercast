@@ -73,7 +73,7 @@ Server::State::State(
     ioc(ioc),
     requestedConfig(initialCfg),
     log(createLog(initialCfg.log, ioc)),
-    server(ioc, *log, initialCfg.network.port, initialCfg.http)
+    server(ioc, *log, initialCfg.network, initialCfg.http)
 {
     server.addResource<ConfigAPIResource>("api/config", *this);
 }

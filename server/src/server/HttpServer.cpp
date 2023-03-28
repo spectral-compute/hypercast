@@ -1,5 +1,6 @@
 #include "HttpServer.hpp"
 
+#include "Address.hpp"
 #include "CacheKind.hpp"
 #include "Error.hpp"
 #include "Request.hpp"
@@ -322,19 +323,34 @@ struct Server::HttpServer::Connection final : public ::Connection
 
 Server::HttpServer::~HttpServer() = default;
 
-Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, uint16_t port, const Config::Http &httpConfig) :
-    Server(log), ioc(ioc), httpConfig(httpConfig)
+Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, const Config::Network &networkConfig,
+                               const Config::Http &httpConfig) :
+    Server(log), ioc(ioc), networkConfig(networkConfig), httpConfig(httpConfig)
 {
     Log::Context listenContext = log("listen");
 
     /* Start a coroutine in the IO context, so we can return immediately. */
-    spawnDetached(ioc, listenContext, [this, port]() -> Awaitable<void> { return listen(port); }, Log::Level::fatal);
+    spawnDetached(ioc, listenContext, [this]() -> Awaitable<void> { return listen(); }, Log::Level::fatal);
 }
 
 Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
 {
     /* Figure out whether the source is public or not. */
-    bool isPublic = false; // TODO
+    // Get an address to compare to.
+    boost::asio::ip::address_v6::bytes_type remoteAddressBytes =
+        connection.socket.remote_endpoint().address().to_v6().to_bytes();
+    ::Server::Address remoteAddress({(const std::byte *)remoteAddressBytes.data(), remoteAddressBytes.size()});
+
+    // Figure out if any of the private networks contain the remote address.
+    bool isPublic = !remoteAddress.isLoopback();
+    if (isPublic) {
+        for (const ::Server::Address &network: networkConfig.privateNetworks) {
+            if (network.contains(remoteAddress)) {
+                isPublic = false;
+                break;
+            }
+        }
+    }
 
     /* Read the HTTP header. */
     boost::beast::http::request_parser<boost::beast::http::buffer_body> parser;
@@ -452,12 +468,13 @@ Awaitable<void> Server::HttpServer::onConnection(Connection &connection)
     }
 }
 
-Awaitable<void> Server::HttpServer::listen(uint16_t port)
+Awaitable<void> Server::HttpServer::listen()
 {
     Log::Context connectionContext = log("acceptor");
 
     /* Listen for connections. */
-    boost::asio::ip::tcp::acceptor acceptor(ioc, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port));
+    boost::asio::ip::tcp::acceptor acceptor(ioc, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(),
+                                                                                networkConfig.port));
 
     /* Handle each connection. */
     while (true) {
