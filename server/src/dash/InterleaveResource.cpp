@@ -26,6 +26,7 @@ Dash::InterleaveResource::~InterleaveResource() = default;
 
 Dash::InterleaveResource::InterleaveResource(IOContext &ioc, Log::Log &log, unsigned int numStreams,
                                              unsigned int timestampIntervalMs) :
+    Resource(true),
     log(log("interleave")), numRemainingStreams(numStreams), timestampIntervalMs(timestampIntervalMs), event(ioc)
 {
 }
