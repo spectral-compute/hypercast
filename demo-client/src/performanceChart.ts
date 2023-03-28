@@ -9,7 +9,7 @@ chart.Chart.defaults.color = "rgb(191, 191, 191)";
 /**
  * Class for showing information for debugging performance/etc.
  */
-export class AppDebugHandler {
+export class PerformanceChart {
     constructor(latencyCanvas: HTMLCanvasElement, rateCanvas: HTMLCanvasElement) {
         /* Common configuration between timelines. */
         const timelineConfig = {

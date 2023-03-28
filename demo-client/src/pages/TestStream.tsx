@@ -1,21 +1,21 @@
 import Player from "../components/Player";
 import {Player as PlayerMain} from "live-video-streamer-client";
-import {AppDebugHandler} from "../debug";
+import {PerformanceChart} from "../performanceChart";
 import {useCallback, useEffect, useRef} from "react";
 
 export default function TestStream() {
     const latencyRef = useRef<HTMLCanvasElement | null>(null);
     const rateRef = useRef<HTMLCanvasElement | null>(null);
-    const chartMakerRef = useRef<AppDebugHandler | null>(null);
+    const performanceChart = useRef<PerformanceChart | null>(null);
 
     useEffect(() => {
-        if (!chartMakerRef.current) {
-            chartMakerRef.current = new AppDebugHandler(latencyRef.current!, rateRef.current!);
+        if (!performanceChart.current) {
+            performanceChart.current = new PerformanceChart(latencyRef.current!, rateRef.current!);
         }
     }, []);
 
     const plugInGraphMaker = useCallback((player: PlayerMain) => {
-        player.setDebugHandler(chartMakerRef.current);
+        player.setDebugHandler(performanceChart.current);
     }, []);
     const unplugGraphMaker = useCallback((player: PlayerMain) => {
         player.setDebugHandler(null);
