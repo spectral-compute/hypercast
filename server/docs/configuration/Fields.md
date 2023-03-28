@@ -283,12 +283,26 @@ Due to HTTP cache timing resolution limitations, this should be greater than 100
 
 Low level (or at least low-ish level) network configuration.
 
-| Field               | Default | Type    | Description                                                       |
-|---------------------|---------|---------|------------------------------------------------------------- -----|
-| `port`              | 8080    | Integer | The TCP port to listen on.                                        |
-| `transitLatency`    | 50      | Integer | Network latency, in ms, to assume, excluding `transitBufferSize`. |
-| `transitJitter`     | 200     | Integer | Network jitter, in ms, to assume, excluding `transitBufferSize`.  |
-| `transitBufferSize` | 32768   | Integer | Buffer size, in bytes, to assume during transit.                  |
+| Field               | Default | Type           | Description                                                       |
+|---------------------|---------|----------------|-------------------------------------------------------------------|
+| `port`              | 8080    | Integer        | The TCP port to listen on.                                        |
+| `privateNetworks`   | `[]`    | `[` String `]` | The set of networks to consider private, excluding localhost.     |
+| `transitLatency`    | 50      | Integer        | Network latency, in ms, to assume, excluding `transitBufferSize`. |
+| `transitJitter`     | 200     | Integer        | Network jitter, in ms, to assume, excluding `transitBufferSize`.  |
+| `transitBufferSize` | 32768   | Integer        | Buffer size, in bytes, to assume during transit.                  |
+
+
+### `network.privateNetworks`
+
+Localhost addresses are always considered private, regardless of this setting. This setting adds networks to consider
+private (and therefore able to access the API and DASH segments). Acceptable values include:
+
+ - IPv4 addresses (e.g: `192.0.2.2`).
+ - IPv4 networks (e.g: `192.0.2.2/24`).
+ - IPv6 addresses (e.g: `2001:db8:c0de::2`).
+ - IPv6 networks (e.g: `2001:db8:c0de::2/64`).
+
+The setting may also be a single string rather than an array of strings.
 
 
 ## `http`

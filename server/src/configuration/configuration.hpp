@@ -2,6 +2,7 @@
 
 #include "log/Level.hpp"
 #include "media/codec.hpp"
+#include "server/Address.hpp"
 
 #include <map>
 #include <optional>
@@ -178,6 +179,7 @@ struct Dash final
 struct Network final
 {
     uint16_t port = 8080;
+    std::vector<Server::Address> privateNetworks;
     unsigned int transitLatency = 50;
     unsigned int transitJitter = 200;
     unsigned int transitBufferSize = 32768;

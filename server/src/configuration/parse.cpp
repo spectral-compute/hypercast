@@ -42,6 +42,17 @@ namespace
 
 /// @}
 
+namespace Server
+{
+
+/// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, Address &out)
+{
+    out = Address(j.get<std::string>(), true);
+}
+
+} // namespace Server
+
 // It's annoying that these have to be in the right namespace, and thus end up mis-documented.
 namespace Config
 {
@@ -191,7 +202,13 @@ static void from_json(const nlohmann::json &j, Network &out)
 {
     Json::ObjectDeserializer d(j, "network");
     d(out.port, "port");
-    d(out.privateNetworks, "privateNetworks");
+    if (j.contains("privateNetworks") && j.at("privateNetworks").is_string()) {
+        out.privateNetworks.emplace_back();
+        d(out.privateNetworks.back(), "privateNetworks");
+    }
+    else {
+        d(out.privateNetworks, "privateNetworks");
+    }
     d(out.transitLatency, "transitLatency");
     d(out.transitJitter, "transitJitter");
     d(out.transitBufferSize, "transitBufferSize");
