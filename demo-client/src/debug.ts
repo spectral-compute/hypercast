@@ -10,7 +10,7 @@ chart.Chart.defaults.color = "rgb(191, 191, 191)";
  * Class for showing information for debugging performance/etc.
  */
 export class AppDebugHandler {
-    constructor() {
+    constructor(latencyCanvas: HTMLCanvasElement, rateCanvas: HTMLCanvasElement) {
         /* Common configuration between timelines. */
         const timelineConfig = {
             type: "line" as const,
@@ -48,7 +48,7 @@ export class AppDebugHandler {
             },
             options: {
                 animation: false as const,
-                aspectRatio: 6,
+                aspectRatio: 4,
                 elements: {
                     line: {
                         borderWidth: 1
@@ -106,10 +106,7 @@ export class AppDebugHandler {
                 beginAtZero: true
             }
         };
-        this.latencyChart = new chart.Chart(
-            document.getElementById("latency_timeline")! as HTMLCanvasElement,
-            latencyConfig
-        );
+        this.latencyChart = new chart.Chart(latencyCanvas, latencyConfig);
         appendTimelineDataset(this.latencyChart, "Target Buffer", "rgb(255, 127, 0)");
         appendTimelineDataset(this.latencyChart, "Actual Buffer", "rgb(255, 233, 63)");
         appendTimelineDataset(this.latencyChart, "Network Latency", "rgb(0, 255, 0)");
@@ -129,7 +126,7 @@ export class AppDebugHandler {
                 beginAtZero: true
             }
         };
-        this.dlChart = new chart.Chart(document.getElementById("dlrate_timeline")! as HTMLCanvasElement, dlConfig);
+        this.dlChart = new chart.Chart(rateCanvas, dlConfig);
         appendTimelineDataset(this.dlChart, "Download Rate", "rgb(127, 127, 255)");
         appendTimelineDataset(this.dlChart, "Average Download Rate", "rgb(0,127,106)");
         this.dlChart.update();

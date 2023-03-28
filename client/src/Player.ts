@@ -269,11 +269,12 @@ export class Player {
      *
      * Set the handler to receive the performance and debugging information the player can generate.
      */
-    setDebugHandler(debugHandler: DebugHandler): void {
+    setDebugHandler(debugHandler: DebugHandler | null): void {
         if (process.env["NODE_ENV"] !== "development") {
             throw Error("Player.setDebugHandler is for development only.");
         }
         this.debugHandler = debugHandler;
+        this.bctrl?.setDebugHandler(debugHandler);
     }
 
     /**

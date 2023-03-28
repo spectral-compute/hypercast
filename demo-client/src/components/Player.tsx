@@ -5,6 +5,7 @@ import "./Player.scss";
 
 export interface PlayerProps extends PlayerOptions {
     sourceURL: string;
+    onDismount: (player: PlayerMain) => void;
 }
 
 export default function Player(props: PlayerProps): React.ReactElement<HTMLDivElement> {
@@ -12,7 +13,7 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
     const playerRef = useRef<PlayerMain | null>(null);
     const isInitialised = useRef(false);
 
-    const {sourceURL, ...options} = props;
+    const {sourceURL, onDismount, ...options} = props;
 
     useEffect(() => {
         // Make sure Video.js player is only initialized once
@@ -38,13 +39,14 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
                 if (isInitialised.current) {
                     player.stop();
                 }
+                onDismount(player);
                 playerRef.current = null;
             }
             if (container) {
                 container.innerHTML = "";
             }
         };
-    }, []);
+    }, [onDismount]);
 
     return <div className="video-container" ref={containerRef} />;
 }

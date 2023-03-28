@@ -36,12 +36,7 @@ export class BufferControl {
         this.mediaElement = mediaElement;
         this.onRecommendDowngrade = onRecommendDowngrade;
         this.verbose = verbose;
-        if (process.env["NODE_ENV"] === "development") {
-            if (debugHandler !== null) {
-                debugHandler.setBufferControl(this);
-                this.debugHandler = debugHandler;
-            }
-        }
+        this.setDebugHandler(debugHandler);
     }
 
     /**
@@ -81,6 +76,20 @@ export class BufferControl {
     stop(): void {
         if (this.interval) {
             clearInterval(this.interval);
+        }
+    }
+
+    /**
+     * @internal
+     *
+     * Set the handler to receive the performance and debugging information about the buffer.
+     */
+    setDebugHandler(debugHandler: DebugHandler | null): void {
+        if (process.env["NODE_ENV"] === "development") {
+            if (debugHandler !== null) {
+                debugHandler.setBufferControl(this);
+            }
+            this.debugHandler = debugHandler;
         }
     }
 
@@ -355,5 +364,5 @@ export class BufferControl {
     private interval: number | null = null;
 
     // Debugging.
-    private readonly debugHandler: DebugHandler | null = null;
+    private debugHandler: DebugHandler | null = null;
 }
