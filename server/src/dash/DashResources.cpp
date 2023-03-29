@@ -575,11 +575,13 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
     unsigned int interleaveNumStreams = config.qualities[interleaveIndex].audio ? 2 : 1;
 
     // Create the interleave and the descriptor we keep track of it with.
+    const Config::Quality &q = config.qualities[interleaveIndex];
     InterleaveExpiringResource &interleave =
         interleaves[interleaveIndex].get(segmentIndex, server,
                                          basePath / getInterleaveName(interleaveIndex, segmentIndex), lifetimeMs,
                                          interleaveNumStreams, ioc, log, interleaveNumStreams,
-                                         config.qualities[interleaveIndex].interleaveTimestampInterval);
+                                         (*q.minInterleaveRate * *q.minInterleaveWindow + 7) / 8,
+                                         *q.minInterleaveWindow, q.interleaveTimestampInterval);
 
     /* Add the new segment. */
     {

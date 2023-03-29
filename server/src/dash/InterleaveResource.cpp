@@ -4,6 +4,8 @@
 #include "server/Response.hpp"
 #include "util/asio.hpp"
 
+#include <random>
+
 namespace
 {
 
@@ -89,6 +91,31 @@ std::vector<std::byte> getChunk(std::span<const std::byte> dataPart, unsigned in
     return chunk;
 }
 
+/**
+ * Generate some random data.
+ *
+ * @param length The amount of random data to generate, in bytes.
+ * @return A least length bytes of data. This may be rounded up by a small amount for efficiency.
+ */
+std::vector<std::byte> getRandomData(unsigned int length)
+{
+    /* Persistent PRNG state. */
+    // This uses 32-bit arithmetic because std::minstd_rand has values that are chosen for 32-bit arithmetic.
+    static std::minstd_rand engine;
+    static std::uniform_int_distribution<uint32_t> distribution(0, ~(uint32_t)0);
+
+    /* Figure out how many 32-bit values are needed to achieve a length of at least that given. */
+    unsigned int n = (length + 3) / 4;
+
+    /* Return the random data. */
+    std::vector<std::byte> result(n * 4);
+    for (unsigned int i = 0; i < n; i++) {
+        uint32_t value = distribution(engine);
+        memcpy(result.data() + i * 4, &value, 4);
+    }
+    return result;
+}
+
 } // namespace
 
 static_assert(std::ratio_less_equal<std::chrono::system_clock::period, std::micro>::value,
@@ -97,16 +124,18 @@ static_assert(std::ratio_less_equal<std::chrono::system_clock::period, std::micr
 Dash::InterleaveResource::~InterleaveResource() = default;
 
 Dash::InterleaveResource::InterleaveResource(IOContext &ioc, Log::Log &log, unsigned int numStreams,
-                                             unsigned int timestampIntervalMs) :
-    Resource(true),
-    log(log("interleave")), numRemainingStreams(numStreams), timestampIntervalMs(timestampIntervalMs), event(ioc)
+                                             unsigned int minInterleaveBytesPerWindow,
+                                             unsigned int minInterleaveWindowMs, unsigned int timestampIntervalMs) :
+    Resource(true), log(log("interleave")), numRemainingStreams(numStreams),
+    minInterleaveBytesPerWindow(minInterleaveBytesPerWindow), minInterleaveWindowMs(minInterleaveWindowMs),
+    timestampIntervalMs(timestampIntervalMs), event(ioc)
 {
 }
 
 Awaitable<void> Dash::InterleaveResource::getAsync(Server::Response &response, Server::Request &request)
 {
     /* Give the response all the data we've got for the interleave so far. */
-    for (const auto &chunk: data) {
+    for (const auto &[chunk, timeReceived]: data) {
         response << chunk;
         co_await response.flush();
     }
@@ -121,7 +150,7 @@ Awaitable<void> Dash::InterleaveResource::getAsync(Server::Response &response, S
         assert(i < data.size());
 
         // Give the response the next piece of data.
-        response << data[i];
+        response << data[i].first;
         co_await response.flush();
     }
 }
@@ -130,6 +159,9 @@ void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart
 {
     assert(streamIndex < 31);
     assert(numRemainingStreams > 0);
+
+    /* We need to know when the chunk was received for some of the realtime stuff below. */
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
     /* Record if this stream is ending. */
     if (dataPart.empty()) {
@@ -141,7 +173,6 @@ void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart
     /* Figure out whether there should be a timestamp. */
     bool addTimestamp = false;
     if (timestampIntervalMs < ~0u) {
-        auto now = std::chrono::steady_clock::now();
         if (now - lastTimestamp >= std::chrono::milliseconds(timestampIntervalMs)) {
             lastTimestamp = now;
             addTimestamp = true;
@@ -149,6 +180,65 @@ void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart
     }
 
     /* Append the chunk and notify anything that's waiting for it. */
-    data.emplace_back(getChunk(dataPart, streamIndex, addTimestamp));
+    data.emplace_back(getChunk(dataPart, streamIndex, addTimestamp), now);
     event.notifyAll();
+
+    /* Pad the interleave with extra data if needed to maintain the minimum rate. */
+    // Figure out how much data we need to pad.
+    unsigned int extraData = getPaddingDataLengthForWindow(now);
+
+    // Don't generate a padding chunk if we don't need any data.
+    if (extraData == 0) {
+        return;
+    }
+
+    // We use random data to make sure there's no compression anywhere that reduces the effective rate. The length
+    // doesn't account for the size of the chunk header for the random data, so this can be a few bytes over, but that's
+    // OK.
+    data.emplace_back(getChunk(getRandomData(extraData), 31), now);
+    event.notifyAll();
+}
+
+unsigned int Dash::InterleaveResource::getPaddingDataLengthForWindow(std::chrono::steady_clock::time_point now) const
+{
+    assert(!data.empty());
+
+    /* No data is needed if the minimum interleave rate is zero. */
+    if (minInterleaveBytesPerWindow == 0) {
+        return 0;
+    }
+
+    /* Figure out when the start of the window to consider is. */
+    std::chrono::steady_clock::time_point windowStart =
+        now - std::chrono::duration_cast<std::chrono::steady_clock::duration>
+              (std::chrono::milliseconds(minInterleaveWindowMs));
+
+    /* If the earliest chunk is still in the window (but not at its earliest edge), then we might receive more real
+       data. */
+    if (data.front().second > windowStart) {
+        return 0;
+    }
+
+    /* Figure out how much data is in that window by iterating the received data, starting from the end. */
+    size_t dataInWindow = 0;
+    for (auto it = data.rbegin(); it != data.rend(); ++it) {
+        const auto &[pastChunk, timeReceived] = *it;
+
+        // If we've gone past the start of the window, the summation is complete.
+        if (timeReceived < windowStart) {
+            break;
+        }
+
+        // Add the amount of data received in this chunk.
+        dataInWindow += pastChunk.size();
+
+        // If we've exceeded the amount of data needed, we don't need to add any extra.
+        if (dataInWindow >= minInterleaveBytesPerWindow) {
+            return 0;
+        }
+    }
+
+    /* Return the amount of extra data we need. */
+    assert(dataInWindow < minInterleaveBytesPerWindow);
+    return (unsigned int)(minInterleaveBytesPerWindow - dataInWindow);
 }
