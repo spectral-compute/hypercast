@@ -11,6 +11,8 @@
 #include <boost/process/v2/process.hpp>
 #include <boost/process/v2/stdio.hpp>
 
+#include <sys/prctl.h>
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -125,13 +127,36 @@ private:
     std::vector<std::byte> remainder;
 };
 
+namespace
+{
+
+/**
+ * A Boost Process initializer to make the subprocess terminate if the parent does.
+ *
+ * The default, at least on Linux, is for orphaned processes to be adopted by init. Unfortunately, that means that if
+ * the server crashes, long running processes (like ffmpeg) keep going, which we don't want.
+ */
+struct KillOnDetachProcessInitializer final
+{
+    template <typename... Args>
+    boost::process::v2::error_code on_exec_setup(Args &&...)
+    {
+        if (int e = prctl(PR_SET_PDEATHSIG, SIGKILL)) {
+            return boost::system::error_code(e, boost::system::system_category());
+        }
+        return {};
+    }
+};
+
+} // namespace
+
 struct Subprocess::Subprocess::Process final
 {
     explicit Process(IOContext &ioc, std::string_view executable, const std::span<const std::string> &arguments,
                      boost::asio::writable_pipe *stdinPipe, boost::asio::readable_pipe *stdoutPipe,
                      boost::asio::readable_pipe *stderrPipe) :
         process(ioc, boost::process::v2::environment::find_executable(executable), arguments,
-                getStdio(stdinPipe, stdoutPipe, stderrPipe))
+                getStdio(stdinPipe, stdoutPipe, stderrPipe), KillOnDetachProcessInitializer{})
     {
     }
 
