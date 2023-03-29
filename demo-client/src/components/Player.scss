@@ -8,11 +8,13 @@
 
     background-color: c.$secondary-bg;
 
+    align-self: center;
+
     & video {
         border: 1px solid c.$border;
 
-        width: 100%;
-        aspect-ratio: 16 / 9;
+        max-width: 100%;
+        max-height: 100vh;
     }
 
     & .video-controls {
