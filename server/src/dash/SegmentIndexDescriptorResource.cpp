@@ -13,6 +13,7 @@ Dash::SegmentIndexResource::SegmentIndexResource(unsigned int segmentIndex) :
 void Dash::SegmentIndexResource::getSync(Server::Response &response, const Server::Request &)
 {
     auto now = std::chrono::steady_clock::now();
+    response.setCacheKind(Server::CacheKind::ephemeral);
     response << Json::dump({
        { "age", std::chrono::duration_cast<std::chrono::milliseconds>(now - creationTime).count() },
        { "index", segmentIndex },
