@@ -17,6 +17,78 @@ void writeLittleEndianInteger(std::byte (&dst)[8], uint64_t src)
     }
 }
 
+/**
+ * Get an interleave chunk;
+ *
+ * @param dataPart The data to include in the chunk.
+ * @param streamIndex The stream index of the chunk. Must be less than 32.
+ * @param addTimestamp Whether to include a timestamp in the chunk.
+ * @return The chunk, with its header.
+ */
+std::vector<std::byte> getChunk(std::span<const std::byte> dataPart, unsigned int streamIndex,
+                                bool addTimestamp = false)
+{
+    assert(streamIndex < 32);
+
+    /* Calculate the length. */
+    unsigned int lengthId = 0;
+    unsigned int lengthByteCount = 0;
+    std::byte lengthBytes[8];
+
+    // Calculate the length as a little-endian value.
+    writeLittleEndianInteger(lengthBytes, dataPart.size());
+
+    // Figure out the length ID.
+    if (dataPart.size() < 1 << 8) {
+        lengthId = 0;
+    }
+    else if (dataPart.size() < 1 << 16) {
+        lengthId = 1;
+    }
+    else if (dataPart.size() < (size_t)1 << 32) {
+        lengthId = 2;
+    }
+    else {
+        lengthId = 3;
+    }
+
+    // Compute the number of bytes for the length for the given length ID.
+    lengthByteCount = 1 << lengthId;
+
+    /* Compute the timestamp. */
+    std::byte timestampBytes[8];
+    if (addTimestamp) {
+        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+        uint64_t utcµs = std::chrono::round<std::chrono::microseconds>(now.time_since_epoch()).count();
+        writeLittleEndianInteger(timestampBytes, utcµs);
+    }
+
+    /* Calculate the content ID. */
+    std::byte contentId = (std::byte)(streamIndex | (addTimestamp ? 1 << 5 : 0) | (lengthId << 6));
+
+    /* Build the complete chunk. */
+    // Create a block of memory of the correct size.
+    unsigned int dataPartOffset = 1 + lengthByteCount + (addTimestamp ? sizeof(timestampBytes) : 0);
+    std::vector<std::byte> chunk(dataPartOffset + dataPart.size());
+
+    // Copy the content ID into the chunk.
+    chunk[0] = contentId;
+
+    // Copy the length into the chunk.
+    memcpy(chunk.data() + 1, lengthBytes, lengthByteCount);
+
+    // Copy the timestamp into the chunk.
+    if (addTimestamp) {
+        memcpy(chunk.data() + 1 + lengthByteCount, timestampBytes, sizeof(timestampBytes));
+    }
+
+    // Copy the data itself.
+    memcpy(chunk.data() + dataPartOffset, dataPart.data(), dataPart.size());
+
+    /* Done :) */
+    return chunk;
+}
+
 } // namespace
 
 static_assert(std::ratio_less_equal<std::chrono::system_clock::period, std::micro>::value,
@@ -66,68 +138,17 @@ void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart
     // Even if the stream is ending, we need to put an empty chunk (with its header) into the interleave so that the
     // client knows it's ended.
 
-    /* Calculate the length. */
-    unsigned int lengthId = 0;
-    unsigned int lengthByteCount = 0;
-    std::byte lengthBytes[8];
-
-    // Calculate the length as a little-endian value.
-    writeLittleEndianInteger(lengthBytes, dataPart.size());
-
-    // Figure out the length ID.
-    if (dataPart.size() < 1 << 8) {
-        lengthId = 0;
-    }
-    else if (dataPart.size() < 1 << 16) {
-        lengthId = 1;
-    }
-    else if (dataPart.size() < (size_t)1 << 32) {
-        lengthId = 2;
-    }
-    else {
-        lengthId = 3;
-    }
-
-    // Compute the number of bytes for the length for the given length ID.
-    lengthByteCount = 1 << lengthId;
-
     /* Figure out whether there should be a timestamp. */
     bool addTimestamp = false;
-    std::byte timestampBytes[8];
     if (timestampIntervalMs < ~0u) {
         auto now = std::chrono::steady_clock::now();
-        addTimestamp = now - lastTimestamp >= std::chrono::milliseconds(timestampIntervalMs);
-        if (addTimestamp) {
+        if (now - lastTimestamp >= std::chrono::milliseconds(timestampIntervalMs)) {
             lastTimestamp = now;
-            auto sysNow = std::chrono::system_clock::now();
-            uint64_t utcµs = std::chrono::round<std::chrono::microseconds>(sysNow.time_since_epoch()).count();
-            writeLittleEndianInteger(timestampBytes, utcµs);
+            addTimestamp = true;
         }
     }
 
-    /* Calculate the content ID. */
-    std::byte contentId = (std::byte)(streamIndex | (addTimestamp ? 1 << 5 : 0) | (lengthId << 6));
-
-    /* Build the complete chunk. */
-    // Create a block of memory of the correct size.
-    unsigned int dataPartOffset = 1 + lengthByteCount + (addTimestamp ? sizeof(timestampBytes) : 0);
-    std::vector<std::byte> chunk(dataPartOffset + dataPart.size());
-
-    // Copy the content ID into the chunk.
-    chunk[0] = contentId;
-
-    // Copy the length into the chunk.
-    memcpy(chunk.data() + 1, lengthBytes, lengthByteCount);
-
-    // Copy the timestamp into the chunk.
-    if (addTimestamp) {
-        memcpy(chunk.data() + 1 + lengthByteCount, timestampBytes, sizeof(timestampBytes));
-    }
-
-    // Copy the data itself.
-    memcpy(chunk.data() + dataPartOffset, dataPart.data(), dataPart.size());
-
     /* Append the chunk and notify anything that's waiting for it. */
-    data.emplace_back(std::move(chunk));
+    data.emplace_back(getChunk(dataPart, streamIndex, addTimestamp));
     event.notifyAll();
 }
