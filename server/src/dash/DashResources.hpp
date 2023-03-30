@@ -11,8 +11,9 @@ class IOContext;
 namespace Config
 {
 
+struct Channel;
 struct Dash;
-class Root;
+struct Http;
 
 } // namespace Config
 
@@ -50,7 +51,11 @@ public:
      * Add the resources to the server for accepting DASH and converting to RISE, and prepare to manage that process
      * ongoing.
      */
-    explicit DashResources(IOContext &ioc, Log::Log &log, const Config::Root &config, Server::Server &server);
+    explicit DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &config, const Config::Http &httpConfig,
+                           Server::Path basePath, Server::Server &server);
+
+    DashResources(const DashResources &) = delete;
+    DashResources & operator=(const DashResources &) = delete;
 
     /**
      * Notify that a given segment from a given stream has started to be received.
@@ -63,11 +68,21 @@ public:
     void notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex);
 
     /**
-     * Get the base path in the server for the streams managed by this object.
+     * Get the base path in the server for the resources managed by this object.
      */
     const Server::Path &getBasePath() const
     {
         return basePath;
+    }
+
+    /**
+     * Get the base path in the server for the segments managed by this object.
+     *
+     * This exists so that the stream can be restarted without stale segments being served by the CDN.
+     */
+    const Server::Path &getUidPath() const
+    {
+        return uidPath;
     }
 
 private:
@@ -95,13 +110,18 @@ private:
     IOContext &ioc;
     Log::Log &log;
     Log::Context logContext;
-    const Config::Root &config;
+    const Config::Channel &config;
     Server::Server &server;
 
     /**
      * The base path for all the resources this object manages.
      */
     const Server::Path basePath;
+
+    /**
+     * The UID for live resources that might need non-ephemeral caching but might also have name collisions.
+     */
+    const Server::Path uidPath;
 
     /**
      * The directory to store persistent DASH streams to.

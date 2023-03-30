@@ -27,7 +27,7 @@ namespace Config
 {
 
 /**
- * The source key.
+ * The channels.source key.
  */
 struct Source final
 {
@@ -41,7 +41,7 @@ struct Source final
 };
 
 /**
- * The qualities.video.frameRate key.
+ * The channels.qualities.video.frameRate key.
  *
  * In JSON, this is a single value, but it's expressed as a composite here.
  */
@@ -85,7 +85,7 @@ struct FrameRate final
 };
 
 /**
- * The qualities.video.h26xPreset key.
+ * The channels.qualities.video.h26xPreset key.
  */
 enum class H26xPreset
 {
@@ -93,7 +93,7 @@ enum class H26xPreset
 };
 
 /**
- * The qualities.video key.
+ * The channels.qualities.video key.
  */
 struct VideoQuality final
 {
@@ -113,7 +113,7 @@ struct VideoQuality final
 };
 
 /**
- * The qualities.audio key.
+ * The channels.qualities.audio key.
  */
 struct AudioQuality final
 {
@@ -133,7 +133,7 @@ struct AudioQuality final
 };
 
 /**
- * The qualities.clientBufferControl key.
+ * The channels.qualities.clientBufferControl key.
  */
 struct ClientBufferControl final
 {
@@ -146,7 +146,7 @@ struct ClientBufferControl final
 };
 
 /**
- * The qualities key's elements.
+ * The channels.qualities key's elements.
  */
 struct Quality final
 {
@@ -171,6 +171,30 @@ struct Dash final
     unsigned int preAvailabilityTime = 4000;
 
     bool operator==(const Dash &) const;
+};
+
+/**
+ * The history key.
+ */
+struct History final
+{
+    unsigned int historyLength = 90;
+    std::string persistentStorage;
+
+    bool operator==(const History &) const;
+};
+
+/**
+ * The channels key's elements.
+ */
+struct Channel final
+{
+    Source source;
+    std::vector<Quality> qualities;
+    Dash dash;
+    History history;
+
+    bool operator==(const Channel &) const;
 };
 
 /**
@@ -199,7 +223,7 @@ struct Http final
 };
 
 /**
- * A directory to expose.
+ * The directories key's elements.
  */
 struct Directory final
 {
@@ -209,29 +233,6 @@ struct Directory final
     bool ephemeral = false;
 
     bool operator==(const Directory &) const;
-};
-
-/**
- * The paths key.
- */
-struct Paths final
-{
-    std::string liveInfo = "/live/info.json";
-    std::string liveStream = "/live/{uid}";
-    std::map<std::string, Directory> directories;
-
-    bool operator==(const Paths &) const;
-};
-
-/**
- * The history key.
- */
-struct History final
-{
-    unsigned int historyLength = 90;
-    std::string persistentStorage;
-
-    bool operator==(const History &) const;
 };
 
 /**
@@ -281,13 +282,10 @@ public:
     // The json this object was originally decoded from. If it was mutated afterwards, this will not be in sync.
     std::string jsonRepresentation;
 
-    Source source;
-    std::vector<Quality> qualities;
-    Dash dash;
+    std::map<std::string, Channel> channels;
+    std::map<std::string, Directory> directories;
     Network network;
     Http http;
-    Paths paths;
-    History history;
     Log log;
 
     bool operator==(const Root &) const;

@@ -46,9 +46,10 @@ struct Server::State::Channel final
     /**
      * Start streaming.
      */
-    explicit Channel(IOContext &ioc, Log::Log &log, const Config::Root &config, Server &server) :
-        dash(ioc, log, config, server),
-        ffmpeg(ioc, log, Ffmpeg::getFfmpegArguments(config, (std::string)dash.getBasePath()))
+    explicit Channel(IOContext &ioc, Log::Log &log, const Config::Root &config, const Config::Channel &channelConfig,
+                     const std::string &basePath, Server &server) :
+        dash(ioc, log, channelConfig, config.http, basePath, server),
+        ffmpeg(ioc, log, Ffmpeg::getFfmpegArguments(channelConfig, config.network, (std::string)dash.getUidPath()))
     {
     }
 
@@ -109,22 +110,20 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     // Reconfigure the static file server.
     // TODO: Sort out `liveInfo` and `liveStream`: perhaps by making them not exist. Why aren't they just
     //       hardcoded to be computed based on name of a stream?
-    CANT_CHANGE(paths.directories); // TODO: More intelligent determination of which directories to delete.
+    CANT_CHANGE(directories); // TODO: More intelligent determination of which directories to delete.
     if (performingStartup) {
-        addFilesystemPathsToServer(server, newCfg.paths.directories, ioc);
+        addFilesystemPathsToServer(server, newCfg.directories, ioc);
     }
 
-    // dash.expose is currently only read during the constructor.
-    CANT_CHANGE(dash.expose);
-
-    /* Now we've decided we can apply the configuration, stop streaming things we're about to update the configuration
-       for. */
-    // TODO: Stop streaming here as needed.
-    if (channel) {
-        // TODO: Add a method to Dash::DashResources() to remove its resources, and to Ffmpeg::FfmpegProcess() to
-        //       terminate the process. Until then, development of the UI may require commenting out the creation of
-        //       channel.
-        throw std::runtime_error("Restarting the stream is not yet supported.");
+    /* Update each channel. */
+    for (const auto &[channelPath, channelConfig]: newCfg.channels) {
+        // TODO: Stop streaming here as needed.
+        if (channels.contains(channelPath)) {
+            // TODO: Add a method to Dash::DashResources() to remove its resources, and to Ffmpeg::FfmpegProcess() to
+            //       terminate the process. Until then, development of the UI may require commenting out the creation of
+            //       channel.
+            throw std::runtime_error("Restarting the stream (for " + channelPath + ") is not yet supported.");
+        }
     }
 
     /* Move the configuration to its final location so  */
@@ -134,7 +133,13 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     config = std::move(newCfg);
 
     /* Start streaming. */
-    channel = std::make_unique<Channel>(ioc, *log, config, server);
+    for (const auto &[channelPath, channelConfig]: config.channels) {
+        if (channels.contains(channelPath)) {
+            continue;
+        }
+        channels.emplace(std::piecewise_construct, std::forward_as_tuple(channelPath),
+                         std::forward_as_tuple(ioc, *log, config, channelConfig, channelPath, server));
+    }
 
     /* Mark that we're done performing setup. */
     performingStartup = false;

@@ -10,7 +10,8 @@
 namespace Config
 {
 
-class Root;
+struct Channel;
+struct Network;
 
 } // namespace Config
 
@@ -51,11 +52,13 @@ private:
  *
  * These arguments should be given to FfmpegProcess.
  *
- * @param config The configuration object.
- * @param basePath The base path for the DASH streams.
+ * @param channelConfig The configuration object for the specific channel.
+ * @param networkConfig The channel configuration object for the network.
+ * @param uidPath The base path for the DASH streams.
  * @return The arguments to give to FfmpegProcess.
  */
-std::vector<std::string> getFfmpegArguments(const Config::Root &config, std::string_view basePath);
+std::vector<std::string> getFfmpegArguments(const Config::Channel &channelConfig, const Config::Network &networkConfig,
+                                            std::string_view uidPath);
 
 } // namespace Ffmpeg
 

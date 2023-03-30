@@ -77,11 +77,16 @@ Awaitable<void> test(IOContext &ioc,
                      unsigned int width = 1920, unsigned int height = 1080,
                      unsigned int frameRateNumerator = 25, unsigned int frameRateDemoninator = 1, bool hasAudio = true)
 {
-    /* Fill in stuff that comes from the source. */
-    config.source.url = "file";
+    /* Make sure /live exists. */
+    if (!config.channels.count("/live")) {
+        config.channels["/live"] = {};
+    }
 
-    config.qualities.resize(1);
-    Config::Quality &q = config.qualities[0];
+    /* Fill in stuff that comes from the source. */
+    config.channels.at("/live").source.url = "file";
+
+    config.channels.at("/live").qualities.resize(1);
+    Config::Quality &q = config.channels.at("/live").qualities[0];
 
     q.targetLatency = targetLatency;
     q.video.width = width;
@@ -119,12 +124,12 @@ Awaitable<void> test(IOContext &ioc,
     co_await fillInDefaults(ioc, config);
 
     // Check that this didn't create a new quality.
-    EXPECT_EQ(1, config.qualities.size());
-    if (config.qualities.empty()) {
+    EXPECT_EQ(1, config.channels.at("/live").qualities.size());
+    if (config.channels.at("/live").qualities.empty()) {
         co_return;
     }
-    EXPECT_EQ(&q, &config.qualities[0]);
-    if (&config.qualities[0] != &q) {
+    EXPECT_EQ(&q, &config.channels.at("/live").qualities[0]);
+    if (&config.channels.at("/live").qualities[0] != &q) {
         co_return;
     }
 
@@ -145,7 +150,7 @@ Awaitable<void> test(IOContext &ioc,
        tiny amount. */
     // Remember that the jitter buffer the client keeps is included in the interleave minimum latency.
     double explicitLatency = (config.network.transitLatency + config.network.transitJitter) / 1000.0;
-    double sourceLatency = *config.source.latency / 1000.0;
+    double sourceLatency = *config.channels.at("/live").source.latency / 1000.0;
 
     double interleaveRateLatency = config.network.transitBufferSize / (*q.minInterleaveRate * 125.0);
     double interleaveWindowLatency = *q.minInterleaveWindow / 1000.0;

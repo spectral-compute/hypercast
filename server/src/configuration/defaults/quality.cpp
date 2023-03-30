@@ -7,15 +7,15 @@
 namespace Config
 {
 
-void allocateLatency(Config::Quality &q, const Root &config);
+void allocateLatency(Config::Quality &q, const Root &config, const Channel &channel);
 
 /**
  * Get latency sources that are explicit or intrinsic to the source in seconds.
  */
-double getExplicitLatencySources(const Root &config)
+double getExplicitLatencySources(const Root &config, const Channel &channel)
 {
-    assert(config.source.latency);
-    return (*config.source.latency + config.network.transitLatency + config.network.transitJitter) / 1000.0;
+    assert(channel.source.latency);
+    return (*channel.source.latency + config.network.transitLatency + config.network.transitJitter) / 1000.0;
 }
 
 /**
@@ -37,18 +37,18 @@ double getVideoRateLatencyContribution(double videoRate, const Quality &q, const
 /**
  * Fill in a quality.
  */
-void fillInQuality(Config::Quality &q, const Root &config)
+void fillInQuality(Config::Quality &q, const Root &config, const Channel &channel)
 {
     assert(q.video.frameRate.type == Config::FrameRate::fps);
 
     /* Set the GOP size. */
     if (!q.video.gop) {
-        q.video.gop = (q.video.frameRate.numerator * config.dash.segmentDuration + 500) /
+        q.video.gop = (q.video.frameRate.numerator * channel.dash.segmentDuration + 500) /
                       (q.video.frameRate.denominator * 1000);
     }
 
     /* Allocate the latency budget between the various things that use it. This also sets the maximum video bitrate. */
-    allocateLatency(q, config);
+    allocateLatency(q, config, channel);
     assert(q.video.bitrate);
     assert(q.video.minBitrate);
     assert(q.video.rateControlBufferLength);
@@ -90,7 +90,7 @@ void fillInQuality(Config::Quality &q, const Root &config)
     if (!q.minInterleaveRate) {
         double interleaveRateLatency =
             (q.targetLatency - *q.minInterleaveWindow - *q.clientBufferControl.extraBuffer) / 1000.0 -
-            getExplicitLatencySources(config);
+            getExplicitLatencySources(config, channel);
         assert(interleaveRateLatency > 0.0);
 
         double interleaveRate = config.network.transitBufferSize / interleaveRateLatency;

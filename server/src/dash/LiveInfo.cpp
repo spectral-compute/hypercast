@@ -73,7 +73,7 @@ nlohmann::json getVideoConfig(const Config::Quality &q)
     };
 }
 
-nlohmann::json getVideoConfigs(const Config::Root &config)
+nlohmann::json getVideoConfigs(const Config::Channel &config)
 {
     nlohmann::json j = nlohmann::json::array();
     for (const Config::Quality &q: config.qualities) {
@@ -90,7 +90,7 @@ nlohmann::json getAudioConfig(const Config::AudioQuality &q)
     };
 }
 
-nlohmann::json getAudioConfigs(const Config::Root &config)
+nlohmann::json getAudioConfigs(const Config::Channel &config)
 {
     nlohmann::json j = nlohmann::json::array();
     for (const Config::Quality &q: config.qualities) {
@@ -101,7 +101,7 @@ nlohmann::json getAudioConfigs(const Config::Root &config)
     return j;
 }
 
-nlohmann::json getAvMap(const Config::Root &config)
+nlohmann::json getAvMap(const Config::Channel &config)
 {
     nlohmann::json j = nlohmann::json::array();
     size_t videoIndex = 0;
@@ -117,10 +117,10 @@ nlohmann::json getAvMap(const Config::Root &config)
 namespace Dash
 {
 
-std::string getLiveInfo(const Config::Root &config, const Server::Path &basePath)
+std::string getLiveInfo(const Config::Channel &config, const Server::Path &uidPath)
 {
     return Json::dump({
-        { "angles", nlohmann::json::array({ getAngle(basePath) }) },
+        { "angles", nlohmann::json::array({ getAngle(uidPath) }) },
         { "segmentDuration", config.dash.segmentDuration },
         { "segmentPreavailability", config.dash.preAvailabilityTime },
         { "videoConfigs", getVideoConfigs(config) },

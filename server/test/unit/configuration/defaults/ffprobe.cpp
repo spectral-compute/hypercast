@@ -11,18 +11,24 @@ CORO_TEST(ConfigDefaults, Ffprobe, ioc)
 {
     /* Fill in defaults for a simple configuration. */
     Config::Root config = {
-        .source = {
-            .url = getSmpteDataPath(1920, 1080, 25, 1, 48000).string()
+        .channels = {
+            {
+                "/live", {
+                    .source = {
+                        .url = getSmpteDataPath(1920, 1080, 25, 1, 48000).string()
+                    }
+                }
+            }
         }
     };
     co_await fillInDefaults(ioc, config);
 
     /* Make sure we have a quality to test. */
-    EXPECT_EQ(1, config.qualities.size());
-    if (config.qualities.empty()) {
+    EXPECT_EQ(1, config.channels.at("/live").qualities.size());
+    if (config.channels.at("/live").qualities.empty()) {
         co_return;
     }
-    const Config::Quality &q = config.qualities[0];
+    const Config::Quality &q = config.channels.at("/live").qualities[0];
 
     /* Check that the quality got filled in correctly. */
     EXPECT_EQ(1920, q.video.width);

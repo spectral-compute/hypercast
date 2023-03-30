@@ -182,7 +182,7 @@ std::string getTimestampFilter(unsigned int width)
  *
  * This assumes a single video input stream. The output streams are v0, v1, v2, ...
  */
-std::string getVideoFilter(const Config::Root &config)
+std::string getVideoFilter(const Config::Channel &config)
 {
     /* Split the input. */
     std::string result = "[0:v]split=" + std::to_string(config.qualities.size());
@@ -226,7 +226,7 @@ std::string getVideoFilter(const Config::Root &config)
 /**
  * Get the filtering arguments.
  */
-std::vector<std::string> getFilterArgs(const Config::Root &config)
+std::vector<std::string> getFilterArgs(const Config::Channel &config)
 {
     return { "-filter_complex", getVideoFilter(config) };
 }
@@ -515,7 +515,8 @@ std::string formatDecimalFixedPoint(unsigned int n, unsigned int dp)
 /**
  * Arguments that apply to DASH outputs.
  */
-std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::string_view basePath)
+std::vector<std::string> getDashOutputArgs(const Config::Channel &channelConfig, const Config::Network &networkConfig,
+                                           std::string_view uidPath)
 {
     std::vector<std::string> result = getRealtimeOutputArgs();
     result.insert(result.end(), {
@@ -523,7 +524,7 @@ std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::stri
         "-f", "dash",
 
         // Stream selection.
-        "-adaptation_sets", "id=0,streams=v"s + (hasAudio(config.qualities) ? " id=1,streams=a" : ""),
+        "-adaptation_sets", "id=0,streams=v"s + (hasAudio(channelConfig.qualities) ? " id=1,streams=a" : ""),
 
         // Emit the type of DASH manifest that allows seeking to the in-progress live-edge segment without confusion.
         "-use_timeline", "0",
@@ -533,7 +534,7 @@ std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::stri
         "-dash_segment_type", "mp4",
         "-single_file", "0",
         "-media_seg_name", "chunk-stream$RepresentationID$-$Number%09d$.$ext$",
-        "-seg_duration", formatDecimalFixedPoint(config.dash.segmentDuration, 3),
+        "-seg_duration", formatDecimalFixedPoint(channelConfig.dash.segmentDuration, 3),
         "-format_options", "movflags=cmaf",
         "-frag_type", "every_frame",
 
@@ -556,21 +557,22 @@ std::vector<std::string> getDashOutputArgs(const Config::Root &config, std::stri
         "-remove_at_exit", "1",
 
         // The actual manifest output.
-        "http://localhost:" + std::to_string(config.network.port) + "/" + std::string(basePath) + "/manifest.mpd"
+        "http://localhost:" + std::to_string(networkConfig.port) + "/" + std::string(uidPath) + "/manifest.mpd"
     });
     return result;
 }
 
 } // namespace
 
-std::vector<std::string> Ffmpeg::getFfmpegArguments(const Config::Root &config, std::string_view basePath)
+std::vector<std::string> Ffmpeg::getFfmpegArguments(const Config::Channel &channelConfig,
+                                                    const Config::Network &networkConfig, std::string_view uidPath)
 {
     std::vector<std::string> result;
     append(result, getGlobalArgs());
-    append(result, getInputArgs(config.source));
-    append(result, getFilterArgs(config));
-    append(result, getMapArgs(config.qualities));
-    append(result, getEncoderArgs(config.qualities));
-    append(result, getDashOutputArgs(config, basePath));
+    append(result, getInputArgs(channelConfig.source));
+    append(result, getFilterArgs(channelConfig));
+    append(result, getMapArgs(channelConfig.qualities));
+    append(result, getEncoderArgs(channelConfig.qualities));
+    append(result, getDashOutputArgs(channelConfig, networkConfig, uidPath));
     return result;
 }

@@ -3,7 +3,7 @@
 #include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
 
-#include <memory>
+#include <map>
 
 namespace Server {
 
@@ -37,7 +37,7 @@ private:
      * TODO: Currently, this is a single channel. Eventually, we'll want to make this a map from configuration channel
      *       to channel state.
      */
-    std::unique_ptr<Channel> channel;
+    std::map<std::string, Channel> channels;
 
     // Flag to suppress "you can't change that" for the first run of `applyConfiguration`, allowing us to use
     // `applyConfiguration` for initial configuration.

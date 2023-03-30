@@ -198,6 +198,44 @@ static void from_json(const nlohmann::json &j, Dash &out)
 }
 
 /// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, History &out)
+{
+    Json::ObjectDeserializer d(j, "history");
+    d(out.historyLength, "historyLength");
+    d(out.persistentStorage, "persistentStorage");
+    d();
+}
+
+/// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, Channel &out)
+{
+    Json::ObjectDeserializer d(j, "channel");
+    d(out.source, "source");
+    d(out.qualities, "qualities");
+    d(out.dash, "dash");
+    d(out.history, "history");
+    d();
+}
+
+/// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, Directory &out)
+{
+    /* Deserialize the short-hand form. */
+    if (j.is_string()) {
+        out.localPath = j.get<std::string>();
+        return;
+    }
+
+    /* Deserialize the long form. */
+    Json::ObjectDeserializer d(j, "paths.directories");
+    d(out.localPath, "localPath");
+    d(out.index, "index");
+    d(out.secure, "secure");
+    d(out.ephemeral, "ephemeral");
+    d();
+}
+
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Network &out)
 {
     Json::ObjectDeserializer d(j, "network");
@@ -221,43 +259,6 @@ static void from_json(const nlohmann::json &j, Http &out)
     Json::ObjectDeserializer d(j, "http");
     d(out.origin, "origin");
     d(out.cacheNonLiveTime, "cacheNonLiveTime");
-    d();
-}
-
-/// @ingroup configuration_implementation
-static void from_json(const nlohmann::json &j, Directory &out)
-{
-    /* Deserialize the short-hand form. */
-    if (j.is_string()) {
-        out.localPath = j.get<std::string>();
-        return;
-    }
-
-    /* Deserialize the long form. */
-    Json::ObjectDeserializer d(j, "paths.directories");
-    d(out.localPath, "localPath");
-    d(out.index, "index");
-    d(out.secure, "secure");
-    d(out.ephemeral, "ephemeral");
-    d();
-}
-
-/// @ingroup configuration_implementation
-static void from_json(const nlohmann::json &j, Paths &out)
-{
-    Json::ObjectDeserializer d(j, "paths");
-    d(out.liveInfo, "liveInfo");
-    d(out.liveStream, "liveStream");
-    d(out.directories, "directories");
-    d();
-}
-
-/// @ingroup configuration_implementation
-static void from_json(const nlohmann::json &j, History &out)
-{
-    Json::ObjectDeserializer d(j, "history");
-    d(out.historyLength, "historyLength");
-    d(out.persistentStorage, "persistentStorage");
     d();
 }
 
@@ -296,13 +297,10 @@ Config::Root Config::Root::fromJson(std::string_view jsonString)
     // Any nlohmann::json exceptions this would raise should be handled by the from_json() implementations above.
     try {
         Json::ObjectDeserializer d(j);
-        d(root.source, "source", true);
-        d(root.qualities, "qualities");
-        d(root.dash, "dash");
+        d(root.channels, "channels");
+        d(root.directories, "directories");
         d(root.network, "network");
         d(root.http, "http");
-        d(root.paths, "paths");
-        d(root.history, "history");
         d(root.log, "log");
         d();
     }

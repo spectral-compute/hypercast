@@ -14,16 +14,22 @@ Awaitable<void> test(IOContext &ioc, unsigned int sourceNumerator, unsigned int 
 {
     /* Fill in defaults for a simple configuration. */
     Config::Root config = {
-        .source = {
-            .url = getSmpteDataPath(1920, 1080, sourceNumerator, sourceDenominator, 48000).string()
-        },
-        .qualities = {
+        .channels = {
             {
-                .video = {
-                    .frameRate = {
-                        .type = initialType,
-                        .numerator = initialNumerator,
-                        .denominator = initialDenominator
+                "/live", {
+                    .source = {
+                        .url = getSmpteDataPath(1920, 1080, sourceNumerator, sourceDenominator, 48000).string()
+                    },
+                    .qualities = {
+                        {
+                            .video = {
+                                .frameRate = {
+                                    .type = initialType,
+                                    .numerator = initialNumerator,
+                                    .denominator = initialDenominator
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -32,11 +38,11 @@ Awaitable<void> test(IOContext &ioc, unsigned int sourceNumerator, unsigned int 
     co_await fillInDefaults(ioc, config);
 
     /* Make sure we have a quality to test. */
-    EXPECT_EQ(1, config.qualities.size());
-    if (config.qualities.empty()) {
+    EXPECT_EQ(1, config.channels.at("/live").qualities.size());
+    if (config.channels.at("/live").qualities.empty()) {
         co_return;
     }
-    const Config::Quality &q = config.qualities[0];
+    const Config::Quality &q = config.channels.at("/live").qualities[0];
 
     /* Check that the quality got filled in correctly. */
     EXPECT_EQ((Config::FrameRate{

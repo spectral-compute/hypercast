@@ -7,7 +7,7 @@
 namespace Dash
 {
 
-std::string getLiveInfo(const Config::Root &config, const Server::Path &basePath);
+std::string getLiveInfo(const Config::Channel &config, const Server::Path &uidPath);
 
 } // namespace Dash
 

@@ -31,7 +31,7 @@ void check(const std::vector<std::string> &ref, const std::vector<std::string> &
 
 TEST(GetFfmpegArguments, Simple)
 {
-    Config::Root config = {
+    Config::Channel config = {
         .source = {
             .url = "rtsp://192.0.2.3"
         },
@@ -131,12 +131,12 @@ TEST(GetFfmpegArguments, Simple)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::getFfmpegArguments(config, "live/uid"));
+    }, Ffmpeg::getFfmpegArguments(config, {}, "live/uid"));
 }
 
 TEST(GetFfmpegArguments, Fractional)
 {
-    Config::Root config = {
+    Config::Channel config = {
         .source = {
             .url = "rtsp://192.0.2.3"
         },
@@ -239,12 +239,12 @@ TEST(GetFfmpegArguments, Fractional)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::getFfmpegArguments(config, "live/uid"));
+    }, Ffmpeg::getFfmpegArguments(config, {}, "live/uid"));
 }
 
 TEST(GetFfmpegArguments, TwoVideoStreams)
 {
-    Config::Root config = {
+    Config::Channel config = {
         .source = {
             .url = "rtsp://192.0.2.3"
         },
@@ -383,5 +383,5 @@ TEST(GetFfmpegArguments, TwoVideoStreams)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::getFfmpegArguments(config, "live/uid"));
+    }, Ffmpeg::getFfmpegArguments(config, {}, "live/uid"));
 }

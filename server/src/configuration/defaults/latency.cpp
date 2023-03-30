@@ -8,7 +8,7 @@
 namespace Config
 {
 
-double getExplicitLatencySources(const Root &config);
+double getExplicitLatencySources(const Root &config, const Channel &channelConfig);
 double getAudioRate(const AudioQuality &aq);
 double getVideoRateLatencyContribution(double videoRate, const Quality &q, const Root &config);
 
@@ -430,11 +430,11 @@ namespace Config
  *  - The video encoder's rate control buffer length.
  *  - The client's extra buffer parameter.
  */
-void allocateLatency(Quality &q, const Root &config)
+void allocateLatency(Quality &q, const Root &config, const Channel &channel)
 {
     /* Figure out what the latency budget is in seconds. */
     // TODO: Empirically measure the defaults for the network sources of latency.
-    LatencyBudget latencyBudget = q.targetLatency / 1000.0 - getExplicitLatencySources(config);
+    LatencyBudget latencyBudget = q.targetLatency / 1000.0 - getExplicitLatencySources(config, channel);
     if (latencyBudget < 0.0) {
         throw LatencyUnachievableException("the explicit latency sources exceed it");
     }

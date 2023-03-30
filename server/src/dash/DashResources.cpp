@@ -369,19 +369,19 @@ namespace Dash
  * Generate an info.json.
  *
  * @param config The configuration object.
- * @param basePath The base path (with unique ID substituted) to the live streaming resources.
+ * @param uidPath The base path (with unique ID substituted) to the live streaming resources.
  */
-std::string getLiveInfo(const Config::Root &config, const Server::Path &basePath);
+std::string getLiveInfo(const Config::Channel &config, const Server::Path &uidPath);
 
 } // namespace Dash
 
 class Dash::DashResources::Interleave final : public StreamSegmentSet<InterleaveExpiringResource>
 {
 public:
-    explicit Interleave(Server::Server &server, const Server::Path &basePath, unsigned int interleaveIndex,
-                        const Config::Root &config) :
-        server(server), basePath(basePath), interleaveIndex(interleaveIndex),
-        numEphemeralNotFoundSegments(config.http.cacheNonLiveTime * 1000 / config.dash.segmentDuration + 1)
+    explicit Interleave(Server::Server &server, const Server::Path &uidPath, unsigned int interleaveIndex,
+                        const Config::Channel &channelConfig, const Config::Http &httpConfig) :
+        server(server), uidPath(uidPath), interleaveIndex(interleaveIndex),
+        numEphemeralNotFoundSegments(httpConfig.cacheNonLiveTime * 1000 / channelConfig.dash.segmentDuration + 1)
     {
     }
 
@@ -401,7 +401,7 @@ public:
 
         /* Create the resources for the not-found segments. */
         for (unsigned int i = firstEphemeralNotFoundSegment; i < nextEphemeralNotFoundSegment; i++) {
-            Server::Path path = basePath / getInterleaveName(interleaveIndex, i);
+            Server::Path path = uidPath / getInterleaveName(interleaveIndex, i);
             server.addResource<Server::ErrorResource>(path, Server::ErrorKind::NotFound, Server::CacheKind::ephemeral,
                                                       true);
         }
@@ -409,7 +409,7 @@ public:
 
 private:
     Server::Server &server;
-    const Server::Path &basePath;
+    const Server::Path &uidPath;
     const unsigned int interleaveIndex;
     const unsigned int numEphemeralNotFoundSegments; ///< The number of not-found to create after the last live segment.
     unsigned int nextEphemeralNotFoundSegment = 0; ///< The first not-found segment that's not been created yet.
@@ -419,13 +419,15 @@ class Dash::DashResources::Stream final : public StreamSegmentSet<SegmentExpirin
 
 Dash::DashResources::~DashResources() = default;
 
-Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Root &config, Server::Server &server) :
-    ioc(ioc), log(log), logContext(log("dash")), config(config), server(server),
-    basePath(Util::replaceAll(config.paths.liveStream, "{uid}", getUid())),
+Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &channelConfig,
+                                   const Config::Http &httpConfig, Server::Path basePath, Server::Server &server) :
+    ioc(ioc), log(log), logContext(log("dash")), config(channelConfig), server(server),
+    basePath(std::move(basePath)), uidPath(this->basePath / getUid()),
     persistenceDirectory(config.history.persistentStorage.empty() ? std::filesystem::path{} :
                          std::filesystem::path(config.history.persistentStorage) / formatPersistenceTimestamp())
 {
-    logContext << "basePath" << Log::Level::info << (std::string)getBasePath();
+    logContext << "base path" << Log::Level::info << (std::string)getBasePath();
+    logContext << "uid path" << Log::Level::info << (std::string)getUidPath();
 
     /* Create the persistence directory. */
     if (!persistenceDirectory.empty()) {
@@ -453,17 +455,17 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
         // Create RISE interleave tracking. There are currently as many interleaves as video streams.
         interleaves.reserve(config.qualities.size());
         for (unsigned int i = 0; i < (unsigned int)config.qualities.size(); i++) {
-            interleaves.emplace_back(server, getBasePath(), i, config);
+            interleaves.emplace_back(server, uidPath, i, config, httpConfig);
         }
     }
 
     /* Add resources. */
     // The info.json.
-    server.addResource<Server::ConstantResource>(config.paths.liveInfo, getLiveInfo(config, basePath),
+    server.addResource<Server::ConstantResource>(this->basePath / "info.json", getLiveInfo(config, uidPath),
                                                  "application/json", Server::CacheKind::ephemeral, true);
 
     // The manifest.mpd file.
-    server.addResource<Server::PutResource>(basePath / "manifest.mpd", ioc, getPersistencePath("manifest.mpd"),
+    server.addResource<Server::PutResource>(uidPath / "manifest.mpd", ioc, getPersistencePath("manifest.mpd"),
                                             Server::CacheKind::fixed, 1 << 16, true);
 
     // For now, each video quality has a single corresponding audio quality.
@@ -474,7 +476,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
             // Add the initializer segment.
             {
                 std::string initializerSegmentName = getInitializerName(videoIndex);
-                server.addResource<Server::PutResource>(basePath / initializerSegmentName, ioc,
+                server.addResource<Server::PutResource>(uidPath / initializerSegmentName, ioc,
                                                         getPersistencePath(initializerSegmentName),
                                                         Server::CacheKind::fixed,
                                                         1 << 14, true);
@@ -491,7 +493,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
             }
             {
                 std::string initializerSegmentName = getInitializerName(audioIndex);
-                server.addResource<Server::PutResource>(basePath / initializerSegmentName, ioc,
+                server.addResource<Server::PutResource>(uidPath / initializerSegmentName, ioc,
                                                         getPersistencePath(initializerSegmentName),
                                                         Server::CacheKind::fixed,
                                                         1 << 14, true);
@@ -512,7 +514,7 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
     spawnDetached(ioc, [=, this]() -> Awaitable<void> {
         /* Update the segment index descriptor. */
         try {
-            server.addOrReplaceResource<SegmentIndexResource>(basePath / getSegmentIndexDescriptorName(streamIndex),
+            server.addOrReplaceResource<SegmentIndexResource>(uidPath / getSegmentIndexDescriptorName(streamIndex),
                                                               segmentIndex);
         }
         catch (const std::exception &e) {
@@ -578,7 +580,7 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
     const Config::Quality &q = config.qualities[interleaveIndex];
     InterleaveExpiringResource &interleave =
         interleaves[interleaveIndex].get(segmentIndex, server,
-                                         basePath / getInterleaveName(interleaveIndex, segmentIndex), lifetimeMs,
+                                         uidPath / getInterleaveName(interleaveIndex, segmentIndex), lifetimeMs,
                                          interleaveNumStreams, ioc, log, interleaveNumStreams,
                                          (*q.minInterleaveRate * *q.minInterleaveWindow + 7) / 8,
                                          *q.minInterleaveWindow, q.interleaveTimestampInterval);
@@ -586,7 +588,7 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
     /* Add the new segment. */
     {
         std::string segmentName = getSegmentName(streamIndex, segmentIndex);
-        streams[streamIndex].get(segmentIndex, server, basePath / segmentName, lifetimeMs,
+        streams[streamIndex].get(segmentIndex, server, uidPath / segmentName, lifetimeMs,
                                  ioc, log, config.dash, *this, streamIndex, segmentIndex, interleave, interleaveIndex,
                                  isAudio ? 1 : 0, getPersistencePath(segmentName));
     }
