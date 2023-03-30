@@ -44,6 +44,14 @@ public:
      */
     void addStreamData(std::span<const std::byte> dataPart, unsigned int streamIndex);
 
+    /**
+     * Determine if every stream in the interleave has ended.
+     */
+    bool hasEnded() const
+    {
+        return numRemainingStreams == 0;
+    }
+
 private:
     /**
      * Figure out how much extra data, in bytes, is needed to meet the minimum interleave rate.

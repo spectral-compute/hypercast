@@ -74,8 +74,14 @@ CORO_TEST(InterleaveResource, SimpleLength1, ioc)
 {
     Log::MemoryLog log(ioc, Log::Level::fatal, false);
     Dash::InterleaveResource resource(ioc, log, 1);
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData(getShortData(), 0); // A data chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData({}, 0); // End of stream.
+    EXPECT_TRUE(resource.hasEnded());
+
     TestRequest request;
     co_await testResource(resource, request, {{
         getChunkLength1(getShortData()),
@@ -87,8 +93,14 @@ CORO_TEST(InterleaveResource, SimpleLength2, ioc)
 {
     Log::MemoryLog log(ioc, Log::Level::fatal, false);
     Dash::InterleaveResource resource(ioc, log, 1);
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData(getData(3 << 8), 0); // A data chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData({}, 0); // End of stream.
+    EXPECT_TRUE(resource.hasEnded());
+
     TestRequest request;
     co_await testResource(resource, request, {{
         getChunkLength2(getData(3 << 8)),
@@ -100,8 +112,14 @@ CORO_TEST(InterleaveResource, SimpleLength4, ioc)
 {
     Log::MemoryLog log(ioc, Log::Level::fatal, false);
     Dash::InterleaveResource resource(ioc, log, 1);
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData(getData(3 << 16), 0); // A data chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData({}, 0); // End of stream.
+    EXPECT_TRUE(resource.hasEnded());
+
     TestRequest request;
     co_await testResource(resource, request, {{
         getChunkLength4(getData(3 << 16)),
@@ -113,10 +131,20 @@ CORO_TEST(InterleaveResource, TwoStreams, ioc)
 {
     Log::MemoryLog log(ioc, Log::Level::fatal, false);
     Dash::InterleaveResource resource(ioc, log, 2);
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData(getShortData(), 0); // A data chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData(getShortData(), 1); // A data chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData({}, 1); // End of stream.
+    EXPECT_FALSE(resource.hasEnded());
+
     resource.addStreamData({}, 0); // End of stream.
+    EXPECT_TRUE(resource.hasEnded());
+
     TestRequest request;
     co_await testResource(resource, request, {{
         getChunkLength1(getShortData(), 0),
