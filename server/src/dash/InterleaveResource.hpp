@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <span>
+#include <string_view>
 #include <vector>
 
 namespace Dash
@@ -17,6 +18,30 @@ namespace Dash
 class InterleaveResource final : public Server::Resource
 {
 public:
+    /**
+     * The maximum number of non-control streams that are allowed in an interleave.
+     *
+     * This is also the stream index of the control chunks.
+     */
+    static constexpr unsigned int maxStreams = 31;
+
+    /**
+     * The type of control chunk.
+     *
+     * Control chunks (which have a stream index of all ones) are used for non media-stream purposes, such as conveying
+     * real-time information to the client via the CDN.
+     */
+    enum class ControlChunkType : uint8_t
+    {
+        /**
+         * The client should discard this chunk.
+         *
+         * This control chunk type is useful for padding interleave to increase its data rate to overcome CDN buffering
+         * delays. This class automatically inserts chunks of this type for that purpose.
+         */
+        discard = 255
+    };
+
     ~InterleaveResource() override;
 
     /**
@@ -40,9 +65,28 @@ public:
      * Append data to a stream in the interleave.
      *
      * @param dataPart The data to append. The stream is ended if this is empty.
-     * @param streamIndex The index of the stream within the interleave.
+     * @param streamIndex The index of the stream within the interleave. Must be less than maxStreams.
      */
     void addStreamData(std::span<const std::byte> dataPart, unsigned int streamIndex);
+
+    /**
+     * Add a control chunk to the interleave.
+     *
+     * This method should not be called if every stream in the interleave has ended. This condition can be tested for
+     * with hasEnded.
+     *
+     * @param type The control chunk type.
+     * @param chunkData The data for the control chunk.
+     */
+    void addControlChunk(ControlChunkType type, std::span<const std::byte> chunkData);
+
+    /**
+     * @copydoc addControlChunk
+     */
+    void addControlChunk(ControlChunkType type, std::string_view chunkData)
+    {
+        addControlChunk(type, std::span((const std::byte *)chunkData.data(), chunkData.size()));
+    }
 
     /**
      * Determine if every stream in the interleave has ended.
@@ -53,6 +97,32 @@ public:
     }
 
 private:
+    /**
+     * Append a chunk to the interleave.
+     *
+     * @param dataPart The data to append.
+     * @param streamIndex The index of the stream within the interleave. Must be less than maxStreams + 1.
+     * @param now The time of the event that created the chunk. This must be at least as large as for the last chunk.
+     *            This exists as a parameter for efficiency reasons.
+     * @param addTimestamp Whether to add a timestamp to the chunk header.
+     * @param prefixData Data to add to the chunk after its header but before dataPart. This is useful for inserting the
+     *                   control chunk header without unnecessary copying.
+     */
+    void addChunk(std::span<const std::byte> dataPart, unsigned int streamIndex,
+                  std::chrono::steady_clock::time_point now, bool addTimestamp,
+                  std::span<const std::byte> prefixData = {});
+
+    /**
+     * Add a control chunk to the interleave.
+     *
+     * @param type The control chunk type.
+     * @param chunkData The data for the control chunk.
+     * @param now The time of the event that created the chunk. This must be at least as large as for the last chunk.
+     *            This exists as a parameter for efficiency reasons.
+     */
+    void addControlChunk(ControlChunkType type, std::span<const std::byte> chunkData,
+                         std::chrono::steady_clock::time_point now);
+
     /**
      * Figure out how much extra data, in bytes, is needed to meet the minimum interleave rate.
      *

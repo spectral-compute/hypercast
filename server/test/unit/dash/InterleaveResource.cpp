@@ -19,7 +19,7 @@ std::vector<std::byte> getVector(std::initializer_list<unsigned char> data)
 std::vector<std::byte> getChunkLength1(const std::vector<std::byte> &data, unsigned int stream = 0)
 {
     EXPECT_GT(1 << 8, data.size());
-    EXPECT_GT(31, stream);
+    EXPECT_GT(32, stream);
     std::vector<std::byte> result(data.size() + 2);
     result[0] = (std::byte)stream;
     result[1] = (std::byte)data.size();
@@ -151,6 +151,33 @@ CORO_TEST(InterleaveResource, TwoStreams, ioc)
         getChunkLength1(getShortData(), 1),
         getChunkLength1({}, 1),
         getChunkLength1({}, 0)
+    }});
+}
+
+CORO_TEST(InterleaveResource, ControlChunk, ioc)
+{
+    Log::MemoryLog log(ioc, Log::Level::fatal, false);
+    Dash::InterleaveResource resource(ioc, log, 1);
+    EXPECT_FALSE(resource.hasEnded());
+
+    resource.addStreamData(getShortData(), 0); // A data chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
+    resource.addControlChunk(Dash::InterleaveResource::ControlChunkType::discard, getShortData()); // A control chunk.
+    EXPECT_FALSE(resource.hasEnded());
+
+    resource.addStreamData({}, 0); // End of stream.
+    EXPECT_TRUE(resource.hasEnded());
+
+    /* Test the control chunk as if it was any other chunk, but with the control chunk header and index. */
+    std::vector<std::byte> controlChunkRef = getShortData();
+    controlChunkRef.insert(controlChunkRef.begin(), (std::byte)Dash::InterleaveResource::ControlChunkType::discard);
+
+    TestRequest request;
+    co_await testResource(resource, request, {{
+        getChunkLength1(getShortData()),
+        getChunkLength1(controlChunkRef, Dash::InterleaveResource::maxStreams),
+        getChunkLength1({})
     }});
 }
 

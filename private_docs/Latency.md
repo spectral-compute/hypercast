@@ -64,4 +64,10 @@ are inserted into the interleaved file in chunks. The format is simply a repetit
  - The data chunk.
 
 The end of an original file is signalled by a zero-byte chunk for the given file index. File index 31 (i.e: the index
-with all 1s) is reserved for padding.
+with all 1s) is reserved for control messages.
+
+The first byte of each control message is a type ID with one of the following values:
+
+| Type ID | Description                                                                            |
+|---------|----------------------------------------------------------------------------------------|
+| 255     | The client should ignore this chunk. Its main use is to force data out of CDN buffers. |
