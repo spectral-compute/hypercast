@@ -3,18 +3,32 @@
 #include "server/Resource.hpp"
 #include "server/ServerState.h"
 
-namespace Server {
+/**
+ * @defgroup api API
+ *
+ * Stuff (e.g: resources) that implement the API that the server exposes via HTTP.
+ */
+/// @addtogroup api
+/// @{
 
+/**
+ * Stuff (e.g: resources) that implement the API that the server exposes via HTTP.
+ */
+namespace Api
+{
 
 // A resource for querying or modifying the configuration.
-class ConfigAPIResource : public Resource {
-    State &serverState;
-
+class ConfigResource final : public Server::Resource
+{
 public:
-    ConfigAPIResource(State& state);
+    ConfigResource(Server::State &state);
 
-    Awaitable<void> operator()(Response &response, Request &request) override;
+    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override;
+
+private:
+    Server::State &serverState;
 };
 
+} // namespace Api
 
-} // namespace Server
+///@}

@@ -5,17 +5,16 @@
 #include "util/debug.hpp"
 #include "util/asio.hpp"
 
-Server::ConfigAPIResource::ConfigAPIResource(State& state):
-        Resource(false),
-        serverState(state) {}
+Api::ConfigResource::ConfigResource(Server::State &state) : Resource(false), serverState(state) {}
 
-Awaitable<void> Server::ConfigAPIResource::operator()(Response& response, Request& request) {
+Awaitable<void> Api::ConfigResource::operator()(Server::Response &response, Server::Request &request)
+{
     switch (request.getType()) {
-        case Request::Type::get:
+        case Server::Request::Type::get:
             response << serverState.requestedConfig.jsonRepresentation;
             break;
 
-        case Request::Type::put:
+        case Server::Request::Type::put:
             co_await serverState.applyConfiguration(
                 Config::Root::fromJson(
                     co_await request.readAllAsString()

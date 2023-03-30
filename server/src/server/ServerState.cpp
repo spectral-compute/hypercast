@@ -76,7 +76,7 @@ Server::State::State(
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network, initialCfg.http)
 {
-    server.addResource<ConfigAPIResource>("api/config", *this);
+    server.addResource<Api::ConfigResource>("api/config", *this);
 }
 
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
