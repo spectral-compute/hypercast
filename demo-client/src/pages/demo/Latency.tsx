@@ -1,9 +1,9 @@
-import Player from "../components/Player";
+import Player from "../../components/Player";
 import {Player as PlayerMain} from "live-video-streamer-client";
-import {PerformanceChart} from "../performanceChart";
+import {PerformanceChart} from "../../performanceChart";
 import {useCallback, useEffect, useRef} from "react";
 
-export default function TestStream() {
+export default function () {
     const latencyRef = useRef<HTMLCanvasElement | null>(null);
     const rateRef = useRef<HTMLCanvasElement | null>(null);
     const performanceChart = useRef<PerformanceChart | null>(null);

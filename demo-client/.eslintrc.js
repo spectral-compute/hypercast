@@ -10,3 +10,6 @@ function disable(rule) {
 // Allow not specifying return types for functions.
 disable("@typescript-eslint/explicit-function-return-type");
 disable("@typescript-eslint/explicit-module-boundary-types");
+
+// Allow trailing commas...
+disable("@typescript-eslint/comma-dangle");
