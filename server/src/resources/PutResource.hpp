@@ -25,7 +25,7 @@ public:
      * @param path The path of the file to write the received data to. If empty, no file is written to.
      * @param cacheKind The caching to use for the resource when GET is used.
      * @param maxRequestLength The maximum length of resource that can be PUT to this resource (i.e: the value to be
-     *                         returned by getMaxRequestLength).
+     *                         returned by getMaxPutRequestLength).
      */
     explicit PutResource(IOContext &ioc, std::filesystem::path path, CacheKind cacheKind = CacheKind::fixed,
                          size_t maxRequestLength = 1 << 20, bool isPublic = false) :
@@ -41,7 +41,7 @@ public:
     Awaitable<void> getAsync(Response &response, Request &request) override;
     Awaitable<void> putAsync(Response &response, Request &request) override;
 
-    size_t getMaxRequestLength() const noexcept override;
+    size_t getMaxPutRequestLength() const noexcept override;
 
 private:
     IOContext *const ioc = nullptr; ///< The IOContext if we're to save files.

@@ -45,7 +45,7 @@ public:
                              std::shared_ptr<InterleaveResource> interleave,
                              unsigned int interleaveIndex, unsigned int indexInInterleave, std::filesystem::path path);
 
-    size_t getMaxRequestLength() const noexcept override;
+    size_t getMaxPutRequestLength() const noexcept override;
 
 private:
     /**

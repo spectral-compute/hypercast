@@ -38,6 +38,16 @@ const char *getErrorKindString(Server::ErrorKind kind)
     return "Unknown";
 }
 
+size_t getMaxRequestLength(const Server::Resource &resource, Server::Request::Type type)
+{
+    switch (type) {
+        case Server::Request::Type::get: return resource.getMaxGetRequestLength();
+        case Server::Request::Type::post: return resource.getMaxPostRequestLength();
+        case Server::Request::Type::put: return resource.getMaxPutRequestLength();
+    }
+    unreachable();
+}
+
 /**
  * Checks that a resource is not excluded from handling a given request.
  *
@@ -61,7 +71,8 @@ void checkResourceRestrictions(const Server::Resource &resource, Server::Request
         throw Server::Error(Server::ErrorKind::Forbidden);
     }
 
-    request.setMaxLength(resource.getMaxRequestLength());
+    /* Enforce the maximum request length. */
+    request.setMaxLength(getMaxRequestLength(resource, request.getType()));
 }
 
 /**

@@ -27,7 +27,7 @@ public:
     Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override;
     Awaitable<void> putAsync(Server::Response &response, Server::Request &request) override;
 
-    size_t getMaxRequestLength() const noexcept override;
+    size_t getMaxPutRequestLength() const noexcept override;
 
 private:
     Server::State &serverState;

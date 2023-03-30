@@ -22,7 +22,7 @@ Awaitable<void> Api::ConfigResource::putAsync(Server::Response &response, Server
     co_await serverState.applyConfiguration(Config::Root::fromJson(co_await request.readAllAsString()));
 }
 
-size_t Api::ConfigResource::getMaxRequestLength() const noexcept
+size_t Api::ConfigResource::getMaxPutRequestLength() const noexcept
 {
     return 1 << 18; // 256 kiB.
 }

@@ -9,16 +9,14 @@
 
 Server::PutResource::~PutResource() = default;
 
-Awaitable<void> Server::PutResource::getAsync(Response &response, Request &request)
+Awaitable<void> Server::PutResource::getAsync(Response &response, Request &)
 {
     response.setCacheKind(cacheKind);
-    if (!(co_await request.readSome()).empty()) {
-        throw Error(ErrorKind::BadRequest, "Unexpected request data");
-    }
     if (!hasBeenPut) {
         throw Error(ErrorKind::NotFound, "PUT resource was GET'd before being PUT");
     }
     response << data;
+    co_return;
 }
 
 Awaitable<void> Server::PutResource::putAsync(Response &response, Request &request)
@@ -62,7 +60,7 @@ Awaitable<void> Server::PutResource::putAsync(Response &response, Request &reque
     hasBeenPut = true;
 }
 
-size_t Server::PutResource::getMaxRequestLength() const noexcept
+size_t Server::PutResource::getMaxPutRequestLength() const noexcept
 {
     return maxRequestLength;
 }

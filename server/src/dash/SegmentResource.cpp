@@ -95,7 +95,7 @@ Awaitable<void> Dash::SegmentResource::putAsync(Server::Response &response, Serv
     }
 }
 
-size_t Dash::SegmentResource::getMaxRequestLength() const noexcept
+size_t Dash::SegmentResource::getMaxPutRequestLength() const noexcept
 {
     return 1zu << 32;
 }

@@ -28,7 +28,17 @@ Awaitable<void> Server::Resource::operator()(Response &response, Request &reques
     unreachable();
 }
 
-size_t Server::Resource::getMaxRequestLength() const noexcept
+size_t Server::Resource::getMaxGetRequestLength() const noexcept
+{
+    return 0;
+}
+
+size_t Server::Resource::getMaxPostRequestLength() const noexcept
+{
+    return 0;
+}
+
+size_t Server::Resource::getMaxPutRequestLength() const noexcept
 {
     return 0;
 }
