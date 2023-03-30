@@ -21,9 +21,13 @@ namespace Api
 class ConfigResource final : public Server::Resource
 {
 public:
+    ~ConfigResource() override;
     ConfigResource(Server::State &state);
 
-    Awaitable<void> operator()(Server::Response &response, Server::Request &request) override;
+    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override;
+    Awaitable<void> putAsync(Server::Response &response, Server::Request &request) override;
+
+    size_t getMaxRequestLength() const noexcept override;
 
 private:
     Server::State &serverState;
