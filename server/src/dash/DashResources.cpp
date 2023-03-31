@@ -67,7 +67,7 @@ std::string formatPersistenceTimestamp()
     /* Format the timezoned timestamp. */
     char buffer[64];
     snprintf(buffer, sizeof(buffer), "%04i-%02i-%02i %02i-%02i-%02i",
-             utc->tm_year, utc->tm_mon, utc->tm_mday, utc->tm_hour, utc->tm_min, utc->tm_sec);
+             utc->tm_year + 1900, utc->tm_mon + 1, utc->tm_mday, utc->tm_hour, utc->tm_min, utc->tm_sec);
     return buffer;
 }
 
