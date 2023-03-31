@@ -157,6 +157,7 @@ CORO_TEST(SubprocessGetStdout, TwiceCoroStack, ioc)
     EXPECT_EQ("hexagons", (co_await hexagons(ioc)));
 }
 
+#ifdef BOOST_ASIO_HAS_IO_URING
 /**
  * Test that running a subprocess and reading a file in parallel work.
  *
@@ -203,5 +204,6 @@ CORO_TEST(SubprocessGetStdout, TwiceAndFileRead, ioc)
 {
     co_await subprocessAndFileCoro(ioc, 2);
 }
+#endif // BOOST_ASIO_HAS_IO_URING
 
 } // namespace

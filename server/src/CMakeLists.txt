@@ -39,12 +39,18 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     target_compile_definitions("${TARGET}" PUBLIC BOOST_DISABLE_CURRENT_LOCATION)
 endif()
 
-# Work around https://github.com/boostorg/boost/issues/740.
-find_library(URING uring REQUIRED)
-add_library(uring UNKNOWN IMPORTED)
-set_property(TARGET uring PROPERTY IMPORTED_LOCATION "${URING}")
-target_link_libraries(${TARGET} PRIVATE uring)
-target_compile_definitions(${TARGET} PUBLIC BOOST_ASIO_HAS_IO_URING BOOST_ASIO_DISABLE_EPOLL)
+# Work around https://github.com/boostorg/boost/issues/740. The bug this mentions is that the subprocess often causes
+# the parent process to get stuck in the uring event loop. I suspect it's something to do with not closing/unregistering
+# the file descriptors properly. Unfortunately, without uring we have to do synchronous file IO and either wait or use a
+# thread and a notification system.
+option(ENABLE_URING "Use liburing for IO. This is disabled by default due to a bug in boost::process::v2." Off)
+if (ENABLE_URING)
+    find_library(URING uring REQUIRED)
+    add_library(uring UNKNOWN IMPORTED)
+    set_property(TARGET uring PROPERTY IMPORTED_LOCATION "${URING}")
+    target_link_libraries(${TARGET} PRIVATE uring)
+    target_compile_definitions(${TARGET} PUBLIC BOOST_ASIO_HAS_IO_URING BOOST_ASIO_DISABLE_EPOLL)
+endif()
 
 # nlohmann::json.
 find_package(nlohmann_json REQUIRED)
