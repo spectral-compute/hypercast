@@ -22,7 +22,6 @@ const chan: Channel = {
                 type: FrameRateType.fps
             },
             bitrate: 10000,
-            crf: 5,
             codec: VideoCodec.h264,
             h26xPreset: H26xPreset.fast
         },

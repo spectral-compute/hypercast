@@ -4,13 +4,13 @@ import {AudioCodec, AudioVariant, Channel, FrameRate, FrameRateCfg, StreamVarian
 import PortStatus from "./PortStatus";
 import {useContext} from "react";
 import {AppContext} from "./index";
-import BoxBtn from "./BoxBtn";
 import {ReactComponent as VideoIcon} from "./assets/icons/image.svg";
 import {ReactComponent as AudioIcon} from "./assets/icons/volume-2.svg";
 import {ReactComponent as NoAudioIcon} from "./assets/icons/volume-x.svg";
 import {ReactComponent as LatencyIcon} from "./assets/icons/clock.svg";
 import {ReactComponent as FrameRateIcon} from "./assets/icons/activity.svg";
 import {inputUrlToSDIPortNumber} from "./api/Hardware";
+import BoxBtn from "./components/BoxBtn";
 
 export interface StreamBoxProps {
     name: string;
@@ -90,9 +90,24 @@ function renderVariant(_name: string, variantCfg: StreamVariantConfig, channelCf
     </div>;
 }
 
+function countPixels(chan: Channel, x: string) {
+    const s = chan.streams[x]!;
+    const vid = chan.videoVariants[s.video]!;
+    return vid.width * vid.height;
+}
+
+function sortVariants(chan: Channel): string[] {
+    return Array.from(Object.keys(chan.streams)).sort((x, y) => {
+        return countPixels(chan, y) - countPixels(chan, x);
+    });
+}
+
 function StreamBox(props: StreamBoxProps) {
     const appCtx = useContext(AppContext);
     const chan = props.config;
+
+    const variantSequence = sortVariants(chan);
+
     return <SecondaryBox>
         <div className="streamInfo" onClick={props.onClick}>
             <div className="sboxHeader">
@@ -105,8 +120,8 @@ function StreamBox(props: StreamBoxProps) {
                 ></PortStatus>
             </div>
 
-            {Array.from(Object.entries(chan.streams)).map(
-                (p) => renderVariant(p[0], p[1], chan)
+            {variantSequence.map(
+                (p) => renderVariant(p, chan.streams[p]!, chan)
             )}
         </div>
     </SecondaryBox>;

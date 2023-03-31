@@ -1,14 +1,38 @@
 import './ChannelConfigModal.sass';
-import BoxBtn from "../BoxBtn";
-import {AudioVariant, VideoVariant} from "../api/Config";
+import {AudioVariant, FrameRateSpecial, StreamVariantConfig, VideoVariant} from "../api/Config";
+import BoxRadioGroup from "../components/BoxRadioGroup";
+import Modal from "./Modal";
+import {
+    FUZZY_AUDIO_QUALITY_SETTINGS,
+    FUZZY_VIDEO_QUALITY_SETTINGS, FuzzyAudioQuality, fuzzyAudioQualityMatch,
+    FuzzyVideoQuality,
+    fuzzyVideoQualityMatch
+} from "../Constants";
+import {fuzzyApply} from "../Fuzzify";
+import {useState} from "react";
 
 export interface VariantConfigModalProps {
+    onSave: (video: VideoVariant, audio: AudioVariant, stream: StreamVariantConfig) => void;
+    onCancel: () => void;
+
+    title: string;
     audio: AudioVariant;
     video: VideoVariant;
+    stream: StreamVariantConfig;
 }
 
-export default (_props: VariantConfigModalProps) => {
-    return <>
+export default (props: VariantConfigModalProps) => {
+    // Local copy of the config is used during editing. On cancel this is discarded, but on
+    // save it's propagated to the parent (and incorporated into the in-progress cfg object).
+    const [video, setVideo] = useState<VideoVariant>(props.video);
+    const [audio, setAudio] = useState<AudioVariant>(props.audio);
+    const [stream, setStream] = useState<StreamVariantConfig>(props.stream);
+
+    return <Modal
+        title={"Configuring " + props.title}
+        onClose={props.onCancel}
+        onSave={() => props.onSave(video, audio, stream)}
+    >
         <div className="btnRow">
             <div className="btnDesc">
                 <span>Image Quality</span>
@@ -16,9 +40,26 @@ export default (_props: VariantConfigModalProps) => {
                 Higher settings will consume more CPU resources to produce a better image quality at each resolution
                 selected.
             </div>
-            <BoxBtn label="Low"></BoxBtn>
-            <BoxBtn label="Medium"></BoxBtn>
-            <BoxBtn label="High"></BoxBtn>
+
+            <BoxRadioGroup<FuzzyVideoQuality>
+                onSelected={(v) => {
+                    setVideo(fuzzyApply(video, FUZZY_VIDEO_QUALITY_SETTINGS[v]));
+                }}
+                selectedItem={fuzzyVideoQualityMatch(video)}
+                items={[{
+                    value: "LOW",
+                    label: "Low"
+                }, {
+                    value: "MEDIUM",
+                    label: "Medium"
+                }, {
+                    value: "HIGH",
+                    label: "High"
+                }, {
+                    value: "VERY_HIGH",
+                    label: "Highest"
+                }]}
+            ></BoxRadioGroup>
         </div>
 
         <hr/>
@@ -28,9 +69,23 @@ export default (_props: VariantConfigModalProps) => {
                 <span>Audio Quality</span>
             </div>
 
-            <BoxBtn label="Low"></BoxBtn>
-            <BoxBtn label="Medium"></BoxBtn>
-            <BoxBtn label="High"></BoxBtn>
+
+            <BoxRadioGroup<FuzzyAudioQuality>
+                onSelected={(v) => {
+                    setAudio(fuzzyApply(audio, FUZZY_AUDIO_QUALITY_SETTINGS[v]));
+                }}
+                selectedItem={fuzzyAudioQualityMatch(audio)}
+                items={[{
+                    value: "LOW",
+                    label: "Low"
+                }, {
+                    value: "MEDIUM",
+                    label: "Medium"
+                }, {
+                    value: "HIGH",
+                    label: "High"
+                }]}
+            ></BoxRadioGroup>
         </div>
 
         <hr/>
@@ -42,8 +97,17 @@ export default (_props: VariantConfigModalProps) => {
                 This can improve the experience for viewers on poor connections.
             </div>
 
-            <BoxBtn label="Native"></BoxBtn>
-            <BoxBtn label="Half"></BoxBtn>
+            <BoxRadioGroup<FrameRateSpecial>
+                selectedItem={video.frameRate as FrameRateSpecial}
+                onSelected={(v) => setVideo({...video, frameRate: v})}
+                items={[{
+                    value: "native",
+                    label: "native"
+                }, {
+                    value: "half",
+                    label: "half"
+                }]}
+            ></BoxRadioGroup>
         </div>
 
         <hr/>
@@ -56,10 +120,23 @@ export default (_props: VariantConfigModalProps) => {
 
                 Lower latency settings may use a little more bandwidth than higher-latency ones.
             </div>
-            <BoxBtn label="1s"></BoxBtn>
-            <BoxBtn label="2s"></BoxBtn>
-            <BoxBtn label="3s"></BoxBtn>
-            <BoxBtn label="5s"></BoxBtn>
+            <BoxRadioGroup<number>
+                onSelected={(v) => setStream({...stream, targetLatencyMs: v})}
+                selectedItem={stream.targetLatencyMs}
+                items={[{
+                    value: 1000,
+                    label: "1s"
+                }, {
+                    value: 2000,
+                    label: "2s"
+                }, {
+                    value: 3000,
+                    label: "3s"
+                }, {
+                    value: 5000,
+                    label: "5s"
+                }]}
+            ></BoxRadioGroup>
         </div>
-    </>;
+    </Modal>;
 };
