@@ -14,3 +14,4 @@ $link-hover: color.scale($link, $lightness: 20%);
 $link-active: color.scale($link, $lightness: -20%);
 
 $border: grey;
+$border-card: color.scale($content-bg, $lightness: 40%);
