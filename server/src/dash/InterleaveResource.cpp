@@ -62,14 +62,8 @@ Dash::InterleaveResource::InterleaveResource(IOContext &ioc, Log::Log &log, unsi
 
 Awaitable<void> Dash::InterleaveResource::getAsync(Server::Response &response, Server::Request &request)
 {
-    /* Give the response all the data we've got for the interleave so far. */
-    for (const auto &[chunk, timeReceived]: data) {
-        response << chunk;
-        co_await response.flush();
-    }
-
-    /* Keep waiting for more data until we've had it all. */
-    for (size_t i = 0; !hasEnded(); i++) {
+    /* Keep sending more chunks to the client until the streams all end and the client's received all the chunks. */
+    for (size_t i = 0; !hasEnded() || i < data.size(); i++) {
         // Wait for more data to become available if necessary.
         assert(i <= data.size());
         while (i == data.size()) {
