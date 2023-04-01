@@ -5,6 +5,7 @@
   "license": "Custom",
   "private": true,
   "version": "0.0.0",
+  "homepage": ".",
   "scripts": {
     "bundle": "GENERATE_SOURCEMAP=false ../cra-build-helper.sh build \"$@\"",
     "bundle-dev": "../cra-build-helper.sh build \"$@\"",

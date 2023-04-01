@@ -5,6 +5,7 @@
   "license": "Custom",
   "private": true,
   "version": "0.0.0",
+  "homepage": ".",
   "scripts": {
     "bundle": "yarn webpack --bail --mode production \"$@\"",
     "bundle-dev": "yarn webpack --bail --mode development \"$@\"",

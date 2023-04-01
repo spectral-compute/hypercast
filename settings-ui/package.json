@@ -1,6 +1,7 @@
 {
   "name": "settings-ui",
   "version": "0.1.0",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "@ckitching/typescript-is": "^0.1.21",
