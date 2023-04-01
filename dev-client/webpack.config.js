@@ -3,15 +3,11 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const path = require("path");
 
 module.exports = (env, argv) => {
-    if (argv.mode === "development") {
-        config.devtool = "source-map";
-    }
-
     const defEnv = (name, def) => {
         return JSON.stringify((env[name] === undefined) ? def : env[name]);
     };
 
-    return {
+    config = {
         entry: "./app.ts",
         mode: (env["NODE_ENV"] === "development" ? "development" : "production"),
         devtool: 'source-map',
@@ -54,4 +50,10 @@ module.exports = (env, argv) => {
             extensions: [".ts", ".js"]
         }
     };
+
+    if (argv.mode === "development") {
+        config.devtool = "source-map";
+    }
+
+    return config;
 };
