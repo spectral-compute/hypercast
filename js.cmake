@@ -44,7 +44,7 @@ add_custom_target(js_copy ALL DEPENDS "${JS_COPY_DEPS}")
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file"
                    COMMAND yarn install
                    COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file"
-                   DEPENDS js_copy
+                   DEPENDS js_copy "${JS_COPY_DEPS}"
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                    COMMENT "Installing Javascript dependencies.")
 add_custom_target(js_yarn_install ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file")
@@ -59,7 +59,7 @@ endif()
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
                    COMMAND yarn "$<IF:$<BOOL:JS_DEV>,bundle-dev,bundle>" ${YARN_ARGS}
                    COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
-                   DEPENDS js_copy js_yarn_install
+                   DEPENDS js_copy js_yarn_install "${JS_COPY_DEPS}"
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
                    COMMENT "Building Javascript projects.")
 add_custom_target(js_yarn_bundle ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file")
@@ -78,7 +78,7 @@ endif()
 #add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
 #                   COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint"
 #                   COMMAND yarn lint
-#                   DEPENDS js_copy js_yarn_bundle
+#                   DEPENDS js_copy js_yarn_bundle "${JS_COPY_DEPS}"
 #                   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 #                   COMMENT "Running Javascript linter.")
 #add_custom_target(js_yarn_foreach_lint ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_foreach_lint")
@@ -101,7 +101,7 @@ if (XCMAKE_ENABLE_DOCS)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_docs_file"
         COMMAND yarn docs
         COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_docs_file"
-        DEPENDS js_copy js_yarn_bundle
+        DEPENDS js_copy js_yarn_bundle "${JS_COPY_DEPS}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         COMMENT "Generate documentation for the Javascript projects."
     )
