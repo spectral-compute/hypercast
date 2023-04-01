@@ -7,6 +7,8 @@
 #include <optional>
 #include <span>
 #include <vector>
+#include <map>
+#include <boost/beast/http/field.hpp>
 
 template <typename> class Awaitable;
 
@@ -144,6 +146,15 @@ public:
      */
     Awaitable<void> flush(bool end = false);
 
+    /**
+     * Set an HTTP response header.
+     *
+     * Why does this class even exist. Half of it is randomly split out into HttpResponse.
+     */
+    void setHeader(const boost::beast::http::field& name, const std::string& value) {
+        extraHeaders[name] = value;
+    }
+
 protected:
     Response() = default;
 
@@ -196,6 +207,10 @@ private:
     CacheKind cacheKind = CacheKind::fixed;
     std::string mimeType;
     bool writeStarted = false;
+
+protected:
+    // Custom response headers the resource has decided it wants to send.
+    std::map<boost::beast::http::field, std::string> extraHeaders;
 };
 
 } // namespace Server

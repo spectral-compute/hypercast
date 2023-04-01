@@ -234,6 +234,10 @@ private:
             response.set(boost::beast::http::field::content_type, getMimeType());
         }
 
+        for (const auto& p : this->extraHeaders) {
+            response.set(p.first, p.second);
+        }
+
         /* If we've not transmitted the headers, but we're guaranteeing no more data in the body, we can set the
            content length. Otherwise, we need to use chunked encoding. */
         if (contentLength) {
