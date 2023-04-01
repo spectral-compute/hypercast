@@ -33,9 +33,6 @@ private:
 
     /**
      * The state for the channel that's streaming.
-     *
-     * TODO: Currently, this is a single channel. Eventually, we'll want to make this a map from configuration channel
-     *       to channel state.
      */
     std::map<std::string, Channel> channels;
 
