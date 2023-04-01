@@ -12,26 +12,31 @@ import {fuzzyApply} from "../Fuzzify";
 import {useState} from "react";
 
 export interface VariantConfigModalProps {
-    onSave: (video: VideoVariant, audio: AudioVariant, stream: StreamVariantConfig) => void;
+    onSave: (cfg: StreamVariantConfig) => void;
     onCancel: () => void;
 
     title: string;
-    audio: AudioVariant;
-    video: VideoVariant;
-    stream: StreamVariantConfig;
+    cfg: StreamVariantConfig
 }
 
 export default (props: VariantConfigModalProps) => {
     // Local copy of the config is used during editing. On cancel this is discarded, but on
     // save it's propagated to the parent (and incorporated into the in-progress cfg object).
-    const [video, setVideo] = useState<VideoVariant>(props.video);
-    const [audio, setAudio] = useState<AudioVariant>(props.audio);
-    const [stream, setStream] = useState<StreamVariantConfig>(props.stream);
+    const [video, setVideo] = useState<VideoVariant>(props.cfg.video);
+    const [audio, setAudio] = useState<AudioVariant>(props.cfg.audio);
+    const [stream, setStream] = useState<StreamVariantConfig>(props.cfg);
+
+    function doSave() {
+        const result = {...stream};
+        result.video = {...video};
+        result.audio = {...audio};
+        props.onSave(result);
+    }
 
     return <Modal
         title={"Configuring " + props.title}
         onClose={props.onCancel}
-        onSave={() => props.onSave(video, audio, stream)}
+        onSave={() => doSave()}
     >
         <div className="btnRow">
             <div className="btnDesc">
@@ -121,8 +126,8 @@ export default (props: VariantConfigModalProps) => {
                 Lower latency settings may use a little more bandwidth than higher-latency ones.
             </div>
             <BoxRadioGroup<number>
-                onSelected={(v) => setStream({...stream, targetLatencyMs: v})}
-                selectedItem={stream.targetLatencyMs}
+                onSelected={(v) => setStream({...stream, targetLatency: v})}
+                selectedItem={stream.targetLatency}
                 items={[{
                     value: 1000,
                     label: "1s"

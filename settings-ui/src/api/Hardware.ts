@@ -35,8 +35,6 @@ export function inputUrlToSDIPortNumber(url: string) {
         return 0;
     }
 
-    console.log(url);
-
     // If it isn't an SDI input...
     return null;
 }

@@ -59,6 +59,7 @@ export function useAsync<ArgsT extends any[], ResultT>(fn: (...args: ArgsT) => P
                     options.onComplete(cArgs, response);
                 }
             }).catch((error) => {
+                console.log("HERE?");
                 console.error(error);
                 setError(error);
                 setStatus("rejected");

@@ -10,6 +10,7 @@ import {ReactComponent as NoAudioIcon} from "./assets/icons/volume-x.svg";
 import {ReactComponent as LatencyIcon} from "./assets/icons/clock.svg";
 import {ReactComponent as FrameRateIcon} from "./assets/icons/activity.svg";
 import {inputUrlToSDIPortNumber} from "./api/Hardware";
+import {ReactComponent as FileIcon} from "./assets/icons/file.svg";
 import BoxBtn from "./components/BoxBtn";
 
 export interface StreamBoxProps {
@@ -68,9 +69,9 @@ function prettyPrintFramerate(f: FrameRateCfg | undefined) {
     }
 }
 
-function renderVariant(_name: string, variantCfg: StreamVariantConfig, channelCfg: Channel) {
-    const videoCfg = channelCfg.videoVariants[variantCfg.video]!;
-    const audioCfg = channelCfg.audioVariants[variantCfg.audio]!;
+function renderVariant(variantCfg: StreamVariantConfig) {
+    const videoCfg = variantCfg.video;
+    const audioCfg = variantCfg.audio;
 
     return <div className="channelInfoBox">
         <div className="variantInfoRow">
@@ -83,22 +84,21 @@ function renderVariant(_name: string, variantCfg: StreamVariantConfig, channelCf
 
             {renderAudioStatus(audioCfg)}
 
-            <BoxBtn label={prettyPrintTargetLatency(variantCfg.targetLatencyMs)} size={4}>
+            <BoxBtn label={prettyPrintTargetLatency(variantCfg.targetLatency)} size={4}>
                 <LatencyIcon/>
             </BoxBtn>
         </div>
     </div>;
 }
 
-function countPixels(chan: Channel, x: string) {
-    const s = chan.streams[x]!;
-    const vid = chan.videoVariants[s.video]!;
+function countPixels(q: StreamVariantConfig) {
+    const vid = q.video;
     return vid.width * vid.height;
 }
 
-function sortVariants(chan: Channel): string[] {
-    return Array.from(Object.keys(chan.streams)).sort((x, y) => {
-        return countPixels(chan, y) - countPixels(chan, x);
+function sortVariants(chan: Channel): StreamVariantConfig[] {
+    return chan.qualities.sort((x, y) => {
+        return countPixels(x) - countPixels(y);
     });
 }
 
@@ -107,21 +107,24 @@ function StreamBox(props: StreamBoxProps) {
     const chan = props.config;
 
     const variantSequence = sortVariants(chan);
+    const whichSDI = inputUrlToSDIPortNumber(chan.source.url)!;
 
     return <SecondaryBox>
         <div className="streamInfo" onClick={props.onClick}>
             <div className="sboxHeader">
                 <span>{props.name}</span>
+                {whichSDI != null ?
                 <PortStatus
                     shortLabel={true}
                     size={1}
-                    desc={appCtx.machineInfo.inputPorts[inputUrlToSDIPortNumber(chan.videoSource.url)!]!}
+                    desc={appCtx.machineInfo.inputPorts[whichSDI]!}
                     connected={true}
                 ></PortStatus>
+                : <FileIcon/>}
             </div>
 
             {variantSequence.map(
-                (p) => renderVariant(p, chan.streams[p]!, chan)
+                (p) => renderVariant(p)
             )}
         </div>
     </SecondaryBox>;

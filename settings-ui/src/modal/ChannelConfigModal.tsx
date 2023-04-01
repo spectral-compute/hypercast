@@ -21,10 +21,14 @@ export interface ChannelConfigModalProps {
 }
 
 function hasStreamWithResolution(channel: Channel, w: number, h: number) {
-    for (const p of Object.entries(channel.videoVariants)) {
-        const v = p[1];
+    for (let i = 0; i < channel.qualities.length; i++) {
+        const p = channel.qualities[i]!;
+        const v = p.video;
         if (v.width == w && v.height == h) {
-            return p[0];
+            console.log("FOUND");
+            console.log(v);
+            console.log(i);
+            return i;
         }
     }
 
@@ -32,21 +36,24 @@ function hasStreamWithResolution(channel: Channel, w: number, h: number) {
 }
 
 function getInputPort(appCtx: AppCtx, channel: Channel) {
-    return appCtx.machineInfo.inputPorts[inputUrlToSDIPortNumber(channel.videoSource.url)!]!;
+    return appCtx.machineInfo.inputPorts[inputUrlToSDIPortNumber(channel.source.url)!]!;
 }
 
 function inputIsAtLeast(appCtx: AppCtx, channel: Channel, w: number, h: number) {
     const port = getInputPort(appCtx, channel);
+    if (port == null) {
+        return true;
+    }
 
     return port.connectedMediaInfo!.height >= h &&
            port.connectedMediaInfo!.width >= w;
 }
 
-export function defaultVariantConfig(name: string): StreamVariantConfig {
+export function defaultVariantConfig(w: number, h: number): StreamVariantConfig {
     return {
-        audio: name,
-        video: name,
-        targetLatencyMs: 1000
+        audio: defaultAudioVariantConfig(),
+        video: defaultVideoVariantConfig(w, h),
+        targetLatency: 1000
     };
 }
 
@@ -64,70 +71,52 @@ export function defaultVideoVariantConfig(w: number, h: number): VideoVariant {
     };
 }
 
-function deleteStreamsReferencing(c: Channel, name: string) {
-    for (const p of Object.keys(c.streams)) {
-        if (c.streams[p]!.audio == name || c.streams[p]!.video == name) {
-            delete c.streams[p];
-        }
-    }
-}
-
-function variantNameFor(w: number, h: number) {
-    return w + "x" + h;
-}
+// function deleteStreamsReferencing(c: Channel, name: string) {
+//     for (const p of Object.keys(c.streams)) {
+//         if (c.streams[p]!.audio == name || c.streams[p]!.video == name) {
+//             delete c.streams[p];
+//         }
+//     }
+// }
+//
+// function variantNameFor(w: number, h: number) {
+//     return w + "x" + h;
+// }
 
 export default observer((props: ChannelConfigModalProps) => {
     const appCtx = useContext(AppContext);
 
     const [channel, setChannel] = useState<Channel>(props.channel);
-    const [variantBeingEdited, setVariantBeingEdited] = useState<[VideoVariant, AudioVariant, StreamVariantConfig, string] | null>(null);
+    const [variantBeingEdited, setVariantBeingEdited] = useState<number | null>(null);
 
     function modifyChannel(c: Channel) {
         setChannel({...c});
     }
 
     function toggleStreamExistence(w: number, h: number) {
+        console.log(channel);
+        console.log(w);
+        console.log(h);
         const c = hasStreamWithResolution(channel, w, h);
-        const canonicalName = variantNameFor(w, h);
+        console.log(c);
 
-        if (c) {
-            delete channel.videoVariants[c];
-            delete channel.audioVariants[c];
+        if (c != null) {
+            channel.qualities.splice(c, 1);
 
-            deleteStreamsReferencing(channel, c);
         } else {
-            const name = canonicalName;
-            channel.videoVariants[name] = defaultVideoVariantConfig(w, h);
-            channel.audioVariants[name] = defaultAudioVariantConfig();
-            channel.streams[name] = defaultVariantConfig(name);
+            channel.qualities.push(defaultVariantConfig(w, h));
         }
 
         modifyChannel(channel);
     }
 
-    function canonicaliseChannel(name: string, w: number, h: number) {
-        channel.videoVariants[name] ??= defaultVideoVariantConfig(w, h);
-        channel.audioVariants[name] ??= defaultAudioVariantConfig();
-        channel.streams[name] ??= defaultVariantConfig(name);
-        modifyChannel(channel);
-    }
-
     function openSettingsFor(w: number, h: number) {
-        const name = hasStreamWithResolution(channel, w, h)!;
-        canonicaliseChannel(name, w, h);
-        setVariantBeingEdited([
-            channel.videoVariants[name]!,
-            channel.audioVariants[name]!,
-            channel.streams[name]!,
-            name
-        ]);
+        const num = hasStreamWithResolution(channel, w, h)!;
+        setVariantBeingEdited(num);
     }
 
-    function saveVariantBeingEdited(video: VideoVariant, audio: AudioVariant, stream: StreamVariantConfig) {
-        const n = variantBeingEdited![3];
-        channel.videoVariants[n] = video;
-        channel.audioVariants[n] = audio;
-        channel.streams[n] = stream;
+    function saveVariantBeingEdited(cfg: StreamVariantConfig) {
+        channel.qualities[variantBeingEdited!] = cfg;
         setVariantBeingEdited(null);
         modifyChannel(channel);
     }
@@ -140,10 +129,8 @@ export default observer((props: ChannelConfigModalProps) => {
 
     if (variantBeingEdited != null) {
         return <VariantConfigModal
-            title={variantBeingEdited[3]}
-            video={variantBeingEdited![0]}
-            audio={variantBeingEdited![1]}
-            stream={variantBeingEdited[2]}
+            title={"Variant"}
+            cfg={channel.qualities[variantBeingEdited]!}
 
             onCancel={() => setVariantBeingEdited(null)}
             onSave={saveVariantBeingEdited}

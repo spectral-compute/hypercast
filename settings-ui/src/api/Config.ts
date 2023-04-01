@@ -71,10 +71,10 @@ export interface AudioVariant {
 
 export interface StreamVariantConfig {
     // The audio/video variants selected for this stream.
-    video: string;
-    audio: string;
+    video: VideoVariant;
+    audio: AudioVariant;
 
-    targetLatencyMs: number;
+    targetLatency: number;
     minInterleaveRate?: number;
     minInterleaveWindow?: number;
     interleaveTimestampInterval?: number;
@@ -83,14 +83,12 @@ export interface StreamVariantConfig {
 
 
 export interface Channel {
-    videoSource: MediaSource;
+    source: MediaSource;
 
     // Define stream variants that exist.
-    videoVariants: {[name: string]: VideoVariant};
-    audioVariants: {[name: string]: AudioVariant};
-
-    // Defines each stream, in terms of selected variants and other options.
-    streams: {[name: string]: StreamVariantConfig};
+    qualities: StreamVariantConfig[];
+    dash: DashConfig;
+    history: HistoryConfig;
 }
 
 export interface HttpConfig {
@@ -136,10 +134,8 @@ export interface LogConfig {
 
 export interface StreamingConfig {
     channels: {[name: string]: Channel};
-    dash: DashConfig;
     network: NetworkConfig;
     http: HttpConfig;
     paths: PathsConfig;
-    history: HistoryConfig;
     log: LogConfig;
 }

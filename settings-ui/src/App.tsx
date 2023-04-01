@@ -10,6 +10,8 @@ import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
 import {Channel} from "./api/Config";
 import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
+import {useAsyncDeferred, useAsyncImmediate } from './hooks/useAsync';
+import Kaput from './Kaput';
 
 
 function App() {
@@ -17,6 +19,17 @@ function App() {
 
   let [modalOpen, setModalOpen] = useState<boolean>(false);
   let [channelBeingEdited, setChannelBeingEdited] = useState<[string, Channel] | null>(null);
+
+  const loadCfg = useAsyncImmediate(appCtx.loadConfig);
+  const saveCfg = useAsyncDeferred(appCtx.saveConfig);
+  const loading = loadCfg.isLoading || saveCfg.isLoading;
+
+  if (loading) {
+      return <div>Loading...</div>;
+  }
+  if (loadCfg.error || saveCfg.error) {
+      return <Kaput message={"Failed to communicate with server process!"}></Kaput>;
+  }
 
   const channels = appCtx.loadedConfiguration.channels;
 
@@ -31,6 +44,7 @@ function App() {
       console.log(newValue);
       appCtx.loadedConfiguration.channels[name] = newValue;
       console.log(appCtx.loadedConfiguration);
+      saveCfg.run(appCtx.loadedConfiguration);
   }
 
   // TODO: initial state loading crap.

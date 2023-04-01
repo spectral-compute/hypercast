@@ -1,5 +1,5 @@
-import {BaseResponse, SetStreamingStateResponse} from "./Types";
-import {assertType} from "@ckitching/typescript-is";
+import {BaseResponse} from "./Types";
+import { StreamingConfig } from "./Config";
 
 // We assume that we're being served by the server, so a relative url can be used to reach the API.
 // It's also useful to run the settings ui in the webpack devserver, so in dev builds we allow a URL
@@ -16,8 +16,8 @@ if (process.env.NODE_ENV === "development") {
 // it if it ever becomes so :D
 export class Api {
     async makeRequest(method: string, route: string, params: any = {}) {
-        const paramsObj = new URLSearchParams(params);
         if (method === "GET") {
+            const paramsObj = new URLSearchParams(params);
             // Send params as GET params.
             const paramStr = paramsObj.toString();
             if (paramStr !== "") {
@@ -29,24 +29,42 @@ export class Api {
             method,
 
             // In POST mode, send params as form-data.
-            ...(method === "POST" ? {body: paramsObj} : {})
+            ...((method === "POST" || method == "PUT") ? {body: JSON.stringify(params)} : {})
         });
 
         if (!rsp.ok) {
             throw new Error("Failed to communicate with API");
         }
 
-        const reply: BaseResponse = JSON.parse(await rsp.text());
+        let reply!: BaseResponse;
+        try {
+            reply = JSON.parse(await rsp.text());
+        } catch (e) {
+            throw new Error("Error calling API: " + e);
+        }
+
         if (reply.error) {
             throw new Error("Error from API: " + reply.error);
         }
 
-        return reply;
+        return reply as any;
     }
 
     async setStreamingState(active: boolean) {
         const reply = await this.makeRequest("POST", "/set_state", {active});
-        assertType<SetStreamingStateResponse>(reply);
+        // assertType<SetStreamingStateResponse>(reply);
+        return reply;
+    }
+
+    async applyConfig(newCfg: StreamingConfig): Promise<StreamingConfig> {
+        await this.makeRequest("PUT", "/config", newCfg);
+        return await this.loadConfig();
+    }
+
+    async loadConfig(): Promise<StreamingConfig> {
+        const reply = await this.makeRequest("GET", "/config");
+        console.log(reply);
+        // assertType<SetStreamingStateResponse>(reply);
         return reply;
     }
 }
