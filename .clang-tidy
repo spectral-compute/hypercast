@@ -7,4 +7,5 @@ Checks: "\
 -clang-analyzer-core.NullDereference,\
 -readability-simplify-boolean-expr,\
 -clang-analyzer-cplusplus.Move,\
+-modernize-loop-convert,\
 -google-explicit-constructor"
