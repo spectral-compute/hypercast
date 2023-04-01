@@ -49,9 +49,15 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file"
                    COMMENT "Installing Javascript dependencies.")
 add_custom_target(js_yarn_install ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_install_file")
 
+# Figure out the arguments to give to yarn for building the projects.
+set(YARN_ARGS)
+if (CLIENT_INFO_URL)
+    list(APPEND YARN_ARGS --env "INFO_URL=${CLIENT_INFO_URL}")
+endif()
+
 # Build the projects.
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
-                   COMMAND yarn "$<IF:$<BOOL:JS_DEV>,bundle-dev,bundle>"
+                   COMMAND yarn "$<IF:$<BOOL:JS_DEV>,bundle-dev,bundle>" ${YARN_ARGS}
                    COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
                    DEPENDS js_copy js_yarn_install
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
