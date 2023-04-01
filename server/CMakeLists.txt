@@ -1,6 +1,3 @@
-# Options.
-option(ENABLE_SERVER "Enable building the C++ server." On)
-
 # The rest of this script is meaningful only if the server is turned on.
 if (NOT ENABLE_SERVER)
     return()
