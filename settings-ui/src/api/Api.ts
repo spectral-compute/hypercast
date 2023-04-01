@@ -1,7 +1,16 @@
 import {BaseResponse, SetStreamingStateResponse} from "./Types";
 import {assertType} from "@ckitching/typescript-is";
 
-export const API_BASE = "http://localhost:8192/api";
+// We assume that we're being served by the server, so a relative url can be used to reach the API.
+// It's also useful to run the settings ui in the webpack devserver, so in dev builds we allow a URL
+// parameter to be used to specify where the server is.
+let API_BASE = "../api";
+const urlParams = new URLSearchParams(window.location.search);
+if (process.env.NODE_ENV === "development") {
+    if (urlParams.has('api')) {
+        API_BASE = urlParams.get("api")!;
+    }
+}
 
 // An object so the API can be stateful. It's not 100% clear if it's actually going to be so, but I CBA to refactor
 // it if it ever becomes so :D
