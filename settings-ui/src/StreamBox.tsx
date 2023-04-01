@@ -19,21 +19,21 @@ export interface StreamBoxProps {
 }
 
 function prettyPrintResolution(w: number, h: number) {
-    if (w == 3840 && h == 2160) {
-        return "4k";
-    } else if (w == 1920 && h == 1080) {
-        return "1080p";
-    } else if (w == 1280 && h == 720) {
-        return "720p";
-    } else if (w == 640 && h == 480) {
-        return "480p";
-    } else if (w == 320 && h == 240) {
-        return "240p";
-    } else if (w == 192 && h == 144) {
-        return "144p";
-    } else {
+    // if (w == 3840 && h == 2160) {
+    //     return "4k";
+    // } else if (w == 1920 && h == 1080) {
+    //     return "1080p";
+    // } else if (w == 1280 && h == 720) {
+    //     return "720p";
+    // } else if (w == 640 && h == 480) {
+    //     return "480p";
+    // } else if (w == 320 && h == 240) {
+    //     return "240p";
+    // } else if (w == 192 && h == 144) {
+    //     return "144p";
+    // } else {
         return w + "x" + h;
-    }
+    // }
 }
 
 function renderAudioStatus(audioCfg: AudioVariant) {
