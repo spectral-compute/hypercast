@@ -69,6 +69,10 @@ install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/client/dist/" DESTINATION ${JS_IN
         ${JS_INSTALL_EXCLUDE})
 install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo-client/build/" DESTINATION ${JS_INSTALL_PREFIX}demo-client
         ${JS_INSTALL_EXCLUDE})
+if (ENABLE_SERVER)
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/settings-ui/build/" DESTINATION ${JS_INSTALL_PREFIX}settings-ui
+            ${JS_INSTALL_EXCLUDE})
+endif()
 if (NOT XCMAKE_PACKAGING)
     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dev-client/dist/" DESTINATION ${JS_INSTALL_PREFIX}dev-client
             ${JS_INSTALL_EXCLUDE})
