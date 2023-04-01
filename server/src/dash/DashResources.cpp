@@ -402,7 +402,7 @@ public:
         /* Create the resources for the not-found segments. */
         for (unsigned int i = firstEphemeralNotFoundSegment; i < nextEphemeralNotFoundSegment; i++) {
             Server::Path path = uidPath / getInterleaveName(interleaveIndex, i);
-            server.addResource<Server::ErrorResource>(path, Server::ErrorKind::NotFound, Server::CacheKind::ephemeral,
+            server.addOrReplaceResource<Server::ErrorResource>(path, Server::ErrorKind::NotFound, Server::CacheKind::ephemeral,
                                                       true);
         }
     }
@@ -418,6 +418,38 @@ private:
 class Dash::DashResources::Stream final : public StreamSegmentSet<SegmentExpiringResource> {};
 
 Dash::DashResources::~DashResources() = default;
+
+void Dash::DashResources::removeResources()
+{
+    server.removeResource(this->basePath / "info.json");
+    server.removeResource(uidPath / "manifest.mpd");
+
+    unsigned int videoIndex = 0;
+    auto audioIndex = (unsigned int) config.qualities.size();
+    for (const Config::Quality &q: config.qualities) {
+        // The initializer segment.
+        server.removeResource(uidPath / getInitializerName(videoIndex));
+        videoIndex++;
+
+        if (!q.audio) {
+            continue;
+        }
+
+        server.removeResource(uidPath / getInitializerName(audioIndex));
+        audioIndex++;
+    }
+
+    for (int i = 0; i < (int) streams.size(); i++) {
+        server.removeResource(uidPath / getSegmentIndexDescriptorName(i));
+    }
+
+    // These contain ExpiringResources, which will be removed as a result of deletion.
+    // As for the resources created by `addEphemeralNotFoundSegments`: both it and the code that replaces them with
+    // real segment resources use `addOrReplaceResource`, meaning we don't actually need to sort them out.
+    //
+    // Someday, maybe this code will look less like a salad recipe written by a corporate lawyer's phone autocorrect.
+    streams.clear();
+}
 
 Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &channelConfig,
                                    const Config::Http &httpConfig, Server::Path basePath, Server::Server &server) :

@@ -68,6 +68,14 @@ public:
     Awaitable<int> wait(bool throwOnNonZero = true);
 
     /**
+     * Stop the process via SIGTERM (or equivalent on other operating systems)
+     *
+     * Waits for the process to exit.
+     * @return The exit code.
+     */
+    Awaitable<int> kill();
+
+    /**
      * Write data to the subprocess's stdin.
      *
      * This method requires that captureStdin was set to true when creating the Subprocess object and closeStdin has

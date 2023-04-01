@@ -57,6 +57,9 @@ public:
     DashResources(const DashResources &) = delete;
     DashResources & operator=(const DashResources &) = delete;
 
+    // TODO: Maybe this ought to be the destructor...
+    void removeResources();
+
     /**
      * Notify that a given segment from a given stream has started to be received.
      *

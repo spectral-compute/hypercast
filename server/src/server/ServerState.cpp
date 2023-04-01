@@ -119,10 +119,19 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     for (const auto &[channelPath, channelConfig]: newCfg.channels) {
         // TODO: Stop streaming here as needed.
         if (channels.contains(channelPath)) {
-            // TODO: Add a method to Dash::DashResources() to remove its resources, and to Ffmpeg::FfmpegProcess() to
-            //       terminate the process. Until then, development of the UI may require commenting out the creation of
-            //       channel.
-            throw std::runtime_error("Restarting the stream (for " + channelPath + ") is not yet supported.");
+            // Destroy the channel, remove it, and then rely on the code later in this function to recreate it.
+            // A more elegant implementation is probably possible :D.
+
+            auto& node = channels.at(channelPath);
+
+            // Stop ffmpeg.
+            co_await node.ffmpeg.kill();
+
+            // Remove the resources from the server.
+            node.dash.removeResources();
+
+            // Delete the channel. TODO: Can all of the above just... happen in destructors so this is the only line needed?
+            channels.erase(channelPath);
         }
     }
 
