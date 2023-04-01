@@ -43,7 +43,10 @@ public:
         /**
          * Equivalent to the HTTP PUT request.
          */
-        put
+        put,
+
+        /// HTTP OPTIONS
+        options
     };
 
     virtual ~Request();

@@ -22,12 +22,18 @@ Awaitable<void> Server::SynchronousResource::operator()(Response &response, Requ
         case Server::Request::Type::put:
             this->putSync(response, request);
             break;
+        case Server::Request::Type::options:
+            this->optionsSync(response, request);
+            break;
     }
 }
 
 void Server::SynchronousResource::getSync(Response&, const Request&) { unsupportedHttpVerb("GET"); }
 void Server::SynchronousResource::postSync(Response&, const Request&) { unsupportedHttpVerb("POST"); }
 void Server::SynchronousResource::putSync(Response&, const Request&) { unsupportedHttpVerb("PUT"); }
+void Server::SynchronousResource::optionsSync(Response& res, const Request& req) {
+    this->defaultOptionsHandler(res, req);
+}
 
 
 Server::SynchronousNullaryResource::~SynchronousNullaryResource() = default;

@@ -11,6 +11,7 @@
 #include "util/asio.hpp"
 #include "util/util.hpp"
 
+#include <chrono>
 #include <boost/asio/ip/tcp.hpp>
 
 #include <boost/beast/core/flat_buffer.hpp>
@@ -129,6 +130,7 @@ private:
      */
     std::vector<std::byte> buffer;
 };
+
 /**
  * Wraps the boost::beast and boost::asio stuff into a Server::Response.
  */
@@ -162,6 +164,7 @@ public:
      */
     void discardBody()
     {
+        // TODO: Shouldn't this set HTTP 204?
         discard = true;
     }
 
@@ -211,6 +214,79 @@ private:
         }
     }
 
+    std::string paddedNum(unsigned d) {
+        if (d < 10) {
+            return "0" + std::to_string(d);
+        }
+
+        return std::to_string(d);
+    }
+
+    std::string computeDateHeader() {
+        using namespace std::chrono;
+        auto tp = system_clock::now();
+        auto dp = floor<days>(tp);
+        year_month_day ymd{dp};
+        weekday wd{dp};
+        hh_mm_ss time{floor<milliseconds>(tp-dp)};
+        int y = (int) ymd.year();
+        month m = ymd.month();
+        auto d = ymd.day();
+        auto h = (int) time.hours().count();
+        auto M = (int) time.minutes().count();
+        auto s = (int) time.seconds().count();
+
+        std::stringstream out;
+        if (wd == Sunday) {
+            out << "Sun";
+        } else if (wd == Monday) {
+            out << "Mon";
+        } else if (wd == Tuesday) {
+            out << "Tue";
+        } else if (wd == Wednesday) {
+            out << "Wed";
+        } else if (wd == Thursday) {
+            out << "Thu";
+        } else if (wd == Friday) {
+            out << "Fri";
+        } else if (wd == Saturday) {
+            out << "Sat";
+        }
+
+        out << ", ";
+        out << paddedNum((unsigned) d);
+        out << " ";
+        if (m == January) {
+            out << "Jan";
+        } else if (m == February) {
+            out << "Feb";
+        } else if (m == March) {
+            out << "Mar";
+        } else if (m == April) {
+            out << "Apr";
+        } else if (m == May) {
+            out << "May";
+        } else if (m == June) {
+            out << "Jun";
+        } else if (m == July) {
+            out << "Jul";
+        } else if (m == August) {
+            out << "Aug";
+        } else if (m == September) {
+            out << "Sep";
+        } else if (m == October) {
+            out << "Oct";
+        } else if (m == November) {
+            out << "Nov";
+        } else if (m == December) {
+            out << "Dec";
+        }
+        out << " " << y << " ";
+
+        out << paddedNum((unsigned) h) << ":" << paddedNum((unsigned) M) << ":" << paddedNum((unsigned) s) << " GMT";
+        return out.str();
+    }
+
     Awaitable<void> transmitHeaders(std::optional<size_t> contentLength)
     {
         /* Set the response code. */
@@ -218,6 +294,9 @@ private:
 
         /* Set the server string. */
         response.set(boost::beast::http::field::server, "Spectral Compute Ultra Low Latency Video Streamer");
+
+        // The Date header.
+        response.set(boost::beast::http::field::date, computeDateHeader());
 
         /* Set cache control. */
         {
@@ -308,6 +387,8 @@ std::optional<Server::Request::Type> getRequestType(boost::beast::http::verb ver
             return Server::Request::Type::post;
         case boost::beast::http::verb::put:
             return Server::Request::Type::put;
+        case boost::beast::http::verb::options:
+            return Server::Request::Type::options;
         default: break;
     }
     return std::nullopt;

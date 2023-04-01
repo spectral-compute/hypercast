@@ -44,6 +44,7 @@ size_t getMaxRequestLength(const Server::Resource &resource, Server::Request::Ty
         case Server::Request::Type::get: return resource.getMaxGetRequestLength();
         case Server::Request::Type::post: return resource.getMaxPostRequestLength();
         case Server::Request::Type::put: return resource.getMaxPutRequestLength();
+        case Server::Request::Type::options: return resource.getMaxGetRequestLength();
     }
     unreachable();
 }
@@ -189,6 +190,7 @@ const char *getRequestTypeString(Server::Request::Type type)
         case Server::Request::Type::get: return "get";
         case Server::Request::Type::post: return "post";
         case Server::Request::Type::put: return "put";
+        case Server::Request::Type::options: return "options";
     }
     unreachable();
 }

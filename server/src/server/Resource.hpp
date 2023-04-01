@@ -23,6 +23,9 @@ protected:
     // Throw an error describing that the given HTTP verb is not supported.
     [[noreturn]] void unsupportedHttpVerb(const std::string& verb) const;
 
+    // Default impleentation for OPTIONS handler.
+    void defaultOptionsHandler(Response& response, const Request& request);
+
 public:
     virtual ~Resource();
 
@@ -41,6 +44,7 @@ public:
     virtual Awaitable<void> getAsync(Response &response, Request &request);
     virtual Awaitable<void> postAsync(Response &response, Request &request);
     virtual Awaitable<void> putAsync(Response &response, Request &request);
+    virtual Awaitable<void> optionsAsync(Response &response, Request &request);
 
     /// Dispatches a request to one of the above.
     /// You probably don't want to override this one, but can if you want.

@@ -39,6 +39,7 @@ public:
     virtual void getSync(Response &response, const Request &request);
     virtual void postSync(Response &response, const Request &request);
     virtual void putSync(Response &response, const Request &request);
+    virtual void optionsSync(Response &response, const Request &request);
 };
 
 /**
