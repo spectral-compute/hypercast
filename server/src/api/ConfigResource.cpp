@@ -13,6 +13,8 @@ Awaitable<void> Api::ConfigResource::getAsync(Server::Response &response, Server
     if (!(co_await request.readSome()).empty()) {
         throw Server::Error(Server::ErrorKind::BadRequest);
     }
+
+    response.setCacheKind(Server::CacheKind::ephemeral);
     response << serverState.requestedConfig.jsonRepresentation;
     co_return;
 }
