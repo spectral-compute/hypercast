@@ -2,10 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import {RouterProvider, createBrowserRouter} from "react-router-dom";
 
-import Body from "./components/Body";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
-
 // Pages
 import Index from "./pages/Index";
 import Demo from "./pages/Demo";
@@ -86,10 +82,6 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-        <Header/>
-        <Body>
-            <RouterProvider router={router}/>
-        </Body>
-        <Footer/>
+        <RouterProvider router={router}/>
     </React.StrictMode>
 );

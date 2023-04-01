@@ -10,4 +10,16 @@ header {
         flex-direction: column;
         align-items: center;
     }
+
+    & .title {
+        color: white;
+        font-size: 2em;
+        font-weight: bold;
+
+        margin: 0.5em 0;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
 }
