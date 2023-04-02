@@ -43,7 +43,7 @@ function renderAudioStatus(audioCfg: AudioVariant) {
 
     let label = hasAudio ? audioCfg.bitrate + "k" : "None";
 
-    return <BoxBtn label={label} size={4}>
+    return <BoxBtn label={label} size={5}>
         {icon}
     </BoxBtn>;
 }
@@ -75,16 +75,16 @@ function renderVariant(variantCfg: StreamVariantConfig, key: number) {
 
     return <div key={key} className="channelInfoBox">
         <div className="variantInfoRow">
-            <BoxBtn label={prettyPrintResolution(videoCfg.width, videoCfg.height)} size={4}>
+            <BoxBtn label={prettyPrintResolution(videoCfg.width, videoCfg.height)} size={5}>
                 <VideoIcon/>
             </BoxBtn>
-            <BoxBtn label={prettyPrintFramerate(videoCfg.frameRate)} size={4}>
+            <BoxBtn label={prettyPrintFramerate(videoCfg.frameRate)} size={5}>
                 <FrameRateIcon/>
             </BoxBtn>
 
             {renderAudioStatus(audioCfg)}
 
-            <BoxBtn label={prettyPrintTargetLatency(variantCfg.targetLatency)} size={4}>
+            <BoxBtn label={prettyPrintTargetLatency(variantCfg.targetLatency)} size={5}>
                 <LatencyIcon/>
             </BoxBtn>
         </div>

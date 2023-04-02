@@ -4,8 +4,10 @@
     display: flex
     justify-content: center
     flex-direction: column
+    gap: 0.2em
     align-items: center
     border-radius: 1em
+    cursor: pointer
 
     &.active
         border: 4px solid darken(#4C8CD4, 10%)
@@ -18,8 +20,13 @@
         background-color: #353844
         pointer-events: none
 
-    &:hover
-        filter: brightness(1.3)
+    @media (hover: hover)
+        &:hover
+            filter: brightness(1.3)
+
+.sizeHack
+    span
+        font-size: 0.8em
 
 .boxBtnLabel
     color: var(--colour-primary)

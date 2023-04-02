@@ -27,6 +27,9 @@ function getClasses(props: BoxBtnProps) {
     if (props.disabled) {
         classes.push("disabled");
     }
+    if (props.label.length > 8) {
+        classes.push("sizeHack");
+    }
 
     return classes.join(" ");
 }
