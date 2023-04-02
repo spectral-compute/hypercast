@@ -1,5 +1,6 @@
 import {BaseResponse} from "./Types";
 import { StreamingConfig } from "./Config";
+import { MediaSourceInfo } from "./Hardware";
 
 // We assume that we're being served by the server, so a relative url can be used to reach the API.
 // It's also useful to run the settings ui in the webpack devserver, so in dev builds we allow a URL
@@ -17,6 +18,7 @@ if (process.env.NODE_ENV === "development") {
 export class Api {
     async makeRequest(method: string, route: string, params: any = {}) {
         if (method === "GET") {
+            console.log(params);
             const paramsObj = new URLSearchParams(params);
             // Send params as GET params.
             const paramStr = paramsObj.toString();
@@ -59,6 +61,12 @@ export class Api {
     async applyConfig(newCfg: StreamingConfig): Promise<StreamingConfig> {
         await this.makeRequest("PUT", "/config", newCfg);
         return await this.loadConfig();
+    }
+
+    async probe(sources: string[]): Promise<MediaSourceInfo[]> {
+        return await this.makeRequest("POST", "probe", sources.map(x => {
+            return {url: x};
+        }));
     }
 
     async loadConfig(): Promise<StreamingConfig> {

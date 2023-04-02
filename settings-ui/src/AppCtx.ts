@@ -1,6 +1,7 @@
 import {Api} from "./api/Api";
 import {MachineInfo, PortConnector} from "./api/Hardware";
 import {StreamingConfig} from "./api/Config";
+import {DecklinkPort, DECKLINK_PORTS_ORDERED } from "./Constants";
 
 
 
@@ -18,10 +19,14 @@ export class AppCtx {
                 name: "SDI 1",
                 connector: PortConnector.SDI,
                 connectedMediaInfo: {
-                    framerateDenominator: 30,
-                    framerateNumerator: 1,
-                    height: 1080,
-                    width: 1920,
+                    video: {
+                        height: 1080,
+                        width: 1920,
+                        frameRate: [30, 1]
+                    },
+                    audio: {
+                        sampleRate: 1000
+                    }
                 }
             },
             ["2"]: {
@@ -41,9 +46,27 @@ export class AppCtx {
 
     loadConfig = async() => {
         this.loadedConfiguration = await this.api.loadConfig();
+        await this.probeSDIPorts();
     };
     saveConfig = async(cfg: StreamingConfig) => {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
+    };
+
+    probeSDIPorts = async() => {
+        const infos = await this.api.probe(
+            DECKLINK_PORTS_ORDERED
+        );
+
+        for (let i = 1; i <= DECKLINK_PORTS_ORDERED.length; i++) {
+            const o = this.machineInfo.inputPorts[String(i) as DecklinkPort];
+            o.connectedMediaInfo = infos[i - 1]!;
+
+            // Strictly speaking, `infos[i-1]` being null means "port doesn't exist", and the other case means there's
+            // nothing plugged into it.
+            if (!infos[i - 1] || (!o.connectedMediaInfo.video && !o.connectedMediaInfo.audio)) {
+                delete o.connectedMediaInfo;
+            }
+        }
     };
 
     constructor() {

@@ -5,10 +5,14 @@ export enum PortConnector {
 }
 
 export interface MediaSourceInfo {
-    framerateNumerator: number;
-    framerateDenominator: number;
-    width: number;
-    height: number;
+    video?: {
+        width: number;
+        height: number;
+        frameRate: [number, number]
+    },
+    audio?: {
+        sampleRate: number;
+    }
 }
 
 export interface PortDescriptor {
@@ -19,6 +23,7 @@ export interface PortDescriptor {
     // Description of what's connected, if anything.
     connectedMediaInfo?: MediaSourceInfo;
 }
+
 
 // Describes the machine the server is running on, and its current status.
 // Note that this can in general change (although the server may not yet support that). People
