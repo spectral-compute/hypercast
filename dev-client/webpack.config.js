@@ -45,7 +45,7 @@ module.exports = (env, argv) => {
         ],
         resolve: {
             alias: {
-                'live-video-streamer-client': path.resolve(__dirname, '../client/src'),
+                'live-video-streamer-client': path.resolve(__dirname, '../client/dist/live-video-streamer-client.js'),
             },
             extensions: [".ts", ".js"]
         }

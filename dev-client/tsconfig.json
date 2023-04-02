@@ -2,13 +2,11 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./build",
+    "target": "ESNext",
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
-    ],
-    "plugins": [
-      { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
     ]
   },
   "include": ["*.ts"],

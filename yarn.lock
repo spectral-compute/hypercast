@@ -9480,7 +9480,6 @@ __metadata:
   resolution: "live-video-streamer-dev-client@workspace:dev-client"
   dependencies:
     "@babel/core": ^7.17.10
-    "@ckitching/typescript-is": ^0.1.21
     "@typescript-eslint/eslint-plugin": ^5.23.0
     "@typescript-eslint/parser": ^5.23.0
     babel-loader: ^8.2.5
