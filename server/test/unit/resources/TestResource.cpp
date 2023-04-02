@@ -42,6 +42,20 @@ std::string errorKindToString(std::optional<Server::ErrorKind> errorKind)
 }
 
 /**
+ * Tell if some data is actually text.
+ */
+bool isText(std::span<const std::byte> data)
+{
+    for (std::byte b: data) {
+        char c = (char)b;
+        if (!std::isprint(c) && !std::isspace(c)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * A test implementation of Server::Response.
  *
  * Handily, that class is abstract to hide away the complexity of interfacing with the HTTP server, so we can just do
@@ -75,7 +89,15 @@ public:
                                              << ", actual cache kind: " << cacheKindToString(getCacheKind());
         EXPECT_EQ(mimeType, getMimeType());
         EXPECT_EQ(accumulatedRef.size(), accumulatedData.size()); // Easier to read than the next one.
-        EXPECT_EQ(accumulatedRef, accumulatedData);
+
+        if (isText(accumulatedRef)) {
+            EXPECT_EQ(accumulatedRef, accumulatedData)
+                << "Reference data: " << std::string((const char *)accumulatedRef.data(), accumulatedRef.size())
+                << ", actual data: " << std::string((const char *)accumulatedData.data(), accumulatedData.size());
+        }
+        else {
+            EXPECT_EQ(accumulatedRef, accumulatedData);
+        }
 
         if (checkChunks) {
             EXPECT_EQ(data.size(), chunkedData.size());
