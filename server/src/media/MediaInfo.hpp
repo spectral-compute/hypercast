@@ -13,7 +13,7 @@
 /**
  * Information about a media source.
  *
- * If multiple audio or video streams are present in the source, then only the one that would be used
+ * If multiple audio or video streams are present in the source, then only the one that would be used is returned.
  */
 namespace MediaInfo
 {
