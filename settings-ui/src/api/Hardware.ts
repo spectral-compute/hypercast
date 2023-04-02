@@ -1,3 +1,5 @@
+import { DecklinkPort, DECKLINK_PORT_SETTINGS } from "../Constants";
+
 export enum PortConnector {
     SDI = "SDI"
 }
@@ -23,18 +25,18 @@ export interface PortDescriptor {
 // can do stuff like plug in a decklink and suddenly they've got more SDI ports. Not a relevant
 // concern on our custom hardware, however...
 export interface MachineInfo {
-    inputPorts: PortDescriptor[];
+    inputPorts: {[K in DecklinkPort]: PortDescriptor}
 
     // Whether or not streaming is actually turned on.
     isStreaming: boolean;
 }
 
 export function inputUrlToSDIPortNumber(url: string) {
-    // TODO: Fill in.
-    if (url == "herring") {
-        return 0;
+    for (const [k, v] of Object.entries(DECKLINK_PORT_SETTINGS)) {
+        if (v.source!.url == url) {
+            return k as DecklinkPort;
+        }
     }
 
-    // If it isn't an SDI input...
     return null;
 }

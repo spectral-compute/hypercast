@@ -54,8 +54,8 @@ function App() {
               <LogoCard/>
               <div className="portList">
                   {
-                      appCtx.machineInfo.inputPorts.map(p =>
-                          <PortStatus connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
+                      Array.from(Object.entries(appCtx.machineInfo.inputPorts)).map(([k, p]) =>
+                          <PortStatus key={k} connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
                   )}
               </div>
 
@@ -73,11 +73,12 @@ function App() {
           </div>
 
           <div className="streams">
-              {Array.from(Object.entries(channels)).map((c) =>
+              {Array.from(Object.entries(channels)).map(([k, c]) =>
                   <StreamBox
-                      onClick={() => openChannelModal(c[0])}
-                      name={c[0]}
-                      config={c[1]}
+                      key={k}
+                      onClick={() => openChannelModal(k)}
+                      name={k}
+                      config={c}
                   ></StreamBox>)}
               <NewChannelButton clicked={() => {setModalOpen(true);}}/>
           </div>

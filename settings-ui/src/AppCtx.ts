@@ -13,26 +13,30 @@ export class AppCtx {
     // The current status of the hardware.
     machineInfo: MachineInfo = {
         isStreaming: false,
-        inputPorts: [{
-            name: "SDI 1",
-            connector: PortConnector.SDI,
-            connectedMediaInfo: {
-                framerateDenominator: 30,
-                framerateNumerator: 1,
-                height: 1080,
-                width: 1920,
-            }
-        }, {
-            name: "SDI 2",
-            connector: PortConnector.SDI,
-        }, {
-            name: "SDI 3",
-            connector: PortConnector.SDI,
-        }, {
-            name: "SDI 4",
-            connector: PortConnector.SDI,
-        },
-        ]
+        inputPorts: {
+            ["1"]: {
+                name: "SDI 1",
+                connector: PortConnector.SDI,
+                connectedMediaInfo: {
+                    framerateDenominator: 30,
+                    framerateNumerator: 1,
+                    height: 1080,
+                    width: 1920,
+                }
+            },
+            ["2"]: {
+                name: "SDI 2",
+                connector: PortConnector.SDI,
+            },
+            ["3"]: {
+                name: "SDI 3",
+                connector: PortConnector.SDI,
+            },
+            ["4"]: {
+                name: "SDI 4",
+                connector: PortConnector.SDI,
+            },
+        }
     };
 
     loadConfig = async() => {

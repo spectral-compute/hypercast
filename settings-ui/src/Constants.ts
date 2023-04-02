@@ -1,4 +1,4 @@
-import {AudioVariant, VideoVariant} from "./api/Config";
+import {AudioVariant, VideoVariant, Channel} from "./api/Config";
 import {fuzzyMatch, FuzzyMatchResult, RecursivePartial} from "./Fuzzify";
 
 export const RES_1080p = [1920, 1080] as const;
@@ -64,7 +64,31 @@ export const FUZZY_AUDIO_QUALITY_SETTINGS: {[K in FuzzyAudioQuality]: RecursiveP
 };
 
 
-export function fuzzyConfigMatch<EnumT extends {[k: string]: string, DEFAULT: string}, SubjectT>(
+export const DECKLINK_PORT = {
+    ["1"]: "1",
+    ["2"]: "2",
+    ["3"]: "3",
+    ["4"]: "4",
+} as const;
+export type DecklinkPort = FuzzyQualityEnum<typeof DECKLINK_PORT>;
+
+// The settings you need to select a specific SDI port on the RISE box.
+export const DECKLINK_PORT_SETTINGS:  {[K in DecklinkPort]: RecursivePartial<Channel>} = {
+    ["1"]: {
+        source: {url: "DeckLink 8K Pro (4)", arguments: ["-f", "decklink"]}
+    },
+    ["2"]: {
+        source: {url: "DeckLink 8K Pro (2)", arguments: ["-f", "decklink"]},
+    },
+    ["3"]: {
+        source: {url: "DeckLink 8K Pro (3)", arguments: ["-f", "decklink"]},
+    },
+    ["4"]: {
+        source: {url: "DeckLink 8K Pro (1)", arguments: ["-f", "decklink"]}
+    }
+};
+
+export function fuzzyConfigMatch<EnumT extends {[k: string]: string | undefined, DEFAULT?: string}, SubjectT>(
     theEnum: EnumT,
     subject: SubjectT,
     fuzzinessCfgObject: {[K in keyof EnumT]?: RecursivePartial<SubjectT>}
@@ -82,9 +106,10 @@ export function fuzzyConfigMatch<EnumT extends {[k: string]: string, DEFAULT: st
         allAbsent &&= r == FuzzyMatchResult.ABSENT;
     }
 
-    if (allAbsent) {
+    if (allAbsent && theEnum["DEFAULT"] != null) {
         return theEnum["DEFAULT"] as FuzzyQualityEnum<EnumT>;
     }
+
     return null;
 }
 
@@ -93,4 +118,8 @@ export function fuzzyVideoQualityMatch(subject: VideoVariant) {
 }
 export function fuzzyAudioQualityMatch(subject: AudioVariant) {
     return fuzzyConfigMatch(FUZZY_AUDIO_QUALITIES, subject, FUZZY_AUDIO_QUALITY_SETTINGS);
+}
+
+export function fuzzyInputMatch(subject: Channel) {
+    return fuzzyConfigMatch(DECKLINK_PORT, subject, DECKLINK_PORT_SETTINGS);
 }

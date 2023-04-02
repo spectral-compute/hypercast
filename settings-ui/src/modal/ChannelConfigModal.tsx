@@ -1,6 +1,6 @@
 import './ChannelConfigModal.sass';
 import Modal from "./Modal";
-import PortStatus from "../PortStatus";
+import {ReactComponent as SDI} from "../assets/SDI.svg";
 import {useContext, useState} from "react";
 import {AppContext} from "../index";
 import {AudioCodec, AudioVariant, Channel, StreamVariantConfig, VideoVariant} from "../api/Config";
@@ -8,9 +8,11 @@ import {observer} from "mobx-react-lite";
 import {inputUrlToSDIPortNumber} from "../api/Hardware";
 import {AppCtx} from "../AppCtx";
 import {ReactComponent as Cog} from "../assets/icons/settings.svg";
-import {RES_1080p, RES_480p, RES_4k, RES_720p} from "../Constants";
+import {DecklinkPort, DECKLINK_PORT_SETTINGS, fuzzyInputMatch, RES_1080p, RES_480p, RES_4k, RES_720p} from "../Constants";
 import VariantConfigModal from "./VariantConfigModal";
 import BoxBtn from "../components/BoxBtn";
+import BoxRadioGroup from '../components/BoxRadioGroup';
+import {fuzzyApply} from "../Fuzzify";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
@@ -94,12 +96,7 @@ export default observer((props: ChannelConfigModalProps) => {
     }
 
     function toggleStreamExistence(w: number, h: number) {
-        console.log(channel);
-        console.log(w);
-        console.log(h);
         const c = hasStreamWithResolution(channel, w, h);
-        console.log(c);
-
         if (c != null) {
             channel.qualities.splice(c, 1);
 
@@ -149,18 +146,24 @@ export default observer((props: ChannelConfigModalProps) => {
                 What to stream. Ports with nothing connected are disabled.
             </div>
 
-            <div className="portList">
-                {
-                    appCtx.machineInfo.inputPorts.map(p =>
-                        <BoxBtn
-                            label=""
-                            active={getInputPort(appCtx, channel) == p}
-                            disabled={p.connectedMediaInfo == null}
-                        >
-                            <PortStatus connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
-                        </BoxBtn>
-                    )}
-            </div>
+            <BoxRadioGroup<DecklinkPort>
+                onSelected={(v) => {
+                    setChannel(fuzzyApply(channel, DECKLINK_PORT_SETTINGS[v]));
+                }}
+                selectedItem={fuzzyInputMatch(channel)}
+                items={
+                    Object.keys(DECKLINK_PORT_SETTINGS).map((i) => {
+                        const k = i as DecklinkPort;
+                        const p = appCtx.machineInfo.inputPorts[k]!;
+                        return {
+                            value: k,
+                            label: "SDI " + i,
+                            disabled: p!.connectedMediaInfo == null,
+                            children: <SDI height={"3em"} width={"3em"}></SDI>
+                        };
+                    })
+                }
+            ></BoxRadioGroup>
         </div>
 
         <hr/>

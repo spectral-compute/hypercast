@@ -69,11 +69,11 @@ function prettyPrintFramerate(f: FrameRateCfg | undefined) {
     }
 }
 
-function renderVariant(variantCfg: StreamVariantConfig) {
+function renderVariant(variantCfg: StreamVariantConfig, key: number) {
     const videoCfg = variantCfg.video;
     const audioCfg = variantCfg.audio;
 
-    return <div className="channelInfoBox">
+    return <div key={key} className="channelInfoBox">
         <div className="variantInfoRow">
             <BoxBtn label={prettyPrintResolution(videoCfg.width, videoCfg.height)} size={4}>
                 <VideoIcon/>
@@ -124,7 +124,7 @@ function StreamBox(props: StreamBoxProps) {
             </div>
 
             {variantSequence.map(
-                (p) => renderVariant(p)
+                (p, i) => renderVariant(p, i)
             )}
         </div>
     </SecondaryBox>;
