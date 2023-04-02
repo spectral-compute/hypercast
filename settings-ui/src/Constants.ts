@@ -88,6 +88,16 @@ export const DECKLINK_PORT_SETTINGS:  {[K in DecklinkPort]: RecursivePartial<Cha
     }
 };
 
+// What you get from pressing "new channel".
+export function makeDefaultChannel(): Channel {
+    return {
+        ... DECKLINK_PORT_SETTINGS["1"],
+        qualities: [],
+        dash: {},
+        history: {}
+    } as Channel;
+}
+
 export function fuzzyConfigMatch<EnumT extends {[k: string]: string | undefined, DEFAULT?: string}, SubjectT>(
     theEnum: EnumT,
     subject: SubjectT,

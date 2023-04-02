@@ -12,6 +12,7 @@ import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
 import {useAsyncDeferred, useAsyncImmediate } from './hooks/useAsync';
 import Kaput from './Kaput';
+import { makeDefaultChannel } from './Constants';
 
 
 function App() {
@@ -37,6 +38,22 @@ function App() {
     const c = appCtx.loadedConfiguration.channels[name]!;
     setChannelBeingEdited([name, JSON.parse(JSON.stringify(c))]);
     setModalOpen(true);
+  }
+
+  function openNewChannelModal(name: string) {
+      setChannelBeingEdited([name, makeDefaultChannel()]);
+      setModalOpen(true);
+  }
+
+  function nameNewChannel() {
+      // Just use a number for the moment.
+      const keys = Object.keys(channels);
+      let n = keys.length;
+      while (channels["Channel " + n] != null) {
+          n++;
+      }
+
+      return String("Channel " + n);
   }
 
   function saveChannel(name: string, newValue: Channel) {
@@ -85,7 +102,7 @@ function App() {
                       name={k}
                       config={c}
                   ></StreamBox>)}
-              <NewChannelButton clicked={() => {setModalOpen(true);}}/>
+              <NewChannelButton clicked={() => {openNewChannelModal(nameNewChannel());}}/>
           </div>
       </div>
 

@@ -6,11 +6,9 @@ export interface NewChannelButtonProps {
 }
 
 
-function NewChannelButton(props: NewChannelButtonProps) {
+export default (props: NewChannelButtonProps) => {
     return <div className="newChannelBtn" onClick={props.clicked}>
         <span>New Channel</span>
         <Plus width="2em" height="2em"/>
     </div>;
-}
-
-export default NewChannelButton;
+};
