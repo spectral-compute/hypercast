@@ -1,5 +1,6 @@
 #include "api/ConfigResource.h"
 #include "api/FullConfigResource.hpp"
+#include "api/ProbeResource.hpp"
 #include "configuration/configuration.hpp"
 #include "configuration/defaults.hpp"
 #include "log/FileLog.hpp"
@@ -46,6 +47,7 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
 #ifndef NDEBUG
     st.getServer().addResource<Api::FullConfigResource>("api/full_config", st);
 #endif // NDEBUG
+    st.getServer().addResource<Api::ProbeResource>("api/probe", ioc);
 
     /* Run the configuration application process. */
     co_await st.applyConfiguration(config);
