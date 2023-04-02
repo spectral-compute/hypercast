@@ -1,4 +1,4 @@
-import {AudioVariant, VideoVariant, Channel} from "./api/Config";
+import {AudioVariant, VideoVariant, Channel, AudioCodec, StreamVariantConfig} from "./api/Config";
 import {fuzzyMatch, FuzzyMatchResult, RecursivePartial} from "./Fuzzify";
 
 export const RES_1080p = [1920, 1080] as const;
@@ -97,6 +97,31 @@ export function makeDefaultChannel(): Channel {
         history: {}
     } as Channel;
 }
+
+export function defaultVariantConfig(w: number, h: number): StreamVariantConfig {
+    return {
+        audio: defaultAudioVariantConfig(),
+        video: defaultVideoVariantConfig(w, h),
+        targetLatency: 1000,
+    };
+}
+
+export function defaultAudioVariantConfig(): AudioVariant {
+    return {
+        codec: AudioCodec.aac,
+        ...FUZZY_AUDIO_QUALITY_SETTINGS[FUZZY_AUDIO_QUALITIES.DEFAULT] as any
+    };
+}
+
+export function defaultVideoVariantConfig(w: number, h: number): VideoVariant {
+    return {
+        width: w,
+        height: h,
+        frameRate: "native",
+        ...FUZZY_VIDEO_QUALITY_SETTINGS[FUZZY_VIDEO_QUALITIES.DEFAULT]
+    };
+}
+
 
 export function fuzzyConfigMatch<EnumT extends {[k: string]: string | undefined, DEFAULT?: string}, SubjectT>(
     theEnum: EnumT,

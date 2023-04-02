@@ -3,12 +3,12 @@ import Modal from "./Modal";
 import {ReactComponent as SDI} from "../assets/SDI.svg";
 import {useContext, useState} from "react";
 import {AppContext} from "../index";
-import {AudioCodec, AudioVariant, Channel, StreamVariantConfig, VideoVariant} from "../api/Config";
+import {Channel, StreamVariantConfig} from "../api/Config";
 import {observer} from "mobx-react-lite";
 import {inputUrlToSDIPortNumber} from "../api/Hardware";
 import {AppCtx} from "../AppCtx";
 import {ReactComponent as Cog} from "../assets/icons/settings.svg";
-import {DecklinkPort, DECKLINK_PORT_SETTINGS, fuzzyInputMatch, RES_1080p, RES_480p, RES_4k, RES_720p} from "../Constants";
+import {DecklinkPort, DECKLINK_PORT_SETTINGS, defaultVariantConfig, fuzzyInputMatch, RES_1080p, RES_480p, RES_4k, RES_720p} from "../Constants";
 import VariantConfigModal from "./VariantConfigModal";
 import BoxBtn from "../components/BoxBtn";
 import BoxRadioGroup from '../components/BoxRadioGroup';
@@ -30,9 +30,6 @@ function hasStreamWithResolution(channel: Channel, w: number, h: number) {
         const p = channel.qualities[i]!;
         const v = p.video;
         if (v.width == w && v.height == h) {
-            console.log("FOUND");
-            console.log(v);
-            console.log(i);
             return i;
         }
     }
@@ -53,40 +50,6 @@ function inputIsAtLeast(appCtx: AppCtx, channel: Channel, w: number, h: number) 
     return port.connectedMediaInfo!.height >= h &&
            port.connectedMediaInfo!.width >= w;
 }
-
-export function defaultVariantConfig(w: number, h: number): StreamVariantConfig {
-    return {
-        audio: defaultAudioVariantConfig(),
-        video: defaultVideoVariantConfig(w, h),
-        targetLatency: 1000
-    };
-}
-
-export function defaultAudioVariantConfig(): AudioVariant {
-    return {
-        codec: AudioCodec.aac,
-        bitrate: 1000
-    };
-}
-
-export function defaultVideoVariantConfig(w: number, h: number): VideoVariant {
-    return {
-        width: w,
-        height: h
-    };
-}
-
-// function deleteStreamsReferencing(c: Channel, name: string) {
-//     for (const p of Object.keys(c.streams)) {
-//         if (c.streams[p]!.audio == name || c.streams[p]!.video == name) {
-//             delete c.streams[p];
-//         }
-//     }
-// }
-//
-// function variantNameFor(w: number, h: number) {
-//     return w + "x" + h;
-// }
 
 export default observer((props: ChannelConfigModalProps) => {
     const appCtx = useContext(AppContext);
