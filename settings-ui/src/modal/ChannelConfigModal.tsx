@@ -13,10 +13,12 @@ import VariantConfigModal from "./VariantConfigModal";
 import BoxBtn from "../components/BoxBtn";
 import BoxRadioGroup from '../components/BoxRadioGroup';
 import {fuzzyApply} from "../Fuzzify";
+import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
     onSave: (name: string, c: Channel) => void;
+    onDelete: (name: string) => void;
 
     channelName: string;
     channel: Channel;
@@ -135,6 +137,17 @@ export default observer((props: ChannelConfigModalProps) => {
     }
 
     return <Modal
+        endBtn={
+            <BoxBtn
+                label="Delete"
+                onClick={() => {
+                    props.onDelete(props.channelName);
+                    props.onClose();
+                }}
+            >
+                <Trash/>
+            </BoxBtn>
+        }
         title={"Configuring " + props.channelName}
         onClose={props.onClose}
         onSave={saveFn}

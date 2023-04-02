@@ -6,6 +6,8 @@ export interface ModalProps {
     title: string;
     children: any;
 
+    endBtn?: any;
+
     onClose: () => void;
     onSave: () => void;
 }
@@ -13,7 +15,10 @@ export interface ModalProps {
 function Modal(props: ModalProps) {
     return <div className="modalBg">
         <div className="modal">
-            <h2>{props.title}</h2>
+            <div className="modalHead">
+                <h2>{props.title}</h2>
+                {props.endBtn ? props.endBtn : null}
+            </div>
             {props.children}
 
             <div className="modalBtnRow">

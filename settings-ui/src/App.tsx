@@ -47,6 +47,11 @@ function App() {
       saveCfg.run(appCtx.loadedConfiguration);
   }
 
+  function deleteChannel(name: string) {
+      delete appCtx.loadedConfiguration.channels[name];
+      saveCfg.run(appCtx.loadedConfiguration);
+  }
+
   // TODO: initial state loading crap.
   return <>
       <div className="layout">
@@ -89,6 +94,7 @@ function App() {
           channelName={channelBeingEdited![0]}
           onClose={() => setModalOpen(false)}
           onSave={saveChannel}
+          onDelete={deleteChannel}
       /> : null}
 
       {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}
