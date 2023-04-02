@@ -1,10 +1,9 @@
-import {ReactComponent as Logo} from "./assets/logo.svg";
+import {ReactComponent as Logo} from "./assets/rise.svg";
 import "./LogoCard.sass";
 
 function LogoCard() {
     return <div className="logoCardBody">
-        <Logo width="3em"></Logo>
-        <span>RISE</span>
+        <Logo width="7em"></Logo>
     </div>;
 }
 
