@@ -5,8 +5,6 @@
 #include "resources/FilesystemResource.hpp"
 #include "dash/DashResources.hpp"
 #include "configuration/defaults.hpp"
-#include "api/ConfigResource.h"
-#include "api/FullConfigResource.hpp"
 
 namespace {
 
@@ -77,10 +75,6 @@ Server::State::State(
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network, initialCfg.http)
 {
-    server.addResource<Api::ConfigResource>("api/config", *this);
-#ifndef NDEBUG
-    server.addResource<Api::FullConfigResource>("api/full_config", *this);
-#endif // NDEBUG
 }
 
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.

@@ -15,6 +15,14 @@ public:
     ~State();
 
     /**
+     * Get the server that this object is the associated state for.
+     */
+    Server &getServer()
+    {
+        return server;
+    }
+
+    /**
      * Get the (fully filled-in) configuration.
      */
     const Config::Root &getConfiguration() const

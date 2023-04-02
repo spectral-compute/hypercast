@@ -1,3 +1,5 @@
+#include "api/ConfigResource.h"
+#include "api/FullConfigResource.hpp"
 #include "configuration/configuration.hpp"
 #include "configuration/defaults.hpp"
 #include "log/FileLog.hpp"
@@ -38,6 +40,14 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     Config::Root config = loadConfig(argv[1]);
 
     Server::State st{config, ioc};
+
+    /* Create global resources for the API. */
+    st.getServer().addResource<Api::ConfigResource>("api/config", st);
+#ifndef NDEBUG
+    st.getServer().addResource<Api::FullConfigResource>("api/full_config", st);
+#endif // NDEBUG
+
+    /* Run the configuration application process. */
     co_await st.applyConfiguration(config);
 
     // Hang this coroutine forever. Interesting things happen as a result of the server handling requests
