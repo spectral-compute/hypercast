@@ -14,6 +14,14 @@ struct State final
 public:
     ~State();
 
+    /**
+     * Get the (fully filled-in) configuration.
+     */
+    const Config::Root &getConfiguration() const
+    {
+        return config;
+    }
+
     IOContext& ioc;
 
 private:

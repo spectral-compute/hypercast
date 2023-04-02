@@ -279,6 +279,13 @@ public:
      */
     static Root fromJson(std::string_view jsonString);
 
+#ifndef NDEBUG
+    /**
+     * Return a JSON representation of the configuration object as a string.
+     */
+    std::string toJson() const;
+#endif // NDEBUG
+
     // The json this object was originally decoded from. If it was mutated afterwards, this will not be in sync.
     std::string jsonRepresentation;
 
