@@ -10,11 +10,12 @@ Api::ConfigResource::ConfigResource(Server::State &state) : Resource(false), ser
 
 Awaitable<void> Api::ConfigResource::getAsync(Server::Response &response, Server::Request &request)
 {
+    response.setCacheKind(Server::CacheKind::none);
+
     if (!(co_await request.readSome()).empty()) {
         throw Server::Error(Server::ErrorKind::BadRequest);
     }
 
-    response.setCacheKind(Server::CacheKind::ephemeral);
     response << serverState.requestedConfig.jsonRepresentation;
     co_return;
 }
