@@ -20,6 +20,7 @@ export interface ChannelConfigModalProps {
     onSave: (name: string, c: Channel) => void;
     onDelete: (name: string) => void;
 
+    showDeleteBtn: boolean;
     channelName: string;
     channel: Channel;
 }
@@ -138,6 +139,7 @@ export default observer((props: ChannelConfigModalProps) => {
 
     return <Modal
         endBtn={
+            props.showDeleteBtn ?
             <BoxBtn
                 label="Delete"
                 onClick={() => {
@@ -146,7 +148,7 @@ export default observer((props: ChannelConfigModalProps) => {
                 }}
             >
                 <Trash/>
-            </BoxBtn>
+            </BoxBtn> : null
         }
         title={"Configuring " + props.channelName}
         onClose={props.onClose}

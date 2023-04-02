@@ -19,6 +19,7 @@ function App() {
   const appCtx = useContext(AppContext);
 
   let [modalOpen, setModalOpen] = useState<boolean>(false);
+  let [isNewChannel, setIsNewChannel] = useState<boolean>(false);
   let [channelBeingEdited, setChannelBeingEdited] = useState<[string, Channel] | null>(null);
 
   const loadCfg = useAsyncImmediate(appCtx.loadConfig);
@@ -38,11 +39,13 @@ function App() {
     const c = appCtx.loadedConfiguration.channels[name]!;
     setChannelBeingEdited([name, JSON.parse(JSON.stringify(c))]);
     setModalOpen(true);
+    setIsNewChannel(false);
   }
 
   function openNewChannelModal(name: string) {
       setChannelBeingEdited([name, makeDefaultChannel()]);
       setModalOpen(true);
+      setIsNewChannel(true);
   }
 
   function nameNewChannel() {
@@ -109,6 +112,7 @@ function App() {
       {modalOpen ? <ChannelConfigModal
           channel={channelBeingEdited![1]}
           channelName={channelBeingEdited![0]}
+          showDeleteBtn={!isNewChannel}
           onClose={() => setModalOpen(false)}
           onSave={saveChannel}
           onDelete={deleteChannel}
