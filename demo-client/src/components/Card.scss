@@ -4,9 +4,12 @@
 .card-container {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     justify-content: flex-start;
 
     gap: 2em;
+
+    padding: 1em;
 }
 
 

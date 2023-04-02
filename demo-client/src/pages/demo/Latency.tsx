@@ -22,6 +22,7 @@ export default function () {
     }, []);
 
     return <>
+        <h2>Ultra Low Latency</h2>
         <Player
             sourceURL={process.env["REACT_APP_INFO_URL"]!}
             onInitialisation={plugInGraphMaker}

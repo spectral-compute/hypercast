@@ -37,6 +37,12 @@ a {
     }
 }
 
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0.5rem 0;
+    padding: 0;
+}
+
 /*
     Layout
 */
@@ -51,7 +57,7 @@ a {
 
     & main {
         flex: 1;
-        padding: 2em 1em;
+        padding: 1em;
     }
 
     & > * {
