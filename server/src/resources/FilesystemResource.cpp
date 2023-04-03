@@ -6,6 +6,8 @@
 #include "util/File.hpp"
 #include "util/subprocess.hpp"
 
+#include <memory>
+
 namespace
 {
 
@@ -53,10 +55,10 @@ Awaitable<void> Server::FilesystemResource::getAsync(Response &response, Request
     response.setCacheKind(cacheKind);
 
     /* Figure out the path. */
-    // This is protected from directory traversal attacks by the constructor for the object returned by
-    // request.getPath().
-    std::filesystem::path filePath = (request.getPath().empty() && !index.empty()) ?
-                                     path / index : (path / request.getPath());
+    std::filesystem::path filePath = getFullPath(request.getPath());
+
+    /* We need a mutex if we can PUT so there isn't a race condition. */
+    auto lockGuard = maxPutSize ? std::make_unique<Mutex::LockGuard>(co_await mutex.lockGuard()) : nullptr;
 
     /* Check that the path exists and that it's not a directory. */
     // Unfortunately, boost.asio doesn't seem to have anything that would do this.
@@ -81,7 +83,51 @@ Awaitable<void> Server::FilesystemResource::getAsync(Response &response, Request
     }
 }
 
+Awaitable<void> Server::FilesystemResource::putAsync(Response &response, Request &request)
+{
+    /* Reject PUT requests if we're not allowing them. */
+    if (!maxPutSize) {
+        throw Error(ErrorKind::UnsupportedType);
+    }
+
+    /* Figure out the path. */
+    std::filesystem::path filePath = getFullPath(request.getPath());
+
+    /* Stop concurrent operations. */
+    auto lockGuard = co_await mutex.lockGuard();
+
+    /* Check that the path either doesn't exist, or is not a directory. */
+    if (std::filesystem::exists(filePath) && std::filesystem::is_directory(filePath)) {
+        throw Error(ErrorKind::Conflict);
+    }
+
+    /* Create parent directories if necessary. */
+    std::filesystem::create_directories(filePath.parent_path());
+
+    /* Write the file contents. */
+    Util::File file(ioc, std::move(filePath), true, false);
+    while (true) {
+        std::vector<std::byte> data = co_await request.readSome();
+        if (data.empty()) {
+            co_return;
+        }
+        co_await file.write(data);
+    }
+}
+
 bool Server::FilesystemResource::getAllowNonEmptyPath() const noexcept
 {
     return true;
+}
+
+size_t Server::FilesystemResource::getMaxPutRequestLength() const noexcept
+{
+    return maxPutSize;
+}
+
+std::filesystem::path Server::FilesystemResource::getFullPath(const Path &requestPath) const
+{
+    // This is protected from directory traversal attacks by the constructor for the object returned by
+    // request.getPath().
+    return (requestPath.empty() && !index.empty()) ? path / index : (path / requestPath);
 }
