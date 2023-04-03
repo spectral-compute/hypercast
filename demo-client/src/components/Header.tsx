@@ -4,7 +4,7 @@ import "./Header.scss";
 export default function Header() {
     return <header>
         <div className="content-width">
-            <div className="title">Ultra Low Latency Video Streamer</div>
+            <div className="title">Rapid Internet Streaming Engine (RISE)</div>
             <div className="credits">
                 <span>by</span>
                 <a
