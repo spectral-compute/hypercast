@@ -69,9 +69,13 @@ static void to_json(nlohmann::json &j, const AudioStreamInfo &in)
 
 static void to_json(nlohmann::json &j, const SourceInfo &in)
 {
-    if (in.video) {
-        j["video"] = *in.video;
+    /* The input is not usable if there's no video. */
+    if (!in.video) {
+        return;
     }
+
+    /* Fill in the result JSON object. */
+    j["video"] = *in.video;
     if (in.audio) {
         j["audio"] = *in.audio;
     }
