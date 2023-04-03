@@ -35,7 +35,9 @@ CORO_TEST(File, Seek, ioc)
 
 CORO_TEST(File, Write, ioc)
 {
-    std::filesystem::path path = "/tmp/live-video-streamer-server_test.FileWrite";
+    std::filesystem::path path =
+        std::filesystem::temp_directory_path() / "live-video-streamer-server_test.FileWrite";
+    std::filesystem::remove(path);
 
     /* Get the reference. */
     std::vector<std::byte> ref(1 << 20);
@@ -51,11 +53,16 @@ CORO_TEST(File, Write, ioc)
 
     /* Check that the write happened correctly. */
     EXPECT_EQ(ref, Util::readFile(path));
+
+    /* Clean up. */
+    std::filesystem::remove(path);
 }
 
 CORO_TEST(File, ReadWrite, ioc)
 {
-    std::filesystem::path path = "/tmp/live-video-streamer-server_test.FileReadWrite";
+    std::filesystem::path path =
+        std::filesystem::temp_directory_path() / "live-video-streamer-server_test.FileReadWrite";
+    std::filesystem::remove(path);
 
     /* Generate reference data. */
     std::vector<std::byte> allData(1 << 20);
@@ -101,4 +108,7 @@ CORO_TEST(File, ReadWrite, ioc)
         ref.insert(ref.end(), allData.begin(), allData.end());
         EXPECT_EQ(ref, Util::readFile(path));
     }
+
+    /* Clean up. */
+    std::filesystem::remove(path);
 }
