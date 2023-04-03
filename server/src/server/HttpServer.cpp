@@ -145,9 +145,10 @@ public:
      * @param connection The connection to write the response to.
      * @param keepAlive Whether to instruct the client to keep the connection alive after the response body has been
      *                  sent.
+     * @param discard Whether to discard the message body. This is useful for implementing HEAD.
      */
-    explicit HttpResponse(Connection &connection, const Config::Http &httpConfig, bool keepAlive) :
-        connection(connection), httpConfig(httpConfig)
+    explicit HttpResponse(Connection &connection, const Config::Http &httpConfig, bool keepAlive, bool discard) :
+        connection(connection), httpConfig(httpConfig), discard(discard)
     {
         response.keep_alive(keepAlive);
     }
@@ -155,17 +156,6 @@ public:
     operator bool() const
     {
         return !(bool)getErrorKind();
-    }
-
-    /**
-     * Don't send any response body back to the client.
-     *
-     * This is useful for implementing HTTP HEAD.
-     */
-    void discardBody()
-    {
-        // TODO: Shouldn't this set HTTP 204?
-        discard = true;
     }
 
 private:
@@ -365,7 +355,13 @@ private:
 
     Connection &connection;
     const Config::Http &httpConfig;
-    bool discard = false;
+
+    /**
+     * Whether to discard the message body rather than send it to the client.
+     *
+     * This is useful for implementing HEAD.
+     */
+    const bool discard = false;
 
     boost::beast::http::response<boost::beast::http::buffer_body> response;
     boost::beast::http::response_serializer<boost::beast::http::buffer_body> serializer{response};
@@ -454,12 +450,8 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     assert(parser.is_header_done());
 
     /* Create a Response object. Create this earlier, so we can use its error transmission code. */
-    HttpResponse response(connection, httpConfig, parser.keep_alive());
-
-    // Make HEAD requests work properly by not sending any body data to the client.
-    if (parser.get().method() == boost::beast::http::verb::head) {
-        response.discardBody();
-    }
+    HttpResponse response(connection, httpConfig, parser.keep_alive(),
+                          parser.get().method() == boost::beast::http::verb::head);
 
     /* Create a Request object to handle the request body. */
     // Figure out the request type.
