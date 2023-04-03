@@ -10,6 +10,7 @@ Api::FullConfigResource::~FullConfigResource() = default;
 
 void Api::FullConfigResource::getSync(Server::Response &response, const Server::Request &)
 {
+    response.setCacheKind(Server::CacheKind::none);
     response << state.getConfiguration().toJson();
 }
 
