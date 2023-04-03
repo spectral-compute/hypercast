@@ -12,8 +12,7 @@ CORO_TEST(PutResource, Simple, ioc)
 
     {
         TestRequest request(Server::Request::Type::put, "Electron", false);
-        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {},
-                              Server::CacheKind::none);
+        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {});
     }
 
     {
@@ -28,8 +27,7 @@ CORO_TEST(PutResource, Ephemeral, ioc)
 
     {
         TestRequest request(Server::Request::Type::put, "Electron", false);
-        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {},
-                              Server::CacheKind::none);
+        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {});
     }
     {
         TestRequest request(Server::Request::Type::get, std::span<const std::span<const std::byte>>(), true);
@@ -50,8 +48,7 @@ CORO_TEST(PutResource, Rewrite, ioc)
 
     {
         TestRequest request(Server::Request::Type::put, "Electron", false);
-        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {},
-                              Server::CacheKind::none);
+        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {});
     }
     {
         TestRequest request(Server::Request::Type::get, std::span<const std::span<const std::byte>>(), true);
@@ -59,8 +56,7 @@ CORO_TEST(PutResource, Rewrite, ioc)
     }
     {
         TestRequest request(Server::Request::Type::put, "Muon", false);
-        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {},
-                              Server::CacheKind::none);
+        co_await testResource(resource, request, std::span<const std::span<const std::byte>>{}, {});
     }
     {
         TestRequest request(Server::Request::Type::get, std::span<const std::span<const std::byte>>(), true);

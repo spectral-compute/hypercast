@@ -23,9 +23,6 @@ Awaitable<void> Server::PutResource::putAsync(Response &response, Request &reque
 {
     assert(!request.getIsPublic());
 
-    /* Set the response cache type. */
-    response.setCacheKind(CacheKind::none);
-
     /* Read input from the request, and possibly write it to a file (that gets opened here). */
     std::vector<std::vector<std::byte>> dataParts;
 
