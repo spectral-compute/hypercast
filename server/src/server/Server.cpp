@@ -33,6 +33,7 @@ const char *getErrorKindString(Server::ErrorKind kind)
         case Server::ErrorKind::Forbidden: return "Forbidden";
         case Server::ErrorKind::NotFound: return "Not found";
         case Server::ErrorKind::UnsupportedType: return "Unsupported request type";
+        case Server::ErrorKind::Conflict: return "Conflict";
         case Server::ErrorKind::Internal: return "Internal";
     }
     return "Unknown";

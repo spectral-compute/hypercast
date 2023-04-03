@@ -336,6 +336,7 @@ private:
             case Server::ErrorKind::Forbidden: return boost::beast::http::status::forbidden;
             case Server::ErrorKind::NotFound: return boost::beast::http::status::not_found;
             case Server::ErrorKind::UnsupportedType: return boost::beast::http::status::method_not_allowed;
+            case Server::ErrorKind::Conflict: return boost::beast::http::status::conflict;
             case Server::ErrorKind::Internal: return boost::beast::http::status::internal_server_error;
         }
         unreachable();

@@ -298,6 +298,7 @@ private:
             case Server::ErrorKind::Forbidden: return "Forbidden";
             case Server::ErrorKind::NotFound: return "Not found";
             case Server::ErrorKind::UnsupportedType: return "Unsupported type";
+            case Server::ErrorKind::Conflict: return "Conflict";
             case Server::ErrorKind::Internal: return "Internal";
         }
         return "Unknown: " + std::to_string((int)*errorKind);

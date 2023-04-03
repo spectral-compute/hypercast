@@ -43,6 +43,13 @@ enum class ErrorKind
     UnsupportedType,
 
     /**
+     * The target resource is in such a state that the request cannot be processed.
+     *
+     * Equivalent to HTTP 409 Conflict.
+     */
+    Conflict,
+
+    /**
      * An unknown or internal error happened.
      *
      * Equivalent to HTTP 500 Internal Server Error.
