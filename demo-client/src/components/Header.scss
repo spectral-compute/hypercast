@@ -18,4 +18,15 @@ header {
 
         margin: 0.5em 0;
     }
+
+    & .credits {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0.75em;
+
+        & img {
+            height: 1.5em;
+        }
+    }
 }
