@@ -27,7 +27,7 @@ export class Api {
             }
         }
 
-        const rsp = await fetch(API_BASE + route, {
+        const rsp = await fetch(`${API_BASE}/${route}`, {
             method,
 
             // In POST mode, send params as form-data.
@@ -53,13 +53,13 @@ export class Api {
     }
 
     async setStreamingState(active: boolean) {
-        const reply = await this.makeRequest("POST", "/set_state", {active});
+        const reply = await this.makeRequest("POST", "set_state", {active});
         // assertType<SetStreamingStateResponse>(reply);
         return reply;
     }
 
     async applyConfig(newCfg: StreamingConfig): Promise<StreamingConfig> {
-        await this.makeRequest("PUT", "/config", newCfg);
+        await this.makeRequest("PUT", "config", newCfg);
         return await this.loadConfig();
     }
 
@@ -70,7 +70,7 @@ export class Api {
     }
 
     async loadConfig(): Promise<StreamingConfig> {
-        const reply = await this.makeRequest("GET", "/config");
+        const reply = await this.makeRequest("GET", "config");
         console.log(reply);
         // assertType<SetStreamingStateResponse>(reply);
         return reply;
