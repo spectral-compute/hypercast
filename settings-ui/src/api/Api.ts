@@ -1,4 +1,3 @@
-import {BaseResponse} from "./Types";
 import { StreamingConfig } from "./Config";
 import { MediaSourceInfo } from "./Hardware";
 
@@ -38,18 +37,17 @@ export class Api {
             throw new Error("Failed to communicate with API");
         }
 
-        let reply!: BaseResponse;
+        let reply;
         try {
-            reply = JSON.parse(await rsp.text());
+            reply = await rsp.text();
+            if (reply != "") {
+                return JSON.parse(reply);
+            }
         } catch (e) {
             throw new Error("Error calling API: " + e);
         }
 
-        if (reply.error) {
-            throw new Error("Error from API: " + reply.error);
-        }
-
-        return reply as any;
+        return reply;
     }
 
     async setStreamingState(active: boolean) {
@@ -60,7 +58,9 @@ export class Api {
 
     async applyConfig(newCfg: StreamingConfig): Promise<StreamingConfig> {
         await this.makeRequest("PUT", "config", newCfg);
-        return await this.loadConfig();
+        const newC = await this.loadConfig();
+        console.log(newC);
+        return newC;
     }
 
     async probe(sources: string[]): Promise<MediaSourceInfo[]> {
