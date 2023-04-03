@@ -171,6 +171,11 @@ Awaitable<void> Util::File::write(std::span<const std::byte> data)
 #endif // BOOST_ASIO_HAS_IO_URING
 }
 
+Awaitable<void> Util::File::write(std::string_view data)
+{
+    return write(std::span((const std::byte *)data.data(), data.size()));
+}
+
 void Util::File::seek(size_t offset)
 {
 #ifdef BOOST_ASIO_HAS_IO_URING

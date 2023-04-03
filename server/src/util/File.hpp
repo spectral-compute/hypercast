@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <memory>
 #include <span>
+#include <string_view>
 #include <vector>
 
 template <typename> class Awaitable;
@@ -71,6 +72,11 @@ public:
      * Write some data to the file.
      */
     Awaitable<void> write(std::span<const std::byte> data);
+
+    /**
+     * @copydoc write
+     */
+    Awaitable<void> write(std::string_view data);
 
     /**
      * Seek to a given offset in the file.
