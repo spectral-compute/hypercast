@@ -9,10 +9,6 @@ nav.path-container {
     justify-items: flex-start;
     gap: $margin;
 
-    padding: 0 $margin * 2;
-    background-color: c.$secondary-bg;
-    border-radius: $margin;
-
     & > .separator {
         color: c.$border;
         font-size: 2em;
@@ -28,7 +24,7 @@ nav.path-container {
 
         &:hover {
             // Some glowing
-            box-shadow: 0 0 1em 0 rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0.5em 0 rgba(255, 255, 255, 0.5);
         }
     }
 }
