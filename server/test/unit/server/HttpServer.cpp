@@ -180,6 +180,115 @@ private:
     boost::asio::ip::tcp::socket socket;
 };
 
+/**
+ * Check that a given string consists only of digits.
+ */
+bool isNumberBetween(std::string_view string, int minimum, int maximum)
+{
+    int value = 0;
+    for (char c: string) {
+        if (c < '0' || c > '9') {
+            return false;
+        }
+        value = value * 10 + c - '0';
+    }
+    return value >= minimum && value <= maximum;
+}
+
+/**
+ * Check that a string is in a list of candidates.
+ */
+bool isIn(std::string_view string, std::initializer_list<std::string_view> candidates)
+{
+    for (std::string_view candidate: candidates) {
+        if (string == candidate) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Check lines that start with Date, and remove them from the result.
+ *
+ * @poram firstHeadersOnly Whether to process only the first set of headers. This is an optimization. Without it, debug
+ *        builds take a long time to run.
+ */
+std::vector<std::byte> checkAndFilterDateHeader(std::span<const std::byte> response, bool firstHeadersOnly = true)
+{
+    std::vector<std::byte> result;
+    result.reserve(response.size());
+
+    /* Step through each line, removing and checking any that start with Date: . */
+    size_t offset = 0;
+    std::vector<std::byte> line;
+    for (std::byte b: response) {
+        offset++;
+        line.insert(line.end(), b);
+
+        // Only the end of the line is interesting.
+        if (b != (std::byte)'\n') {
+            continue;
+        }
+        std::string_view headerLine((const char *)line.data(), line.size());
+
+        // Check for the Date header and exclude it.
+        if (headerLine.starts_with("Date: ")) {
+            EXPECT_EQ(37, headerLine.size());
+            EXPECT_TRUE(isIn(headerLine.substr(6, 3), { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" }))
+                << headerLine;
+            EXPECT_EQ(", ", headerLine.substr(9, 2)) << headerLine;
+            EXPECT_TRUE(isNumberBetween(headerLine.substr(11, 2), 1, 31)) << headerLine;
+            EXPECT_EQ(' ', headerLine[13]) << headerLine;
+            EXPECT_TRUE(isIn(headerLine.substr(14, 3),
+                             { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }))
+                << headerLine;
+            EXPECT_EQ(' ', headerLine[17]) << headerLine;
+            EXPECT_TRUE(isNumberBetween(headerLine.substr(18, 4), 2023, 2033)) << headerLine; // Happy 10th Birthday to RISE!
+            EXPECT_EQ(' ', headerLine[22]) << headerLine;
+            EXPECT_TRUE(isNumberBetween(headerLine.substr(23, 2), 0, 23)) << headerLine;
+            EXPECT_EQ(':', headerLine[25]) << headerLine;
+            EXPECT_TRUE(isNumberBetween(headerLine.substr(26, 2), 0, 59)) << headerLine;
+            EXPECT_EQ(':', headerLine[28]) << headerLine;
+            EXPECT_TRUE(isNumberBetween(headerLine.substr(29, 2), 0, 60)) << headerLine; // Don't fail on leap seconds.
+            EXPECT_EQ(" GMT\r\n", headerLine.substr(31)) << headerLine;
+            line.clear();
+            continue;
+        }
+
+        // Other lines should be inserted verbatim.
+        result.insert(result.end(), line.begin(), line.end());
+
+        // If we're not processing everything, then stop whne we get to the first empty header.
+        if (firstHeadersOnly && headerLine == "\r\n") {
+            line.clear();
+            break;
+        }
+
+        // None of the above conditions matched, and thus didn't do this clear.
+        line.clear();
+    }
+
+    /* Insert the remaining line, if any. */
+    result.insert(result.end(), line.begin(), line.end());
+
+    /* Insert the remaining data, if any. */
+    result.insert(result.end(), response.begin() + offset, response.end());
+
+    /* Done :) */
+    return result;
+}
+
+/**
+ * @copydoc checkAndFilterDateHeader
+ */
+std::string checkAndFilterDateHeader(std::string_view response, bool firstHeadersOnly = true)
+{
+    auto result = checkAndFilterDateHeader(std::span((const std::byte *)response.data(), response.size()),
+                                           firstHeadersOnly);
+    return std::string((const char *)result.data(), result.size());
+}
+
 CORO_TEST(HttpServer, Short, ioc)
 {
     Socket socket(ioc);
@@ -193,7 +302,7 @@ CORO_TEST(HttpServer, Short, ioc)
               "Content-Length: 16\r\n"
               "\r\n"
               "Cats are cute :D",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, NotFound, ioc)
@@ -207,7 +316,7 @@ CORO_TEST(HttpServer, NotFound, ioc)
               "Cache-Control: public, max-age=600\r\n"
               "Content-Length: 0\r\n"
               "\r\n",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, DotDotForbidden, ioc)
@@ -221,7 +330,7 @@ CORO_TEST(HttpServer, DotDotForbidden, ioc)
               "Cache-Control: public, max-age=600\r\n"
               "Content-Length: 0\r\n"
               "\r\n",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, ShortChunk, ioc)
@@ -245,7 +354,7 @@ CORO_TEST(HttpServer, ShortChunk, ioc)
               " :D\r\n"
               "0\r\n"
               "\r\n",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, ShortKeepAlive, ioc)
@@ -272,7 +381,7 @@ CORO_TEST(HttpServer, ShortKeepAlive, ioc)
               "Content-Length: 16\r\n"
               "\r\n"
               "Cats are cute :D",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString(), false));
 }
 
 CORO_TEST(HttpServer, LengthShort, ioc)
@@ -285,11 +394,10 @@ CORO_TEST(HttpServer, LengthShort, ioc)
     EXPECT_EQ("HTTP/1.1 200 OK\r\n"
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
-              "Cache-Control: public, max-age=600\r\n"
               "Content-Length: 1\r\n"
               "\r\n"
               "6",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, LengthLarge, ioc)
@@ -302,11 +410,10 @@ CORO_TEST(HttpServer, LengthLarge, ioc)
     EXPECT_EQ("HTTP/1.1 200 OK\r\n"
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
-              "Cache-Control: public, max-age=600\r\n"
               "Content-Length: 9\r\n"
               "\r\n"
               "104857600",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, Echo, ioc)
@@ -326,7 +433,7 @@ CORO_TEST(HttpServer, Echo, ioc)
               "Kitten\r\n"
               "0\r\n"
               "\r\n",
-              co_await socket.readAllAsString());
+              checkAndFilterDateHeader(co_await socket.readAllAsString()));
 }
 
 CORO_TEST(HttpServer, Long, ioc)
@@ -352,7 +459,7 @@ CORO_TEST(HttpServer, Long, ioc)
                           "\r\n");
 
     /* Read the response and split it into header and body. */
-    std::vector<std::byte> testResult = co_await socket.readAll();
+    std::vector<std::byte> testResult = checkAndFilterDateHeader(co_await socket.readAll());
     std::string_view testHeader((const char *)testResult.data(), std::min(refHeader.size(), testResult.size()));
     std::span testData(testResult.data() + testHeader.size(), testResult.size() - testHeader.size());
 
