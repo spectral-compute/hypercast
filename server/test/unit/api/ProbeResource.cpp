@@ -33,4 +33,24 @@ CORO_TEST(ApiProbeResource, Multiple, ioc)
                           "application/json");
 }
 
+CORO_TEST(ApiProbeResource, NonExistent, ioc)
+{
+    Api::ProbeResource resource(ioc);
+    TestRequest request(Server::Request::Type::post, "[{\"url\":\"squiggle\"}]");
+    co_await testResource(resource, request, "[null]",
+                          "application/json");
+}
+
+CORO_TEST(ApiProbeResource, ExistentAndNonExistent, ioc)
+{
+    Api::ProbeResource resource(ioc);
+    TestRequest request(Server::Request::Type::post,
+                        "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}," +
+                         "{\"url\":\"squiggle\"}]");
+    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},"
+                                               "\"video\":{\"frameRate\":[25,1],\"height\":1080,\"width\":1920}},"
+                                              "null]",
+                          "application/json");
+}
+
 } // namespace

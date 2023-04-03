@@ -16,7 +16,7 @@ namespace Api
  *
  * The output is of type:
  * ```
- * {
+ * ({
  *   video: {
  *     width: integer,
  *     height: integer,
@@ -25,11 +25,12 @@ namespace Api
  *   audio: {
  *     sampleRate: integer
  *   }
- * }[]
+ * } | null)[]
  * ```
  * and has the same length as the input (with corresponding elements). Either of `video` or `audio` may be absent. If
- * both are absent, then the media file is not usable. For a capture card input (such as a DeckLink), this should be
- * interpreted as that input not being connected.
+ * an element of the returned list is null, then the corresponding media input is not usable (e.g: it does not exist, or
+ * has no usable contents). For a capture card input (such as a DeckLink), this should be interpreted as that input not
+ * being connected.
  *
  * The `video.frameRate` field is a numerator/denominator pair. The other fields are self-explanatory.
  */
