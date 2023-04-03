@@ -76,3 +76,9 @@ Ffmpeg::FfmpegProcess::FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<co
         co_await this->subprocess.wait();
     });
 }
+
+Awaitable<void> Ffmpeg::FfmpegProcess::kill()
+{
+    subprocess.kill();
+    co_await this->subprocess.wait(false);
+}

@@ -2,7 +2,6 @@
 
 #include "log/Log.hpp"
 #include "util/subprocess.hpp"
-#include "util/asio.hpp"
 
 #include <string>
 #include <string_view>
@@ -43,9 +42,7 @@ public:
      */
     explicit FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<const std::string> arguments);
 
-    Awaitable<void> kill() {
-        co_await subprocess.kill();
-    }
+    Awaitable<void> kill();
 
 private:
     Log::Context log;

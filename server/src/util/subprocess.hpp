@@ -70,10 +70,9 @@ public:
     /**
      * Stop the process via SIGTERM (or equivalent on other operating systems)
      *
-     * Waits for the process to exit.
-     * @return The exit code.
+     * Use wait to wait for the process to terminate after calling this method.
      */
-    Awaitable<int> kill();
+    void kill();
 
     /**
      * Write data to the subprocess's stdin.

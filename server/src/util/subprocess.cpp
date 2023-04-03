@@ -256,10 +256,9 @@ Subprocess::Subprocess::Subprocess(IOContext &ioc, std::string_view executable,
 {
 }
 
-Awaitable<int> Subprocess::Subprocess::kill()
+void Subprocess::Subprocess::kill()
 {
     process->process.request_exit();
-    co_return process->process.wait();
 }
 
 Awaitable<int> Subprocess::Subprocess::wait(bool throwOnNonZero)
