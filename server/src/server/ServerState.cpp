@@ -137,8 +137,6 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     }
 
     // Reconfigure the static file server.
-    // TODO: Sort out `liveInfo` and `liveStream`: perhaps by making them not exist. Why aren't they just
-    //       hardcoded to be computed based on name of a stream?
     CANT_CHANGE(directories); // TODO: More intelligent determination of which directories to delete.
     if (performingStartup) {
         addFilesystemPathsToServer(server, newCfg.directories, ioc);
@@ -146,7 +144,6 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
 
     /* Update each channel. */
     for (const auto &[channelPath, channelConfig]: newCfg.channels) {
-        // TODO: Stop streaming here as needed.
         if (channels.contains(channelPath)) {
             // Only restart streaming if the channel configuration changed.
             if (channelConfig == config.channels.at(channelPath)) {
