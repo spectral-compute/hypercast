@@ -2,8 +2,16 @@
 
 #include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
+#include "ffmpeg/ProbeCache.hpp"
 
 #include <map>
+
+namespace MediaInfo
+{
+
+struct SourceInfo;
+
+} // namespace MediaInfo
 
 namespace Server {
 
@@ -30,6 +38,19 @@ public:
         return config;
     }
 
+    /**
+     * Get a map from URL and arguments that we're streaming from to information about the media source at that URL.
+     *
+     * This exists because some sources, such as DeckLinks, do not like to be ffprobe'd while they're streaming, but we
+     * still want to be able to return information about them via the API.
+     *
+     * @return An object that caches the media source information for all the sources we're streaming from.
+     */
+    const Ffmpeg::ProbeCache &getStreamingSourceInfos() const
+    {
+        return streamingSourceInfos;
+    }
+
     IOContext& ioc;
 
 private:
@@ -52,12 +73,25 @@ private:
      */
     std::map<std::string, Channel> channels;
 
+    /**
+     * The result of ffprobing each URL that's being streamed.
+     */
+    Ffmpeg::ProbeCache streamingSourceInfos;
+
     // Flag to suppress "you can't change that" for the first run of `applyConfiguration`, allowing us to use
     // `applyConfiguration` for initial configuration.
     bool performingStartup = true;
 
     /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
     void configCannotChange(bool itChanged, const std::string& name) const;
+
+    /**
+     * Fill in the defaults for a configuration.
+     *
+     * @param newConfig The new configuration to fill in defaults for.
+     * @return A media source probe cache for the new configuration.
+     */
+    Awaitable<Ffmpeg::ProbeCache> fillInDefaults(Config::Root &newConfig);
 
 public:
     /// Perform initial setup/configuration.

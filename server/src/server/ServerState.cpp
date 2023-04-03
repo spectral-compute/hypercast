@@ -1,7 +1,9 @@
 #include "ServerState.h"
 #include "ffmpeg/ffmpeg.hpp"
+#include "ffmpeg/ffprobe.hpp"
 #include "log/MemoryLog.hpp"
 #include "log/FileLog.hpp"
+#include "media/MediaInfo.hpp"
 #include "resources/FilesystemResource.hpp"
 #include "dash/DashResources.hpp"
 #include "configuration/defaults.hpp"
@@ -84,6 +86,36 @@ void Server::State::configCannotChange(bool itChanged, const std::string& name) 
     }
 }
 
+Awaitable<Ffmpeg::ProbeCache> Server::State::fillInDefaults(Config::Root &newConfig)
+{
+    Ffmpeg::ProbeCache newStreamingSourceInfos;
+    co_await Config::fillInDefaults([this, &newStreamingSourceInfos](const std::string &url,
+                                                                     const std::vector<std::string> &arguments) ->
+                                    Awaitable<MediaInfo::SourceInfo> {
+        /* If we already have a result in the new cache, just return that. */
+        if (const MediaInfo::SourceInfo *sourceInfo = newStreamingSourceInfos[url, arguments]) {
+            co_return *sourceInfo;
+        }
+
+        /* Make sure we're not trying to stream from the same URL with different parameters. */
+        if (newStreamingSourceInfos.contains(url)) {
+            throw std::runtime_error("Configuration contains the same source with different parameters.");
+        }
+
+        /* See if we're already streaming from this source. */
+        if (const MediaInfo::SourceInfo *sourceInfo = streamingSourceInfos[url, arguments]) {
+            newStreamingSourceInfos.insert(*sourceInfo, url, arguments);
+            co_return *sourceInfo;
+        }
+
+        /* We've not seen this resource before, so we'll have to actually probe it. */
+        MediaInfo::SourceInfo sourceInfo = co_await Ffmpeg::ffprobe(ioc, url, arguments);
+        newStreamingSourceInfos.insert(sourceInfo, url, arguments);
+        co_return sourceInfo;
+    }, newConfig);
+    co_return newStreamingSourceInfos;
+}
+
 /// Change the settings. Add as much clever incremental reconfiguration logic here as you like.
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
@@ -92,7 +124,7 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     requestedConfig = newCfg;
 
     // Fill in the blanks...
-    co_await Config::fillInDefaults(ioc, newCfg);
+    streamingSourceInfos = co_await fillInDefaults(newCfg);
 
 #define CANT_CHANGE(N) configCannotChange(config.N != newCfg.N, #N)
     // Listen port can be changed only by restarting the process (and will probably break

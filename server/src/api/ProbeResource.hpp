@@ -4,6 +4,13 @@
 
 class IOcontext;
 
+namespace Ffmpeg
+{
+
+class ProbeCache;
+
+} // namespace Ffmpeg
+
 namespace Api
 {
 
@@ -38,14 +45,22 @@ class ProbeResource final : public Server::Resource
 {
 public:
     ~ProbeResource() override;
-    ProbeResource(IOContext &ioc) : ioc(ioc) {}
+
+    /**
+     * Constructor :)
+     *
+     * @param configProbes The cache containing the media probes for the sources in the configuration. This is needed to
+     *                     make sure we don't probe devices that are in use.
+     */
+    ProbeResource(IOContext &ioc, const Ffmpeg::ProbeCache &configProbes) : ioc(ioc), configProbes(configProbes) {}
 
     Awaitable<void> postAsync(Server::Response &response, Server::Request &request) override;
 
     size_t getMaxPostRequestLength() const noexcept override;
 
 private:
-    class IOContext &ioc;
+    IOContext &ioc;
+    const Ffmpeg::ProbeCache &configProbes;
 };
 
 } // namespace Api
