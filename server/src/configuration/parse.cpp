@@ -232,6 +232,7 @@ static void from_json(const nlohmann::json &j, Directory &out)
     d(out.index, "index");
     d(out.secure, "secure");
     d(out.ephemeral, "ephemeral");
+    d(out.maxWritableSize, "maxWritableSize");
     d();
 }
 

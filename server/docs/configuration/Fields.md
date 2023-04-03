@@ -312,6 +312,7 @@ as follows, or a string that is interpreted as the `localPath` field:
 | `index`           |            | String  | Path within the directory to use if the directory itself is requested.    |
 | `secure`          | False      | Boolean | If this directory is accessible only in secure contexts (e.g: localhost). |
 | `ephemeral`       | False      | Boolean | If the cache control should be ephemeral.                                 |
+| `maxWritableSize` |            | Integer | Maximum size in MiB that can be PUT. If not given, PUT is not allowed.    |
 
 
 ### `directories.ephemeral`

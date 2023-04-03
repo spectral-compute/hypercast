@@ -154,6 +154,7 @@ static void to_json(nlohmann::json &j, const Directory &in)
     j["index"] = in.index;
     j["secure"] = in.secure;
     j["ephemeral"] = in.ephemeral;
+    j["maxWritableSize"] = in.maxWritableSize;
 }
 
 /// @ingroup configuration_implementation

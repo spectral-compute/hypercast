@@ -32,10 +32,9 @@ void addFilesystemPathsToServer(Server::Server &server, const std::map<std::stri
         server.addResource<Server::FilesystemResource>(path, ioc, directory.localPath, directory.index,
                                                        directory.ephemeral ? Server::CacheKind::ephemeral :
                                                                              Server::CacheKind::fixed,
-                                                       !directory.secure);
+                                                       !directory.secure, directory.maxWritableSize << 20);
     }
 }
-
 
 } // Anonymous namespace
 

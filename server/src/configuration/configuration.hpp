@@ -231,6 +231,7 @@ struct Directory final
     std::string index;
     bool secure = false;
     bool ephemeral = false;
+    size_t maxWritableSize = 0;
 
     bool operator==(const Directory &) const;
 };
