@@ -2,11 +2,11 @@
 
 #include "server/Request.hpp"
 #include "server/Response.hpp"
+#include "server/ServerState.h"
 #include "util/asio.hpp"
+#include "util/File.hpp"
 
 Api::ConfigResource::~ConfigResource() = default;
-
-Api::ConfigResource::ConfigResource(Server::State &state) : Resource(false), serverState(state) {}
 
 Awaitable<void> Api::ConfigResource::getAsync(Server::Response &response, Server::Request &request)
 {
@@ -22,7 +22,16 @@ Awaitable<void> Api::ConfigResource::getAsync(Server::Response &response, Server
 
 Awaitable<void> Api::ConfigResource::putAsync(Server::Response &response, Server::Request &request)
 {
-    co_await serverState.applyConfiguration(Config::Root::fromJson(co_await request.readAllAsString()));
+    /* Read the JSON we recieved. */
+    std::string json = co_await request.readAllAsString();
+
+    /* Apply the configuration. */
+    co_await serverState.applyConfiguration(Config::Root::fromJson(json));
+
+    /* Write the configuration to the configuration file. We only actually get here if the above was successful, because
+       failure would throw an exception. This provides protection against writing junk configurations. */
+    Util::File configFile(serverState.ioc, configPath, true, false);
+    co_await configFile.write(json);
 }
 
 size_t Api::ConfigResource::getMaxPutRequestLength() const noexcept

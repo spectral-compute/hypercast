@@ -21,7 +21,7 @@ namespace
 /**
  * Read, parse, and validate the configuration from a file.
  */
-Config::Root loadConfig(const char *path)
+Config::Root loadConfig(const std::filesystem::path &path)
 {
     std::vector<std::byte> bytes = Util::readFile(path);
     return Config::Root::fromJson(std::string_view((const char *)bytes.data(), bytes.size()));
@@ -36,14 +36,15 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     if (argc != 2) {
         throw std::runtime_error("Usage: "s + (argc ? argv[0] : "") + " configuration.json");
     }
+    std::filesystem::path configPath = argv[1];
 
     // Load and populate a config object.
-    Config::Root config = loadConfig(argv[1]);
+    Config::Root config = loadConfig(configPath);
 
     Server::State st{config, ioc};
 
     /* Create global resources for the API. */
-    st.getServer().addResource<Api::ConfigResource>("api/config", st);
+    st.getServer().addResource<Api::ConfigResource>("api/config", st, configPath);
 #ifndef NDEBUG
     st.getServer().addResource<Api::FullConfigResource>("api/full_config", st);
 #endif // NDEBUG
