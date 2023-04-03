@@ -1,6 +1,6 @@
 import "./Footer.scss";
 
-function Spec_a({location, children}: {location: string, children: React.ReactNode}) {
+function SpecA({location, children}: {location: string, children: React.ReactNode}) {
     return <a
         href={"https://spectralcompute.co.uk/" + location}
         target="_blank"
@@ -14,21 +14,21 @@ export default function Footer() {
             <div>
                 <span className="title">Product</span>
                 <ul>
-                    <li><Spec_a location="rise">Information</Spec_a></li>
+                    <li><SpecA location="rise">Information</SpecA></li>
                 </ul>
             </div>
             <div>
                 <span className="title">Company</span>
                 <ul>
-                    <li><Spec_a location="company">About</Spec_a></li>
-                    <li><Spec_a location="#contact">Contact</Spec_a></li>
+                    <li><SpecA location="company">About</SpecA></li>
+                    <li><SpecA location="#contact">Contact</SpecA></li>
                 </ul>
             </div>
             <div className="credits">
                 <span>by</span>
-                <Spec_a location="">
+                <SpecA location="">
                     <img src="/img/spectral-compute-logo.svg" alt="Spectral Compute" />
-                </Spec_a>
+                </SpecA>
             </div>
         </div>
     </footer>;
