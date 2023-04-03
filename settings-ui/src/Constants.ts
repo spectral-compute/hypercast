@@ -38,28 +38,28 @@ export type FuzzyVideoQuality = FuzzyQualityEnum<typeof FUZZY_VIDEO_QUALITIES>;
 // Any subset of the keys from the VideoVariant object can be specified here.
 export const FUZZY_VIDEO_QUALITY_SETTINGS: {[K in FuzzyVideoQuality]: RecursivePartial<VideoVariant>} = {
     LOW: {
-        crf: 10
+        crf: 30
     },
     MEDIUM: {
-        crf: 15
+        crf: 26
     },
     HIGH: {
-        crf: 25,
+        crf: 22,
     },
     VERY_HIGH: {
-        crf: 35
+        crf: 18
     }
 };
 
 export const FUZZY_AUDIO_QUALITY_SETTINGS: {[K in FuzzyAudioQuality]: RecursivePartial<AudioVariant>} = {
     LOW: {
-        bitrate: 100
+        bitrate: 48
     },
     MEDIUM: {
-        bitrate: 500
+        bitrate: 96
     },
     HIGH: {
-        bitrate: 5000
+        bitrate: 192
     }
 };
 
