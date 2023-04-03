@@ -1,6 +1,7 @@
 #pragma once
 
 #include "log/Log.hpp"
+#include "util/Event.hpp"
 #include "util/subprocess.hpp"
 
 #include <string>
@@ -42,11 +43,16 @@ public:
      */
     explicit FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<const std::string> arguments);
 
+    /**
+     * Send SIGTERM to the ffmpeg process and wait for it to terminate.
+     */
     Awaitable<void> kill();
 
 private:
     Log::Context log;
     Subprocess::Subprocess subprocess;
+    Event finishedReadingEvent;
+    bool finishedReading = false;
 };
 
 /**

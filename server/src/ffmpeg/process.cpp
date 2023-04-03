@@ -63,22 +63,37 @@ void handleFfmpegStderrLine(Log::Context &log, std::string_view line)
 } // namespace
 
 Ffmpeg::FfmpegProcess::FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<const std::string> arguments) :
-    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments, false, false)
+    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments, false, false), finishedReadingEvent(ioc)
 {
     /* Log the arguments given to ffmpeg. */
     this->log << "arguments" << Log::Level::info << getArgumentsForLog(arguments);
 
     /* Create a coroutine to handle the stderr output of ffmpeg and wait for the process termination. */
-    spawnDetached(ioc, this->log, [this]() -> Awaitable<void> {
-        while (auto line = co_await this->subprocess.readStderrLine()) {
-            handleFfmpegStderrLine(this->log, *line);
+    spawnDetached(ioc, [this]() -> Awaitable<void> {
+        // Read the logging that ffmpeg emits.
+        try {
+            while (auto line = co_await this->subprocess.readStderrLine()) {
+                handleFfmpegStderrLine(this->log, *line);
+            }
         }
-        co_await this->subprocess.wait();
+        catch (const std::exception &e) {
+            this->log << "exception" << Log::Level::error << e.what();
+        }
+        catch (...) {
+            this->log << "exception" << Log::Level::error << "Unknown.";
+        }
+
+        // Wait for ffmpeg to terminate, and then notify anything that's waiting that we've done so.
+        co_await this->subprocess.wait(false);
+        finishedReading = true;
+        finishedReadingEvent.notifyAll();
     });
 }
 
 Awaitable<void> Ffmpeg::FfmpegProcess::kill()
 {
     subprocess.kill();
-    co_await this->subprocess.wait(false);
+    while (!finishedReading) {
+        co_await finishedReadingEvent.wait();
+    }
 }
