@@ -1,3 +1,5 @@
+#include "configuration/defaults.hpp"
+
 #include "configuration/configuration.hpp"
 
 #include "ffmpeg/ffprobe.hpp"
@@ -125,14 +127,15 @@ namespace Config
  *                  for doing that in this function.
  * @param source The media source configuration.
  */
-Awaitable<void> fillInQualitiesFromFfprobe(IOContext &ioc, std::vector<Quality> &qualities, const Source &source)
+Awaitable<void> fillInQualitiesFromFfprobe(std::vector<Quality> &qualities, const Source &source,
+                                           const ProbeFunction &probe)
 {
     /* Lazily initialized information about the media source. The macro is to avoid an expensive co_await for every
        use. */
     #define ensureMediaInfoInitialized() \
         do { \
             if (!mediaInfo) { \
-                mediaInfo = co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments); \
+                mediaInfo = co_await probe(source.url, source.arguments); \
                 if (!mediaInfo->video) { \
                     throw std::runtime_error("Media source has no video."); \
                 } \

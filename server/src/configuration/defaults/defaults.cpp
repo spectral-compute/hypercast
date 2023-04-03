@@ -1,15 +1,18 @@
 #include "configuration/defaults.hpp"
 #include "configuration/configuration.hpp"
+#include "ffmpeg/ffprobe.hpp"
 
 namespace Config
 {
 
-Awaitable<void> fillInQualitiesFromFfprobe(IOContext &ioc, std::vector<Quality> &qualities, const Source &source);
+Awaitable<void>
+fillInQualitiesFromFfprobe(std::vector<Quality> &qualities, const Source &source, const ProbeFunction &probe);
+
 void fillInQuality(Config::Quality &q, const Root &config, const Channel &channel);
 
 } // namespace Config
 
-Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
+Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
 {
     // TODO: This is likely no longer correct, since the ffprobeage will need to be changed to cope with
     //       multiple input ports.
@@ -27,7 +30,7 @@ Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
 
         // Fill in the information we get from ffprobe. This is done first because a lot of other stuff is based on
         // this.
-        co_await fillInQualitiesFromFfprobe(ioc, channel.qualities, channel.source);
+        co_await fillInQualitiesFromFfprobe(channel.qualities, channel.source, probe);
 
         // Fill in prerequisites to the latency tracker.
         if (!channel.source.latency) {
@@ -39,4 +42,13 @@ Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
             fillInQuality(q, config, channel);
         }
     }
+}
+
+Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
+{
+    // This has ot be a co_await because otherwise the lambda would go out of scope.
+    co_await fillInDefaults([&ioc](const std::string &url, const std::vector<std::string> &arguments) ->
+                            Awaitable<MediaInfo::SourceInfo> {
+        return Ffmpeg::ffprobe(ioc, url, arguments);
+    }, config);
 }
