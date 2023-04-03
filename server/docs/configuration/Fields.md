@@ -300,18 +300,18 @@ Due to HTTP cache timing resolution limitations, this should be greater than 100
 ## `directories`
 
 This is useful to easily build a basic streaming server that serves a client. For a more complex case, such as with
-server-side scripting, authentication, cookies, session management, or where multiple video sources are required from
-the same server, the use of a reverse HTTP proxy like Nginx is recommended.
+server-side scripting, authentication, cookies, or session management, the use of a reverse HTTP proxy like Nginx is
+recommended.
 
 The name of each field of this object is a path to expose on the server. The values of each field are either an object
 as follows, or a string that is interpreted as the `localPath` field:
 
-| Field       | Default    | Type    | Description                                                                    |
-|-------------|------------|---------|--------------------------------------------------------------------------------|
-| `localPath` | *Required* | String  | The location on the local server where the directory resides.                  |
-| `index`     |            | String  | Path within the directory to use if the directory itself is requested.         |
-| `secure`    | False      | Boolean | Whether this directory is accessible only in secure contexts (e.g: localhost). |
-| `ephemeral` | False      | Boolean | Whether the cache control should be ephemeral.                                 |
+| Field             | Default    | Type    | Description                                                               |
+|-------------------|------------|---------|---------------------------------------------------------------------------|
+| `localPath`       | *Required* | String  | The location on the local server where the directory resides.             |
+| `index`           |            | String  | Path within the directory to use if the directory itself is requested.    |
+| `secure`          | False      | Boolean | If this directory is accessible only in secure contexts (e.g: localhost). |
+| `ephemeral`       | False      | Boolean | If the cache control should be ephemeral.                                 |
 
 
 ### `directories.ephemeral`
