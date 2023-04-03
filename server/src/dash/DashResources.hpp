@@ -4,6 +4,7 @@
 #include "server/Path.hpp"
 
 #include <filesystem>
+#include <memory>
 #include <vector>
 
 class IOContext;
@@ -140,6 +141,11 @@ private:
      * Tracks state for each interleave stream.
      */
     std::vector<Interleave> interleaves;
+
+    /**
+     * Something to create weak pointers from to determine from a coroutine whether the object parent still exist.
+     */
+    std::shared_ptr<char> exists;
 };
 
 } // namespace Dash

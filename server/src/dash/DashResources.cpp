@@ -456,7 +456,8 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     ioc(ioc), log(log), logContext(log("dash")), config(channelConfig), server(server),
     basePath(std::move(basePath)), uidPath(this->basePath / getUid()),
     persistenceDirectory(config.history.persistentStorage.empty() ? std::filesystem::path{} :
-                         std::filesystem::path(config.history.persistentStorage) / formatPersistenceTimestamp())
+                         std::filesystem::path(config.history.persistentStorage) / formatPersistenceTimestamp()),
+    exists(std::make_shared<char>(0))
 {
     logContext << "base path" << Log::Level::info << (std::string)getBasePath();
     logContext << "uid path" << Log::Level::info << (std::string)getUidPath();
@@ -543,7 +544,12 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
         { "segmentIndex", segmentIndex }
     });
 
-    spawnDetached(ioc, [=, this]() -> Awaitable<void> {
+    spawnDetached(ioc, [=, this, stillExists = std::weak_ptr(exists)]() -> Awaitable<void> {
+        /* Don't play with a dead object. */
+        if (stillExists.expired()) {
+            co_return;
+        }
+
         /* Update the segment index descriptor. */
         try {
             server.addOrReplaceResource<SegmentIndexResource>(uidPath / getSegmentIndexDescriptorName(streamIndex),
@@ -568,15 +574,26 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
                                                              config.dash.preAvailabilityTime));
             co_await timer.async_wait(boost::asio::use_awaitable);
 
+            // The this object might have been deleted while waiting.
+            if (stillExists.expired()) {
+                co_return;
+            }
+
             // Create the segment.
             createSegment(streamIndex, segmentIndex + 1);
         }
         catch (const std::exception &e) {
+            if (stillExists.expired()) {
+                co_return;
+            }
             logContext << Log::Level::error
                        << "Exception while creating pre-available segment " << segmentIndex
                        << " for stream " << (streamIndex + 1) << ": " << e.what() << ".";
         }
         catch (...) {
+            if (stillExists.expired()) {
+                co_return;
+            }
             logContext << Log::Level::error
                        << "Unknown exception while creating pre-available segment " << segmentIndex
                        << " for stream " << (streamIndex + 1) << ".";
