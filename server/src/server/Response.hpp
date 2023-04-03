@@ -75,6 +75,9 @@ public:
      *
      * The default if this method is not called is CacheKind::fixed. If this method is called, it must be called before
      * operator<< and wait.
+     *
+     * This method must not be called for responses that serve requests that don't support caching. The only requests
+     * that do are those of type Request::get.
      */
     void setCacheKind(CacheKind kind)
     {

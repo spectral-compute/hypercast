@@ -146,9 +146,11 @@ public:
      * @param keepAlive Whether to instruct the client to keep the connection alive after the response body has been
      *                  sent.
      * @param discard Whether to discard the message body. This is useful for implementing HEAD.
+     * @param methodAllowsCaching Whether the HTTP method we're responding to allows caching.
      */
-    explicit HttpResponse(Connection &connection, const Config::Http &httpConfig, bool keepAlive, bool discard) :
-        connection(connection), httpConfig(httpConfig), discard(discard)
+    explicit HttpResponse(Connection &connection, const Config::Http &httpConfig, bool keepAlive, bool discard,
+                          bool methodAllowsCaching) :
+        connection(connection), httpConfig(httpConfig), discard(discard), methodAllowsCaching(methodAllowsCaching)
     {
         response.keep_alive(keepAlive);
     }
@@ -289,7 +291,7 @@ private:
         response.set(boost::beast::http::field::date, computeDateHeader());
 
         /* Set cache control. */
-        {
+        if (methodAllowsCaching) {
             int cacheDuration = getCacheDuration();
             response.set(boost::beast::http::field::cache_control,
                          cacheDuration ? "public, max-age=" + std::to_string(cacheDuration) : "no-cache");
@@ -362,6 +364,11 @@ private:
      * This is useful for implementing HEAD.
      */
     const bool discard = false;
+
+    /**
+     * Whether the method in the request that this is a response to permits caching.
+     */
+    const bool methodAllowsCaching;
 
     boost::beast::http::response<boost::beast::http::buffer_body> response;
     boost::beast::http::response_serializer<boost::beast::http::buffer_body> serializer{response};
@@ -451,7 +458,9 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
 
     /* Create a Response object. Create this earlier, so we can use its error transmission code. */
     HttpResponse response(connection, httpConfig, parser.keep_alive(),
-                          parser.get().method() == boost::beast::http::verb::head);
+                          parser.get().method() == boost::beast::http::verb::head,
+                          parser.get().method() == boost::beast::http::verb::head ||
+                              parser.get().method() == boost::beast::http::verb::get);
 
     /* Create a Request object to handle the request body. */
     // Figure out the request type.
