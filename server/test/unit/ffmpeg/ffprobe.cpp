@@ -10,8 +10,7 @@ namespace
 
 CORO_TEST(Ffprobe, IntegerFPS, ioc)
 {
-    Config::Source source = {.url = getSmpteDataPath(1920, 1080, 25, 1, 48000).string()};
-    MediaInfo::SourceInfo ffprobed = co_await Ffmpeg::ffprobe(ioc, source);
+    MediaInfo::SourceInfo ffprobed = co_await Ffmpeg::ffprobe(ioc, getSmpteDataPath(1920, 1080, 25, 1, 48000).string());
 
     MediaInfo::SourceInfo ref = {
         .video = MediaInfo::VideoStreamInfo{
@@ -30,8 +29,8 @@ CORO_TEST(Ffprobe, IntegerFPS, ioc)
 
 CORO_TEST(Ffprobe, FractionFPS, ioc)
 {
-    Config::Source source = {.url = getSmpteDataPath(1920, 1080, 30000, 1001, 48000).string()};
-    MediaInfo::SourceInfo ffprobed = co_await Ffmpeg::ffprobe(ioc, source);
+    MediaInfo::SourceInfo ffprobed =
+        co_await Ffmpeg::ffprobe(ioc, getSmpteDataPath(1920, 1080, 30000, 1001, 48000).string());
 
     MediaInfo::SourceInfo ref = {
         .video = MediaInfo::VideoStreamInfo{

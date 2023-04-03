@@ -104,19 +104,20 @@ static void from_json(const nlohmann::json &j, AudioStreamInfo &out)
 
 } // namespace MediaInfo
 
-Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, const Config::Source &source)
+Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
+                                                 std::span<const std::string_view> arguments)
 {
     /* Run ffprobe. */
     std::vector<std::string_view> args;
-    args.reserve(source.arguments.size() + 4);
+    args.reserve(arguments.size() + 4);
 
     // The source's input arguments.
-    for (const std::string &arg: source.arguments) {
-        args.push_back(arg);
+    for (std::string_view arg: arguments) {
+        args.emplace_back(arg);
     }
 
     // The input itself.
-    args.push_back(source.url);
+    args.emplace_back(url);
 
     // The output arguments.
     for (const char *arg: {"-of", "json", "-show_streams"}) {
@@ -163,4 +164,14 @@ Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, const Config::S
 
     /* Done :) */
     co_return result;
+}
+
+Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
+                                                 std::span<const std::string> arguments)
+{
+    std::vector<std::string_view> argumentViews(arguments.size());
+    for (size_t i = 0; i < arguments.size(); i++) {
+        argumentViews[i] = arguments[i];
+    }
+    co_return co_await ffprobe(ioc, url, argumentViews);
 }

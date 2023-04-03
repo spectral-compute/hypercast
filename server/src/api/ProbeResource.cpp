@@ -31,7 +31,7 @@ Awaitable<void> probeSource(IOContext &ioc, MediaInfo::SourceInfo &result, const
 {
     /* Try to probe the source to see what it contains. */
     try {
-        result = co_await Ffmpeg::ffprobe(ioc, { .url = source.url, .arguments = source.arguments });
+        result = co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments);
     }
 
     /* In case of exception, the source probably isn't connected, or is otherwise not usable. */

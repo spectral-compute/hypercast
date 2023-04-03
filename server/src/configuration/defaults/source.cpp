@@ -132,7 +132,7 @@ Awaitable<void> fillInQualitiesFromFfprobe(IOContext &ioc, std::vector<Quality> 
     #define ensureMediaInfoInitialized() \
         do { \
             if (!mediaInfo) { \
-                mediaInfo = co_await Ffmpeg::ffprobe(ioc, source); \
+                mediaInfo = co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments); \
                 if (!mediaInfo->video) { \
                     throw std::runtime_error("Media source has no video."); \
                 } \
