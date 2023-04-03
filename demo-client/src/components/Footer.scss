@@ -6,4 +6,26 @@ footer {
     min-height: 5em;
 
     background-color: c.$content-bg;
+
+    & .content-width {
+        display: flex;
+        flex-direction: row;
+        gap: 1em;
+    }
+
+    & .footer-block {
+        & .title {
+            font-size: 1.5em;
+        }
+
+        & ul {
+            list-style-type: none;
+            padding-left: 1em;
+            margin: 0.5em 0;
+
+            & li {
+                margin: 0.25em 0;
+            }
+        }
+    }
 }
