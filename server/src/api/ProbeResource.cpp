@@ -81,10 +81,8 @@ static void to_json(nlohmann::json &j, const SourceInfo &in)
 
 Api::ProbeResource::~ProbeResource() = default;
 
-Awaitable<void> Api::ProbeResource::getAsync(Server::Response &response, Server::Request &request)
+Awaitable<void> Api::ProbeResource::postAsync(Server::Response &response, Server::Request &request)
 {
-    response.setCacheKind(Server::CacheKind::none);
-
     try {
         /* Get all the sources and somewhere to put the result. */
         auto sources = Json::parse(co_await request.readAllAsString()).get<std::vector<Source>>();
@@ -108,7 +106,7 @@ Awaitable<void> Api::ProbeResource::getAsync(Server::Response &response, Server:
     }
 }
 
-size_t Api::ProbeResource::getMaxGetRequestLength() const noexcept
+size_t Api::ProbeResource::getMaxPostRequestLength() const noexcept
 {
     return 1 << 12; // 4 kiB.
 }

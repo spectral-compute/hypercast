@@ -39,9 +39,9 @@ public:
     ~ProbeResource() override;
     ProbeResource(IOContext &ioc) : ioc(ioc) {}
 
-    Awaitable<void> getAsync(Server::Response &response, Server::Request &request) override;
+    Awaitable<void> postAsync(Server::Response &response, Server::Request &request) override;
 
-    size_t getMaxGetRequestLength() const noexcept override;
+    size_t getMaxPostRequestLength() const noexcept override;
 
 private:
     class IOContext &ioc;
