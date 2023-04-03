@@ -51,9 +51,9 @@ public:
 
 private:
     IOContext &ioc;
-    std::filesystem::path path;
-    std::filesystem::path index;
-    CacheKind cacheKind;
+    const std::filesystem::path path;
+    const std::filesystem::path index;
+    const CacheKind cacheKind;
 };
 
 } // namespace Server
