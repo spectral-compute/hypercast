@@ -117,6 +117,11 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     for (const auto &[channelPath, channelConfig]: newCfg.channels) {
         // TODO: Stop streaming here as needed.
         if (channels.contains(channelPath)) {
+            // Only restart streaming if the channel configuration changed.
+            if (channelConfig == config.channels.at(channelPath)) {
+                continue;
+            }
+
             // Destroy the channel, remove it, and then rely on the code later in this function to recreate it.
             // A more elegant implementation is probably possible :D.
 
