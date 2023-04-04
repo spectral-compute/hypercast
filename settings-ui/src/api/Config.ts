@@ -45,7 +45,7 @@ export interface FrameRate {
     denominator: number;
 }
 
-export type FrameRateSpecial = "native" | "half" | "half+";
+export type FrameRateSpecial = undefined | "half" | "half+";
 export type FrameRateCfg = FrameRate | FrameRateSpecial;
 
 export interface VideoVariant {

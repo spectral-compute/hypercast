@@ -125,7 +125,6 @@ export function defaultVideoVariantConfig(w: number, h: number): VideoVariant {
     return {
         width: w,
         height: h,
-        frameRate: "native",
         ...FUZZY_VIDEO_QUALITY_SETTINGS[FUZZY_VIDEO_QUALITIES.DEFAULT]
     };
 }

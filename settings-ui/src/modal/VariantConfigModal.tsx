@@ -106,7 +106,7 @@ export default (props: VariantConfigModalProps) => {
                 selectedItem={video.frameRate as FrameRateSpecial}
                 onSelected={(v) => setVideo({...video, frameRate: v})}
                 items={[{
-                    value: "native",
+                    value: undefined,
                     label: "native"
                 }, {
                     value: "half",
