@@ -1,25 +1,42 @@
 export enum LogLevel {
-    debug,
-    info,
-    warning,
-    error,
-    fatal
+    debug = "debug",
+    info = "info",
+    warning = "warning",
+    error = "error",
+    fatal = "fatal"
 }
 
 export enum VideoCodec {
-    h264, h265, vp8, vp9, av1
+    h264 = "h264",
+    h265 = "h265",
+    vp8 = "vp8",
+    vp9 = "vp9",
+    av1 = "av1"
 }
 
 export enum AudioCodec {
-    none, aac, opus
+    none = "none",
+    aac = "aac",
+    opus = "opus"
 }
 
 export enum FrameRateType {
-    fps, fraction, fraction23
+    fps = "fps",
+    fraction = "fraction",
+    fraction23 = "fraction23"
 }
 
 export enum H26xPreset {
-    ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+    ultrafast = "ultrafast",
+    superfast = "superfast",
+    veryfast = "veryfast",
+    faster = "faster",
+    fast = "fast",
+    medium = "medium",
+    slow = "slow",
+    slower = "slower",
+    veryslow = "veryslow",
+    placebo = "placebo"
 }
 
 export interface MediaSource {
