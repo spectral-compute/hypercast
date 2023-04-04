@@ -272,7 +272,7 @@ Awaitable<void> Server::Server::operator()(Response &response, Request &request)
 
     // Return an error code if possible.
     if (!response.getWriteStarted()) {
-        response.setErrorAndMessage(ErrorKind::Internal);
+        response.setErrorAndMessage(ErrorKind::Internal, request.getIsPublic() ? "" : (what ? what : "Unknown error."));
         co_await response.flush(true);
     }
 }
