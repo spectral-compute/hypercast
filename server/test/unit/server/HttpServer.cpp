@@ -298,6 +298,7 @@ CORO_TEST(HttpServer, Short, ioc)
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: public, max-age=600\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Type: text/plain\r\n"
               "Content-Length: 16\r\n"
               "\r\n"
@@ -314,6 +315,7 @@ CORO_TEST(HttpServer, NotFound, ioc)
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: public, max-age=600\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Length: 0\r\n"
               "\r\n",
               checkAndFilterDateHeader(co_await socket.readAllAsString()));
@@ -328,6 +330,7 @@ CORO_TEST(HttpServer, DotDotForbidden, ioc)
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: public, max-age=600\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Length: 0\r\n"
               "\r\n",
               checkAndFilterDateHeader(co_await socket.readAllAsString()));
@@ -342,6 +345,7 @@ CORO_TEST(HttpServer, ShortChunk, ioc)
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: public, max-age=1\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Transfer-Encoding: chunked\r\n"
               "\r\n"
               "4\r\n"
@@ -369,6 +373,7 @@ CORO_TEST(HttpServer, ShortKeepAlive, ioc)
     EXPECT_EQ("HTTP/1.1 200 OK\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: public, max-age=600\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Type: text/plain\r\n"
               "Content-Length: 16\r\n"
               "\r\n"
@@ -377,6 +382,7 @@ CORO_TEST(HttpServer, ShortKeepAlive, ioc)
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: public, max-age=600\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Type: text/plain\r\n"
               "Content-Length: 16\r\n"
               "\r\n"
@@ -394,6 +400,7 @@ CORO_TEST(HttpServer, LengthShort, ioc)
     EXPECT_EQ("HTTP/1.1 200 OK\r\n"
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Length: 1\r\n"
               "\r\n"
               "6",
@@ -410,6 +417,7 @@ CORO_TEST(HttpServer, LengthLarge, ioc)
     EXPECT_EQ("HTTP/1.1 200 OK\r\n"
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Content-Length: 9\r\n"
               "\r\n"
               "104857600",
@@ -427,6 +435,7 @@ CORO_TEST(HttpServer, Echo, ioc)
               "Connection: close\r\n"
               "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
               "Cache-Control: no-cache\r\n"
+              "Access-Control-Allow-Origin: *\r\n"
               "Transfer-Encoding: chunked\r\n"
               "\r\n"
               "6\r\n"
@@ -443,6 +452,7 @@ CORO_TEST(HttpServer, Long, ioc)
                                  "Connection: close\r\n"
                                  "Server: Spectral Compute Ultra Low Latency Video Streamer\r\n"
                                  "Cache-Control: public, max-age=600\r\n"
+                                 "Access-Control-Allow-Origin: *\r\n"
                                  "Content-Length: 268435456\r\n"
                                  "\r\n";
 

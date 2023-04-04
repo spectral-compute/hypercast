@@ -121,9 +121,11 @@ private:
 
 int main()
 {
+    Config::Network networkConfig = { .port = 12480 };
+    Config::Http httpConfig = {};
     IOContext ioc;
     ExpectNeverLog log(ioc);
-    Server::HttpServer server(ioc, log, { .port = 12480 }, {});
+    Server::HttpServer server(ioc, log, networkConfig, httpConfig);
     server.addResource<EchoResource>("Echo");
     server.addResource<LengthResource>("Length");
     server.addResource<LongResource>("Long", false);
