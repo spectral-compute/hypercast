@@ -1,5 +1,6 @@
 import {AudioVariant, VideoVariant, Channel, AudioCodec, StreamVariantConfig} from "./api/Config";
 import {fuzzyMatch, FuzzyMatchResult, RecursivePartial} from "./Fuzzify";
+import {Source} from "./api/Types";
 
 export const RES_1080p = [1920, 1080] as const;
 export const RES_4k = [3840, 2160] as const;
@@ -72,26 +73,26 @@ export const DECKLINK_PORT = {
 } as const;
 export type DecklinkPort = FuzzyQualityEnum<typeof DECKLINK_PORT>;
 
-export const DECKLINK_PORTS_ORDERED: string[] = [
-    "DeckLink 8K Pro (4)",
-    "DeckLink 8K Pro (2)",
-    "DeckLink 8K Pro (3)",
-    "DeckLink 8K Pro (1)"
+export const DECKLINK_PORTS_ORDERED: Source[] = [
+    { url: "DeckLink 8K Pro (4)", arguments: ["-f", "decklink"] },
+    { url: "DeckLink 8K Pro (2)", arguments: ["-f", "decklink"] },
+    { url: "DeckLink 8K Pro (3)", arguments: ["-f", "decklink"] },
+    { url: "DeckLink 8K Pro (1)", arguments: ["-f", "decklink"] }
 ];
 
 // The settings you need to select a specific SDI port on the RISE box.
 export const DECKLINK_PORT_SETTINGS:  {[K in DecklinkPort]: RecursivePartial<Channel>} = {
     ["1"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[0], arguments: ["-f", "decklink"]}
+        source: DECKLINK_PORTS_ORDERED[0]
     },
     ["2"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[1], arguments: ["-f", "decklink"]},
+        source: DECKLINK_PORTS_ORDERED[1],
     },
     ["3"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[2], arguments: ["-f", "decklink"]},
+        source: DECKLINK_PORTS_ORDERED[2],
     },
     ["4"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[3], arguments: ["-f", "decklink"]}
+        source: DECKLINK_PORTS_ORDERED[3]
     }
 };
 
