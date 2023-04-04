@@ -120,7 +120,6 @@ Awaitable<Ffmpeg::ProbeCache> Server::State::fillInDefaults(Config::Root &newCon
 /// so they don't appear specifically within this function.
 Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     // TODO: We probably need a mutex to stop this method from running in parallel with itself in another coroutine.
-    requestedConfig = newCfg;
 
     // Fill in the blanks...
     streamingSourceInfos = co_await fillInDefaults(newCfg);
@@ -144,6 +143,9 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
 
     // Delete channels that are simply gone.
     std::vector<std::string> murderise;
+
+    fprintf(stderr, ">>>>>>>> Channels: %zu\n", channels.size());
+
     for (auto &[channelPath, channelConfig]: channels) {
         if (!newCfg.channels.contains(channelPath)) {
             co_await channelConfig.ffmpeg.kill();
@@ -151,9 +153,12 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
             murderise.push_back(channelPath);
         }
     }
+
+    fprintf(stderr, "    %s:%i\n", __FILE__, __LINE__);
     for (const auto& p : murderise) {
         channels.erase(p);
     }
+    fprintf(stderr, "    Channels: %zu\n", channels.size());
 
     // Update channels that have been.. updated.
     for (const auto &[channelPath, channelConfig]: newCfg.channels) {
@@ -172,6 +177,7 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
             channels.erase(channelPath);
         }
     }
+    fprintf(stderr, "    %s:%i\n", __FILE__, __LINE__);
 
     /* Move the configuration to its final location so  */
     // TODO: Either this needs to update only the channels we stopped above, or the channels need a copy of the
@@ -187,6 +193,13 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
         channels.emplace(std::piecewise_construct, std::forward_as_tuple(channelPath),
                          std::forward_as_tuple(ioc, *log, config, channelConfig, channelPath, server));
     }
+    fprintf(stderr, "    %s:%i\n", __FILE__, __LINE__);
+
+    /* Now that we got here, we successfully applied the new configuration, so record it as the new requested
+       configuration. */
+    // TODO: I think we actually only care about jsonRepresentation from this, in which case, it probably makes sense to
+    //       move that from Config::Root to either this class or Api::ConfigResource.
+    requestedConfig = config;
 
     /* Mark that we're done performing setup. */
     performingStartup = false;
