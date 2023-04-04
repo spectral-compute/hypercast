@@ -72,33 +72,33 @@ export const DECKLINK_PORT = {
 } as const;
 export type DecklinkPort = FuzzyQualityEnum<typeof DECKLINK_PORT>;
 
-export const DECKLINK_PORTS_ORDERED: string[] = [
-    "DeckLink 8K Pro (4)",
-    "DeckLink 8K Pro (2)",
-    "DeckLink 8K Pro (3)",
-    "DeckLink 8K Pro (1)"
+export const DECKLINK_PORTS_ORDERED: DecklinkPort[] = [
+    "1",
+    "2",
+    "3",
+    "4"
 ];
 
 // The settings you need to select a specific SDI port on the RISE box.
 export const DECKLINK_PORT_SETTINGS:  {[K in DecklinkPort]: RecursivePartial<Channel>} = {
     ["1"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[0], arguments: ["-f", "decklink"]}
+        source: {url: "DeckLink 8K Pro (4)", arguments: ["-f", "decklink"]}
     },
     ["2"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[1], arguments: ["-f", "decklink"]},
+        source: {url: "DeckLink 8K Pro (1)", arguments: ["-f", "decklink"]},
     },
     ["3"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[2], arguments: ["-f", "decklink"]},
+        source: {url: "DeckLink 8K Pro (3)", arguments: ["-f", "decklink"]},
     },
     ["4"]: {
-        source: {url: DECKLINK_PORTS_ORDERED[3], arguments: ["-f", "decklink"]}
+        source: {url: "DeckLink 8K Pro (2)", arguments: ["-f", "decklink"]}
     }
 };
 
 // What you get from pressing "new channel".
-export function makeDefaultChannel(): Channel {
+export function makeDefaultChannel(input: DecklinkPort | null): Channel {
     return {
-        ... DECKLINK_PORT_SETTINGS["1"],
+        ... (input != null ? DECKLINK_PORT_SETTINGS[input] : {}),
         qualities: [],
         dash: {},
         history: {}

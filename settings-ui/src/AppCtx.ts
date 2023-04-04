@@ -68,7 +68,7 @@ export class AppCtx {
 
     probeSDIPorts = async() => {
         const infos = await this.api.probe(
-            DECKLINK_PORTS_ORDERED
+            DECKLINK_PORTS_ORDERED.map(x => DECKLINK_PORT_SETTINGS[x]!.source as MediaSource)
         );
 
         for (let i = 1; i <= DECKLINK_PORTS_ORDERED.length; i++) {

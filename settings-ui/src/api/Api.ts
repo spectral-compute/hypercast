@@ -63,10 +63,8 @@ export class Api {
         return newC;
     }
 
-    async probe(sources: string[]): Promise<MediaSourceInfo[]> {
-        return await this.makeRequest("POST", "probe", sources.map(x => {
-            return {url: x};
-        }));
+    async probe(sources: MediaSource[]): Promise<MediaSourceInfo[]> {
+        return await this.makeRequest("POST", "probe", sources);
     }
 
     async loadConfig(): Promise<StreamingConfig> {
