@@ -44,10 +44,14 @@ std::string formatEndpoint(const boost::asio::ip::tcp::endpoint &endpoint)
  */
 struct Connection
 {
-    explicit Connection(boost::asio::ip::tcp::socket socket) : socket(std::move(socket)) {}
+    explicit Connection(boost::asio::ip::tcp::socket socket, bool allowPrivate) :
+        socket(std::move(socket)), allowPrivate(allowPrivate)
+    {
+    }
 
     boost::asio::ip::tcp::socket socket;
     boost::beast::flat_buffer buffer;
+    const bool allowPrivate;
 };
 
 /**
@@ -419,7 +423,16 @@ Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, const Config::Netw
     Log::Context listenContext = log("listen");
 
     /* Start a coroutine in the IO context, so we can return immediately. */
-    spawnDetached(ioc, listenContext, [this]() -> Awaitable<void> { return listen(); }, Log::Level::fatal);
+    spawnDetached(ioc, listenContext,
+                  [this]() -> Awaitable<void> { return listen(this->networkConfig.port, true); },
+                  Log::Level::fatal);
+
+    /* Start another for the public-only port. */
+    if (networkConfig.publicPort > 0) {
+        spawnDetached(ioc, listenContext,
+                      [this]() -> Awaitable<void> { return listen(this->networkConfig.publicPort, false); },
+                      Log::Level::fatal);
+    }
 }
 
 Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
@@ -431,8 +444,8 @@ Awaitable<bool> Server::HttpServer::onRequest(Connection &connection)
     ::Server::Address remoteAddress({(const std::byte *)remoteAddressBytes.data(), remoteAddressBytes.size()});
 
     // Figure out if any of the private networks contain the remote address.
-    bool isPublic = !remoteAddress.isLoopback();
-    if (isPublic) {
+    bool isPublic = !connection.allowPrivate || !remoteAddress.isLoopback();
+    if (connection.allowPrivate && isPublic) {
         for (const ::Server::Address &network: networkConfig.privateNetworks) {
             if (network.contains(remoteAddress)) {
                 isPublic = false;
@@ -555,13 +568,12 @@ Awaitable<void> Server::HttpServer::onConnection(Connection &connection)
     }
 }
 
-Awaitable<void> Server::HttpServer::listen()
+Awaitable<void> Server::HttpServer::listen(int16_t port, bool allowPrivate)
 {
     Log::Context connectionContext = log("acceptor");
 
     /* Listen for connections. */
-    boost::asio::ip::tcp::acceptor acceptor(ioc, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(),
-                                                                                networkConfig.port));
+    boost::asio::ip::tcp::acceptor acceptor(ioc, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port));
 
     /* Handle each connection. */
     while (true) {
@@ -570,8 +582,8 @@ Awaitable<void> Server::HttpServer::listen()
             boost::asio::ip::tcp::socket socket = co_await acceptor.async_accept(boost::asio::use_awaitable);
 
             // Spawn a detached coroutine to handle the socket, so we can get back to accepting more connections.
-            spawnDetached(ioc, [this, socket = std::move(socket)]() mutable -> Awaitable<void> {
-                Connection connection(std::move(socket));
+            spawnDetached(ioc, [this, socket = std::move(socket), allowPrivate]() mutable -> Awaitable<void> {
+                Connection connection(std::move(socket), allowPrivate);
                 co_await onConnection(connection);
             });
         }

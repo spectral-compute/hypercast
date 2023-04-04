@@ -203,6 +203,7 @@ struct Channel final
 struct Network final
 {
     uint16_t port = 8080;
+    uint16_t publicPort = 0;
     std::vector<Server::Address> privateNetworks;
     unsigned int transitLatency = 50;
     unsigned int transitJitter = 200;

@@ -57,8 +57,11 @@ private:
 
     /**
      * Called by the constructor as a worker coroutine.
+     *
+     * @param port The TCP port to listen on.
+     * @param allowPrivate Whether to allow access to private resources (when the source is appropriate).
      */
-    Awaitable<void> listen();
+    Awaitable<void> listen(int16_t port, bool allowPrivate);
 
     IOContext &ioc;
     const Config::Network &networkConfig;

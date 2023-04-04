@@ -161,6 +161,7 @@ static void to_json(nlohmann::json &j, const Directory &in)
 static void to_json(nlohmann::json &j, const Network &in)
 {
     j["port"] = in.port;
+    j["publicPort"] = in.publicPort;
     j["privateNetworks"] = in.privateNetworks;
     j["transitLatency"] = in.transitLatency;
     j["transitJitter"] = in.transitJitter;

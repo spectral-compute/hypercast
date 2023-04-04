@@ -334,19 +334,30 @@ short notice. It's also useful for debugging.
 
 Low level (or at least low-ish level) network configuration.
 
-| Field               | Default | Type           | Description                                                       |
-|---------------------|---------|----------------|-------------------------------------------------------------------|
-| `port`              | 8080    | Integer        | The TCP port to listen on.                                        |
-| `privateNetworks`   | `[]`    | `[` String `]` | The set of networks to consider private, excluding localhost.     |
-| `transitLatency`    | 50      | Integer        | Network latency, in ms, to assume, excluding `transitBufferSize`. |
-| `transitJitter`     | 200     | Integer        | Network jitter, in ms, to assume, excluding `transitBufferSize`.  |
-| `transitBufferSize` | 32768   | Integer        | Buffer size, in bytes, to assume during transit.                  |
+| Field               | Default | Type           | Description                                                         |
+|---------------------|---------|----------------|---------------------------------------------------------------------|
+| `port`              | 8080    | Integer        | The TCP port to listen on.                                          |
+| `publicPort`        |         | Integer        | The TCP port to listen on only allowing access to public resources. |
+| `privateNetworks`   | `[]`    | `[` String `]` | The set of networks to consider private, excluding localhost.       |
+| `transitLatency`    | 50      | Integer        | Network latency, in ms, to assume, excluding `transitBufferSize`.   |
+| `transitJitter`     | 200     | Integer        | Network jitter, in ms, to assume, excluding `transitBufferSize`.    |
+| `transitBufferSize` | 32768   | Integer        | Buffer size, in bytes, to assume during transit.                    |
+
+
+### `network.publicPort`
+
+The server that listens on the port specified by `network.port` accepts connections from both public and private
+contexts (the latter of which is used for things like the connections from `ffmpeg`, and the API used by the settings
+UI). If using a proxy that connects to the server from `localhost`, it would not be possible to distinguish between
+public and private requests based on IP address. If `network.publicPort` is given, the server will also listen on that
+port, but will only serve public resources to connections to that port.
 
 
 ### `network.privateNetworks`
 
-Localhost addresses are always considered private, regardless of this setting. This setting adds networks to consider
-private (and therefore able to access the API and DASH segments). Acceptable values include:
+Localhost addresses are always considered private on the port given by `network.port` (and never on the port given by
+`network.publicPort`), regardless of this setting. This setting adds networks to consider private (and therefore able to
+access the API and DASH segments) when accessed via port `network.port`. Acceptable values include:
 
  - IPv4 addresses (e.g: `192.0.2.2`).
  - IPv4 networks (e.g: `192.0.2.2/24`).

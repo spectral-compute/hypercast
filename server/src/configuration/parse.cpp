@@ -241,6 +241,7 @@ static void from_json(const nlohmann::json &j, Network &out)
 {
     Json::ObjectDeserializer d(j, "network");
     d(out.port, "port");
+    d(out.publicPort, "publicPort");
     if (j.contains("privateNetworks") && j.at("privateNetworks").is_string()) {
         out.privateNetworks.emplace_back();
         d(out.privateNetworks.back(), "privateNetworks");
