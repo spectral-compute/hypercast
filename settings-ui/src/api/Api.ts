@@ -1,6 +1,5 @@
 import { StreamingConfig } from "./Config";
 import { MediaSourceInfo } from "./Hardware";
-import { Source } from "./Types";
 
 // We assume that we're being served by the server, so a relative url can be used to reach the API.
 // It's also useful to run the settings ui in the webpack devserver, so in dev builds we allow a URL
@@ -64,8 +63,10 @@ export class Api {
         return newC;
     }
 
-    async probe(sources: Source[]): Promise<MediaSourceInfo[]> {
-        return await this.makeRequest("POST", "probe", sources);
+    async probe(sources: string[]): Promise<MediaSourceInfo[]> {
+        return await this.makeRequest("POST", "probe", sources.map(x => {
+            return {url: x};
+        }));
     }
 
     async loadConfig(): Promise<StreamingConfig> {

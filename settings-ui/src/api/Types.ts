@@ -17,19 +17,3 @@ export interface GetCurrentConfigRequest {}
 export interface GetCurrentConfigResponse extends BaseResponse {
     cfg: StreamingConfig;
 }
-
-/**
- * Represents an input media source.
- */
-export interface Source
-{
-    /**
-     * The URL to give ffmpeg after -i.
-     */
-    url: string,
-
-    /**
-     * The arguments to give ffmpeg before -i.
-     */
-    arguments: string[] | undefined
-}
