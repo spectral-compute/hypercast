@@ -418,10 +418,8 @@ Server::HttpServer::~HttpServer() = default;
 
 Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, const Config::Network &networkConfig,
                                const Config::Http &httpConfig) :
-    Server(log), ioc(ioc), networkConfig(networkConfig), httpConfig(httpConfig)
+    Server(log), ioc(ioc), networkConfig(networkConfig), httpConfig(httpConfig), listenContext(log("listen"))
 {
-    Log::Context listenContext = log("listen");
-
     /* Start a coroutine in the IO context, so we can return immediately. */
     spawnDetached(ioc, listenContext,
                   [this]() -> Awaitable<void> { return listen(this->networkConfig.port, true); },

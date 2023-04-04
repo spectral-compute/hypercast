@@ -66,6 +66,11 @@ private:
     IOContext &ioc;
     const Config::Network &networkConfig;
     const Config::Http &httpConfig;
+
+    /**
+     * A log context that needs to survive the constructor.
+     */
+    Log::Context listenContext;
 };
 
 } // namespace Server
