@@ -18,6 +18,7 @@ public:
     TestServer(Log::Log &log) : Server(log) {}
 
     using Server::removeResource;
+    using Server::removeResourceTree;
 
     /**
      * Add a resource with a given set of permissions and capabilities.

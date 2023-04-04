@@ -339,7 +339,7 @@ void Server::Server::logResourceChange(const Path &path, bool added, bool remove
     logContext << type << Log::Level::info << (std::string)path;
 }
 
-void Server::Server::removeResource(const Path &path)
+void Server::Server::removeResourceOrTree(const Path &path, bool allowTreeRemoval)
 {
     /* Tree traversal to find the tree node path to the leaf to remove. */
     std::vector<TreeResource *> intermediateNodes;
@@ -372,7 +372,7 @@ void Server::Server::removeResource(const Path &path)
     assert(intermediateNodes.size() == path.size()); // Number of lookups, and therefore number of intermediate nodes.
 
     /* Check that we're not trying to remove an intermediate node. */
-    if (dynamic_cast<TreeResource *>(node->get())) {
+    if (!allowTreeRemoval && dynamic_cast<TreeResource *>(node->get())) {
         throw std::runtime_error("Cannot remove intermediate server tree node \"" + (std::string)path + "\".");
     }
 

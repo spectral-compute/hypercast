@@ -80,7 +80,23 @@ public:
      *             tree) that exists.
      * @throws std::runtime_error if the conditions on path are not met.
      */
-    void removeResource(const Path &path);
+    void removeResource(const Path &path)
+    {
+        removeResourceOrTree(path, false);
+    }
+
+    /**
+     * Remove a tree of resources.
+     *
+     * This is useful where a resource creates a tree of resources, but either doesn't track their paths, or it would be
+     * unnecessarily verbose to write the code to generate those paths just for their deletion.
+     *
+     * @param path The base path of the resources to remove. Every resource that starts with this path will be removed.
+     */
+    void removeResourceTree(const Path &path)
+    {
+        removeResourceOrTree(path, true);
+    }
 
 protected:
     explicit Server(Log::Log &log) : log(log), logContext(log("server")) {}
@@ -145,6 +161,15 @@ private:
      * @return A pointer to the node. Or nullptr if it doesn't exist and isn't allowed to be created.
      */
     std::shared_ptr<Resource> &getOrCreateLeafNode(const Path &path, bool existing);
+
+    /**
+     * Remove a resource or resource tree.
+     *
+     * @param path The path to remove.
+     * @param allowTreeRemoval Whether to allow the removal of a whole resource tree, i.e intermediate node (true), or
+     *                         to only allow the removal of a single resource (leaf node).
+     */
+    void removeResourceOrTree(const Path &path, bool allowTreeRemoval);
 
     /**
      * Log that a resource was changed.

@@ -99,6 +99,23 @@ SERVER_TEST(Server, RemoveNonexistent, server)
 SERVER_TEST(Server, RemoveIntermediate, server)
 {
     server.addResource("alpha/beta");
+    server.addResource("alpha/gamma");
+    server.addResource("alpha/delta/epsilon");
+
+    co_await server("alpha/beta");
+    co_await server("alpha/gamma", 1);
+    co_await server("alpha/delta/epsilon", 2);
+
+    server.removeResourceTree("alpha");
+
+    co_await server("alpha/beta", Server::ErrorKind::NotFound);
+    co_await server("alpha/gamma", Server::ErrorKind::NotFound);
+    co_await server("alpha/delta/epsilon", Server::ErrorKind::NotFound);
+}
+
+SERVER_TEST(Server, BadRemoveIntermediate, server)
+{
+    server.addResource("alpha/beta");
     EXPECT_THROW(server.removeResource("alpha"), std::runtime_error);
     co_await server("alpha/beta");
 }
