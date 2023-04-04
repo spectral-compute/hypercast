@@ -81,7 +81,7 @@ Server::State::State(
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
 void Server::State::configCannotChange(bool itChanged, const std::string& name) const {
     if (!performingStartup && itChanged) {
-        throw std::runtime_error("This configuration field cannot be changed at runtime: " + name);
+        throw BadConfigurationReplacementException("This configuration field cannot be changed at runtime: " + name);
     }
 }
 

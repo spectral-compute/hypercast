@@ -5,6 +5,7 @@
 #include "ffmpeg/ProbeCache.hpp"
 
 #include <map>
+#include <stdexcept>
 
 namespace MediaInfo
 {
@@ -15,6 +16,14 @@ struct SourceInfo;
 
 namespace Server {
 
+/**
+ * An exception that's thrown by State::applyConfiguration if the configuration modification can't be applied.
+ */
+class BadConfigurationReplacementException final : public std::runtime_error
+{
+public:
+    BadConfigurationReplacementException(const std::string &message) : runtime_error(message) {}
+};
 
 /// A place to keep the server's per-instance state.
 struct State final
