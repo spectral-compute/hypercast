@@ -210,7 +210,7 @@ Awaitable<void> Server::Server::operator()(Response &response, Request &request)
                << getRequestTypeString(request.getType());
 
     bool waitForResponse = false; // Call response.wait after the try/catch block, and then return.
-    const char *what = nullptr; // Somewhere to put the internal error message if we can get one.
+    std::string what; // Somewhere to put the internal error message if we can get one.
 
     /* Try to handle the request. */
     try {
@@ -266,13 +266,14 @@ Awaitable<void> Server::Server::operator()(Response &response, Request &request)
     /* All but the first exception handler rely on not returning to actually handle the error with the response. */
     // Write an error somewhere, because we didn't actually handle it any other way than closing the stream and maybe
     // returning a generic error to the client.
-    requestLog << Log::Level::error << (what ? "Error" : "Unknown error")
+    requestLog << Log::Level::error << (what.empty() ? "Unknown error" : "Error")
                << (response.getWriteStarted() ? " after writing started" : "")
-               << (what ? ": " : "") << (what ? what : "");
+               << (what.empty() ? "" : ": ") << what;
 
     // Return an error code if possible.
     if (!response.getWriteStarted()) {
-        response.setErrorAndMessage(ErrorKind::Internal, request.getIsPublic() ? "" : (what ? what : "Unknown error."));
+        response.setErrorAndMessage(ErrorKind::Internal,
+                                    request.getIsPublic() ? "" : (what.empty() ? "Unknown error." : what));
         co_await response.flush(true);
     }
 }
