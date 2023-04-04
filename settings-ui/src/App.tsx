@@ -52,11 +52,11 @@ function App() {
       // Just use a number for the moment.
       const keys = Object.keys(channels);
       let n = keys.length;
-      while (channels["Channel " + n] != null) {
+      while (channels["live/Channel " + n] != null) {
           n++;
       }
 
-      return String("Channel " + n);
+      return String("live/Channel " + n);
   }
 
   function saveChannel(name: string, newValue: Channel) {
