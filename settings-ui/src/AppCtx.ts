@@ -1,7 +1,7 @@
 import {Api} from "./api/Api";
 import {MachineInfo, PortConnector} from "./api/Hardware";
 import {StreamingConfig} from "./api/Config";
-import {DecklinkPort, DECKLINK_PORTS_ORDERED } from "./Constants";
+import {DecklinkPort, DECKLINK_PORTS_ORDERED, DECKLINK_PORT_SETTINGS } from "./Constants";
 
 
 
@@ -43,6 +43,17 @@ export class AppCtx {
             },
         }
     };
+
+    // Find the lowest-numbered input port with something pugged into it.
+    getAvailableInputPort(): DecklinkPort | null {
+        for (const [k, v] of Object.entries(this.machineInfo.inputPorts)) {
+            if (v.connectedMediaInfo) {
+                return k as DecklinkPort;
+            }
+        }
+
+        return null;
+    }
 
     loadConfig = async() => {
         this.loadedConfiguration = await this.api.loadConfig();

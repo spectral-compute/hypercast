@@ -43,7 +43,7 @@ function App() {
   }
 
   function openNewChannelModal(name: string) {
-      setChannelBeingEdited([name, makeDefaultChannel()]);
+      setChannelBeingEdited([name, makeDefaultChannel(appCtx.getAvailableInputPort())]);
       setModalOpen(true);
       setIsNewChannel(true);
   }
