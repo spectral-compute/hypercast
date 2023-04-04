@@ -118,7 +118,7 @@ export default observer((props: ChannelConfigModalProps) => {
                 <Trash/>
             </BoxBtn> : null
         }
-        title={"Configuring " + props.channelName}
+        title={"Configuring " + props.channelName.slice(5)}
         onClose={props.onClose}
         onSave={saveFn}
     >

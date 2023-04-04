@@ -112,7 +112,7 @@ function StreamBox(props: StreamBoxProps) {
     return <SecondaryBox>
         <div className="streamInfo" onClick={props.onClick}>
             <div className="sboxHeader">
-                <span>{props.name}</span>
+                <span>{props.name.slice(5)}</span>
                 {whichSDI != null ?
                 <PortStatus
                     shortLabel={true}
