@@ -17,29 +17,19 @@ export class AppCtx {
         inputPorts: {
             ["1"]: {
                 name: "SDI 1",
-                connector: PortConnector.SDI,
-                connectedMediaInfo: {
-                    video: {
-                        height: 1080,
-                        width: 1920,
-                        frameRate: [30, 1]
-                    },
-                    audio: {
-                        sampleRate: 1000
-                    }
-                }
+                connector: PortConnector.SDI
             },
             ["2"]: {
                 name: "SDI 2",
-                connector: PortConnector.SDI,
+                connector: PortConnector.SDI
             },
             ["3"]: {
                 name: "SDI 3",
-                connector: PortConnector.SDI,
+                connector: PortConnector.SDI
             },
             ["4"]: {
                 name: "SDI 4",
-                connector: PortConnector.SDI,
+                connector: PortConnector.SDI
             },
         }
     };
@@ -82,6 +72,19 @@ export class AppCtx {
             }
         }
     };
+
+    portPollTimer: any = null;
+    startPollingPorts() {
+        this.portPollTimer = setInterval(this.probeSDIPorts, 5000);
+    }
+    stopPollingPorts() {
+        if (this.portPollTimer == null) {
+            return;
+        }
+
+        clearInterval(this.portPollTimer);
+        this.portPollTimer = null;
+    }
 
     constructor() {
     }

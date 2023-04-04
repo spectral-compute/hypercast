@@ -10,7 +10,7 @@ import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
 import {Channel} from "./api/Config";
 import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
-import {useAsyncDeferred, useAsyncImmediate } from './hooks/useAsync';
+import {useAsyncDeferred, useAsyncImmediateEx } from './hooks/useAsync';
 import Kaput from './Kaput';
 import { makeDefaultChannel } from './Constants';
 
@@ -22,15 +22,25 @@ function App() {
   let [isNewChannel, setIsNewChannel] = useState<boolean>(false);
   let [channelBeingEdited, setChannelBeingEdited] = useState<[string, Channel] | null>(null);
 
-  const loadCfg = useAsyncImmediate(appCtx.loadConfig);
+  const loadCfg = useAsyncImmediateEx(appCtx.loadConfig, {onError: async(_args, e) => {
+      if (e.message == "Failed to fetch") {
+          setTimeout(() => loadCfg.run(), 1000);
+      }
+  }});
   const saveCfg = useAsyncDeferred(appCtx.saveConfig);
   const loading = loadCfg.isLoading || saveCfg.isLoading;
 
   if (loading) {
-      return <div>Loading...</div>;
+      return <Kaput message={"Loading..."}></Kaput>;
   }
+
+  if (loadCfg.error!.message == "Failed to fetch") {
+      // Special case: server isn't up yet.
+      return <Kaput message={"Loading..."}></Kaput>;
+  }
+
   if (loadCfg.error || saveCfg.error) {
-      return <Kaput message={"Failed to communicate with server process!"}></Kaput>;
+    return <Kaput message={"Failed to communicate with server process!"}></Kaput>;
   }
 
   const channels = appCtx.loadedConfiguration.channels;

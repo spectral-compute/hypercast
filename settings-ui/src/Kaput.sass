@@ -2,7 +2,27 @@
     display: flex
     color: var(--colour-primary)
     flex-direction: column
+    gap: 0.2em
+    font-size: 3em
+    font-weight: bold
     width: 100vw
     height: 100vh
     align-items: center
     justify-content: center
+
+@keyframes spinner
+  0%
+    transform: rotate(0)
+    animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19)
+
+  50%
+    transform: rotate(900deg)
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1)
+
+  100%
+    transform: rotate(1800deg)
+
+
+
+.happy
+    animation: spinner 2s infinite
