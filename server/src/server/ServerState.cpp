@@ -142,7 +142,20 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
         addFilesystemPathsToServer(server, newCfg.directories, ioc);
     }
 
-    /* Update each channel. */
+    // Delete channels that are simply gone.
+    std::vector<std::string> murderise;
+    for (auto &[channelPath, channelConfig]: channels) {
+        if (!newCfg.channels.contains(channelPath)) {
+            co_await channelConfig.ffmpeg.kill();
+            channelConfig.dash.removeResources();
+            murderise.push_back(channelPath);
+        }
+    }
+    for (const auto& p : murderise) {
+        channels.erase(p);
+    }
+
+    // Update channels that have been.. updated.
     for (const auto &[channelPath, channelConfig]: newCfg.channels) {
         if (channels.contains(channelPath)) {
             // Only restart streaming if the channel configuration changed.
@@ -150,15 +163,9 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
                 continue;
             }
 
-            // Destroy the channel, remove it, and then rely on the code later in this function to recreate it.
-            // A more elegant implementation is probably possible :D.
-
+            // Destroy the channel, and rely on the code below to recreate it.
             auto& node = channels.at(channelPath);
-
-            // Stop ffmpeg.
             co_await node.ffmpeg.kill();
-
-            // Remove the resources from the server.
             node.dash.removeResources();
 
             // Delete the channel. TODO: Can all of the above just... happen in destructors so this is the only line needed?
