@@ -146,7 +146,6 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     for (auto &[channelPath, channelConfig]: channels) {
         if (!newCfg.channels.contains(channelPath)) {
             co_await channelConfig.ffmpeg.kill();
-            channelConfig.dash.removeResources();
             murderise.push_back(channelPath);
         }
     }
@@ -165,7 +164,6 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
             // Destroy the channel, and rely on the code below to recreate it.
             auto& node = channels.at(channelPath);
             co_await node.ffmpeg.kill();
-            node.dash.removeResources();
 
             // Delete the channel. TODO: Can all of the above just... happen in destructors so this is the only line needed?
             channels.erase(channelPath);
