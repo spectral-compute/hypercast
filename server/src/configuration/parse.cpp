@@ -20,9 +20,9 @@ namespace
  *
  * @param message The what() message for the exception.
  */
-[[nodiscard]] auto ParseException(std::string_view message)
+[[nodiscard]] auto parseException(std::string_view message)
 {
-    return std::runtime_error("Error parsing configuration: " + std::string(message));
+    return Config::ParseException("Error parsing configuration: " + std::string(message));
 }
 
 /**
@@ -31,11 +31,11 @@ namespace
  * @param key The key in the configuration that is the problem.
  * @param message The reason this key is a problem.
  */
-[[nodiscard]] auto ParseException(const char *key, std::string_view message)
+[[nodiscard]] auto parseException(const char *key, std::string_view message)
 {
     std::string messageStr(message);
-    return std::runtime_error(key ? "Error parsing configuration at key \""s + key + "\": " + messageStr :
-                                    ("Error parsing configuration at root: " + messageStr));
+    return Config::ParseException(key ? "Error parsing configuration at key \""s + key + "\": " + messageStr :
+                                        ("Error parsing configuration at root: " + messageStr));
 }
 
 } // namespace
@@ -88,17 +88,17 @@ static void from_json(const nlohmann::json &j, FrameRate &out)
             out.denominator = 2;
         }
         else {
-            throw ParseException(key, "Unknown string value \"" + value + "\".");
+            throw parseException(key, "Unknown string value \"" + value + "\".");
         }
         return;
     }
 
     /* Otherwise, it should be an array with two values. */
     if (!j.is_array()) {
-        throw ParseException(key, "Value is not a string or array.");
+        throw parseException(key, "Value is not a string or array.");
     }
     if (j.size() != 2) {
-        throw ParseException(key, "Value is an array, but not of length 2.");
+        throw parseException(key, "Value is an array, but not of length 2.");
     }
 
     /* Extract the array into a pair of integers. */
@@ -107,10 +107,10 @@ static void from_json(const nlohmann::json &j, FrameRate &out)
         out.denominator = j[1].get<int>();
     }
     catch (const nlohmann::json::type_error &e) {
-        throw ParseException(key, "Array element has incorrect type: "s + e.what() + ".");
+        throw parseException(key, "Array element has incorrect type: "s + e.what() + ".");
     }
     catch (const nlohmann::json::out_of_range &e) {
-        throw ParseException(key, "Array element is out of range: "s + e.what() + ".");
+        throw parseException(key, "Array element is out of range: "s + e.what() + ".");
     }
 }
 
@@ -290,7 +290,7 @@ Config::Root Config::Root::fromJson(std::string_view jsonString)
         j = Json::parse(jsonString, true);
     }
     catch (const nlohmann::json::parse_error &e) {
-        throw ParseException(e.what());
+        throw parseException(e.what());
     }
 
     /* Deserialize the JSON value. */
@@ -307,7 +307,7 @@ Config::Root Config::Root::fromJson(std::string_view jsonString)
         d();
     }
     catch (const Json::ObjectDeserializer::Exception &e) {
-        throw ParseException(e.getKey() ? e.getKey()->c_str() : nullptr, e.getMessage());
+        throw parseException(e.getKey() ? e.getKey()->c_str() : nullptr, e.getMessage());
     }
 
     /* Finish off. */

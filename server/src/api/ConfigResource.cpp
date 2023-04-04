@@ -26,7 +26,12 @@ Awaitable<void> Api::ConfigResource::putAsync(Server::Response &response, Server
     std::string json = co_await request.readAllAsString();
 
     /* Apply the configuration. */
-    co_await serverState.applyConfiguration(Config::Root::fromJson(json));
+    try {
+        co_await serverState.applyConfiguration(Config::Root::fromJson(json));
+    }
+    catch (const Config::ParseException &e) {
+        throw Server::Error(Server::ErrorKind::BadRequest, e.what());
+    }
 
     /* Write the configuration to the configuration file. We only actually get here if the above was successful, because
        failure would throw an exception. This provides protection against writing junk configurations. */

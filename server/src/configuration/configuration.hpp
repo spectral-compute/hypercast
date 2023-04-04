@@ -6,6 +6,7 @@
 
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -247,6 +248,15 @@ struct Log final
     ::Log::Level level = ::Log::Level::info;
 
     bool operator==(const Log &) const;
+};
+
+/**
+ * The exception that's thrown if there's an error parsing the configuration.
+ */
+class ParseException final : public std::runtime_error
+{
+public:
+    ParseException(const std::string &msg) : runtime_error(msg) {}
 };
 
 /**
