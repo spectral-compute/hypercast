@@ -46,6 +46,9 @@ export class AppCtx {
 
     loadConfig = async() => {
         this.loadedConfiguration = await this.api.loadConfig();
+        if (!this.loadedConfiguration.channels) {
+            this.loadedConfiguration.channels = {}; // The rest of the UI expects this.
+        }
         await this.probeSDIPorts();
     };
     saveConfig = async(cfg: StreamingConfig) => {
