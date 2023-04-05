@@ -1,3 +1,49 @@
-export default function () {
-    return <div></div>;
+import {Link} from "react-router-dom";
+import SyntaxHighlighter from "react-syntax-highlighter";
+
+
+export default function ReactHowTo() {
+    // TODO: styling the code blocks
+    // TODO: styling the text
+    // TODO: better text
+
+    const code = `\
+import Player from "@spectral/rise-react";
+
+export default function PageWithPlayer(props: {sourceURL: string}) {
+    // Let's add some extra handlers to the player
+    const init = useCallback((player: Player) => {
+        /* Your code */
+    }, []);
+    const dismount = useCallback((player: Player) => {
+        /* Your code */
+    }, []);
+
+    return <>
+        <p>Showing stream from {props.sourceURL}</p>
+        <Player
+            sourceURL={props.sourceURL}
+            onInitialisation={init}
+            onDismount={dismount}
+        />
+    </>;
+}`;
+
+    return <>
+        <h2>Using the Player from React</h2>
+        <p>
+            The <code>@spectral/rise-react</code> npm package provides a simple interface to use the player
+            in a React application.
+            The <code>Player</code> component is a wrapper around the <code>Player</code> class from
+            the <code>@spectral/rise</code> package.
+        </p>
+        <p>
+            This example shows how to use the <code>Player</code> component.
+            The <code>sourceURL</code> prop is the URL of the stream to play, the component will handle the rest.
+            The component can be customized with callbacks and <Link to="/how-to/styling">styled</Link>.
+        </p>
+        <SyntaxHighlighter language="typescript">
+            {code}
+        </SyntaxHighlighter>
+    </>;
 }
