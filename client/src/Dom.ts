@@ -6,10 +6,6 @@ type ControlsType = "native" | "js";
 export interface PlayerOptions {
     secondarySource?: string;
     controls?: ControlsType;
-    /** An optional string with which the IDs of all video player elements will be prefixed. Prefixing prevents ID
-     * collisions if multiple players are created on one page. If omitted, a random integer will be used, so supply a
-     * prefix if you want to select these elements by ID. */
-    idPrefix?: string;
     debugHandler?: DebugHandler;
     onInitialisation?: (player: Player) => void;
     // TODO event listeners
@@ -72,9 +68,7 @@ export default function createPlayer(
     player.init().then(() => {
         // Hook up the controls if necessary
         if (controlsType === "js") {
-            // In case multiple videos are shown on the same page, we need IDs to be unique...
-            const idPrefix = options?.idPrefix ?? (Math.random() * 100_000).toFixed(0);
-            createControlPanel(figure, player, video, idPrefix);
+            createControlPanel(figure, player, video);
         }
 
         options?.onInitialisation?.(player);
@@ -87,16 +81,16 @@ export default function createPlayer(
 }
 
 // Set up the control panel using JS (in place of the browsers' native controls)
-function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVideoElement, idPrefix: string): void {
+function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVideoElement): void {
     const controlsDiv = insertNode(figure, "div", {className: "video-controls"});
 
     // Create and wire up the angle and quality selectors
-    const angle = insertSelector(controlsDiv, idPrefix + "-angle", "angle", player.getAngleOptions(), player.getAngle());
+    const angle = insertSelector(controlsDiv, "angle", player.getAngleOptions(), player.getAngle());
     angle.onchange = (): void => {
         player.setAngle(parseInt(angle.value));
     };
     const qualityOptionNames = getQualityOptionNames(player.getQualityOptions());
-    const quality = insertSelector(controlsDiv, idPrefix + "-quality", "quality", qualityOptionNames, player.getQuality());
+    const quality = insertSelector(controlsDiv, "quality", qualityOptionNames, player.getQuality());
     quality.onchange = (): void => {
         player.setQuality(parseInt(quality.value));
     };
@@ -149,9 +143,8 @@ function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVide
 }
 
 // Create a selector input with specified options and wire it up
-function insertSelector(parent: HTMLElement, id: string, className: string, options: string[], index: number): HTMLSelectElement {
-    const label = insertNode(parent, "label", {id: id + "-label", className});
-    const selector = insertNode(label, "select", {id});
+function insertSelector(parent: HTMLElement, className: string, options: string[], index: number): HTMLSelectElement {
+    const selector = insertNode(parent, "select", {className});
     options.forEach((name: string, nameIndex: number): void => {
         selector.innerHTML += `<option value="${nameIndex}">${name}</option>`;
     });

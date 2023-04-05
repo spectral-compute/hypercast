@@ -41,11 +41,11 @@
             grid-column: $start-stop;
         }
 
-        & label.angle {
+        & select.angle {
             grid-column: $angle;
         }
 
-        & label.quality {
+        & select.quality {
             grid-column: $quality;
         }
 
