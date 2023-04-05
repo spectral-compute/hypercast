@@ -126,7 +126,7 @@ export default observer((props: ChannelConfigModalProps) => {
             <div className="btnDesc">
                 <span>Media Source</span>
 
-                What to stream. Ports with nothing connected are disabled.
+                What to stream. Ports with nothing connected, or which are in use by another channel, are disabled.
             </div>
 
             <BoxRadioGroup<DecklinkPort>
@@ -138,11 +138,17 @@ export default observer((props: ChannelConfigModalProps) => {
                     Object.keys(DECKLINK_PORT_SETTINGS).map((i) => {
                         const k = i as DecklinkPort;
                         const p = appCtx.machineInfo.inputPorts[k]!;
+
+                        let disabled = p!.connectedMediaInfo == null;
+                        for (const [_k, c] of Object.entries(appCtx.loadedConfiguration.channels)) {
+                            disabled ||= c.source.url == k;
+                        }
+
                         return {
                             value: k,
                             label: "SDI " + i,
-                            disabled: p!.connectedMediaInfo == null,
-                            children: <SDI height={"3em"} width={"3em"}></SDI>
+                            disabled,
+                            children: <SDI height="3em" width="3em"/>
                         };
                     })
                 }
