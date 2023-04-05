@@ -34,7 +34,7 @@ function App() {
       return <Kaput message={"Loading..."}></Kaput>;
   }
 
-  if (loadCfg.error!.message == "Failed to fetch") {
+  if (loadCfg.error && loadCfg.error!.message == "Failed to fetch") {
       // Special case: server isn't up yet.
       return <Kaput message={"Loading..."}></Kaput>;
   }
