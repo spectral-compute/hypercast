@@ -1,6 +1,7 @@
 import {Link, useLocation} from "react-router-dom";
 
 import "./Path.scss";
+import {Fragment} from "react";
 
 
 /*
@@ -38,10 +39,10 @@ export default function () {
 
     const path = sortedMatches.map((match) => {
         const name = CONFIGURATION[match];
-        return <>
+        return <Fragment key={match}>
             <span className="separator">/</span>
-            <Link className="path" key={match} to={match}>{name}</Link>
-        </>;
+            <Link className="path" to={match}>{name}</Link>
+        </Fragment>;
     });
 
     return <nav className="path-container">{path}</nav>;
