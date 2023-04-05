@@ -2,6 +2,7 @@ import {Api} from "./api/Api";
 import {MachineInfo, PortConnector} from "./api/Hardware";
 import {StreamingConfig} from "./api/Config";
 import {DecklinkPort, DECKLINK_PORTS_ORDERED, DECKLINK_PORT_SETTINGS } from "./Constants";
+import {makeObservable, observable} from "mobx";
 
 
 
@@ -12,6 +13,7 @@ export class AppCtx {
     loadedConfiguration!: StreamingConfig;
 
     // The current status of the hardware.
+    @observable
     machineInfo: MachineInfo = {
         isStreaming: false,
         inputPorts: {
@@ -50,7 +52,10 @@ export class AppCtx {
         if (!this.loadedConfiguration.channels) {
             this.loadedConfiguration.channels = {}; // The rest of the UI expects this.
         }
-        await this.probeSDIPorts();
+
+        // We only get here if the config load succeeded, which suggests that now is a good time to
+        // start polling the ports, too.
+        this.startPollingPorts();
     };
     saveConfig = async(cfg: StreamingConfig) => {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
@@ -75,6 +80,10 @@ export class AppCtx {
 
     portPollTimer: any = null;
     startPollingPorts() {
+        if (this.portPollTimer != null) {
+            return;
+        }
+
         this.portPollTimer = setInterval(this.probeSDIPorts, 5000);
     }
     stopPollingPorts() {
@@ -87,5 +96,6 @@ export class AppCtx {
     }
 
     constructor() {
+        makeObservable(this);
     }
 }

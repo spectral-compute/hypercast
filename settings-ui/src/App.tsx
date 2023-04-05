@@ -1,7 +1,6 @@
 import {useContext, useState} from 'react';
 import './App.sass';
 import {AppContext} from "./index";
-// import LoadEstimator from "./LoadEstimator";
 import PortStatus from "./PortStatus";
 import StreamBox from "./StreamBox";
 import LogoCard from "./LogoCard";
@@ -13,9 +12,10 @@ import ChannelConfigModal from "./modal/ChannelConfigModal";
 import {useAsyncDeferred, useAsyncImmediateEx } from './hooks/useAsync';
 import Kaput from './Kaput';
 import { makeDefaultChannel } from './Constants';
+import { observer } from 'mobx-react-lite';
 
 
-function App() {
+export default observer(() => {
   const appCtx = useContext(AppContext);
 
   let [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -130,6 +130,4 @@ function App() {
 
       {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}
   </>;
-}
-
-export default App;
+});

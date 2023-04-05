@@ -12,6 +12,7 @@ import {ReactComponent as FrameRateIcon} from "./assets/icons/activity.svg";
 import {inputUrlToSDIPortNumber} from "./api/Hardware";
 import {ReactComponent as FileIcon} from "./assets/icons/file.svg";
 import BoxBtn from "./components/BoxBtn";
+import { observer } from 'mobx-react-lite';
 
 export interface StreamBoxProps {
     name: string;
@@ -102,7 +103,7 @@ function sortVariants(chan: Channel): StreamVariantConfig[] {
     });
 }
 
-function StreamBox(props: StreamBoxProps) {
+export default observer((props: StreamBoxProps) => {
     const appCtx = useContext(AppContext);
     const chan = props.config;
 
@@ -128,11 +129,4 @@ function StreamBox(props: StreamBoxProps) {
             )}
         </div>
     </SecondaryBox>;
-}
-
-export default StreamBox;
-//
-// Perhaps, for bitrate: Low, medium, high (I'm going to call this "quality") - and map this to the CRF setting (this will cause the bitrates to be set automatically) and audio bitrate.
-// Perhaps for latency: 1s, 2s, 3s, 5s, 10s (with the first ones greyed out according to a function that I specify of the quality, frame rate, and resolution).
-// Perhaps for resolution: 4k, 1080p, 720p, 360p (you probably want to query the source to exclude resolutions that are higher than the source).
-// Perhaps for frame rate: full, half+. Or whatever you want to call it. The idea of full is that you get 30fps if the source is 30fps, and 60 fps if it's 60 fps. The idea of half+ is that you get 30fps for a source frame rate of both 30fps and 60fps (the exact definition is given in the manual). You might want to implement that by querying the source to see what its frame rate is, and only offering the choice between full and half if it's sensible to do so (the manual gives a definition of half+ which is intended to correspond to a definition of whether it's sensible to use half framerate).
+});
