@@ -188,7 +188,7 @@ CORO_TEST(ConfigQualityDefaults, Default, ioc)
         {150, 250}, {100, 250},
 
         // Client buffer parameters.
-        {50, 350}, {500, 2000}, {50, 350}, {500, 2000}
+        {100, 700}, {500, 2000}, {50, 350}, {500, 2000}
 
         // Input.
     );
@@ -206,7 +206,7 @@ CORO_TEST(ConfigQualityDefaults, Default1s, ioc)
         {300, 700}, {100, 250},
 
         // Client buffer parameters.
-        {50, 350}, {400, 1000}, {50, 350}, {500, 2000},
+        {100, 700}, {400, 1000}, {50, 350}, {500, 2000},
 
         // Input.
         1000
@@ -225,7 +225,7 @@ CORO_TEST(ConfigQualityDefaults, PresetRateControlBufferLength, ioc)
         {150, 250}, {100, 250},
 
         // Client buffer parameters.
-        {50, 350}, {500, 2000}, {50, 350}, {500, 2000}
+        {100, 700}, {500, 2000}, {50, 350}, {500, 2000}
 
         // Input.
     );

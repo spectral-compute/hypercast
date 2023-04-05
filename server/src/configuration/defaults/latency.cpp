@@ -411,7 +411,7 @@ private:
     /**
      * Relative budgets for each parameter. These are in the order of Parameter.
      */
-    double relative[3] = { 1.0, 1.0, 0.25 };
+    double relative[3] = { 1.0, 1.0, 0.5 };
 };
 
 } // namespace
