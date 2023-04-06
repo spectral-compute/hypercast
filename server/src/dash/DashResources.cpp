@@ -420,6 +420,7 @@ class Dash::DashResources::Stream final : public StreamSegmentSet<SegmentExpirin
 Dash::DashResources::~DashResources()
 {
     streams.clear();
+    interleaves.clear();
     server.removeResourceTree(basePath);
 }
 
