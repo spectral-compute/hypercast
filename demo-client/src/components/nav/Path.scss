@@ -1,6 +1,6 @@
 @use "../../styles/colors" as c;
 
-$margin: 0.5em;
+$margin: 0.25em;
 
 nav.path-container {
     margin-bottom: 1em;
@@ -13,20 +13,24 @@ nav.path-container {
 
     & > .separator {
         color: c.$border;
-        font-size: 2em;
+        font-size: 1.3em;
     }
 
     & > a {
-        background-color: c.$content-bg;
-
         padding: $margin / 2 $margin;
-        border-radius: $margin / 2;
 
-        transition: box-shadow 0.1s;
+        transition: text-decoration 0.2s;
 
         &:hover {
-            // Some glowing
-            box-shadow: 0 0 0.5em 0 rgba(255, 255, 255, 0.5);
+            text-decoration: underline;
+        }
+    }
+
+    & :last-child {
+        color: c.$primary;
+
+        &:hover {
+            text-decoration: none;
         }
     }
 }
