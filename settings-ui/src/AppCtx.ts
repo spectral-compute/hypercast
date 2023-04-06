@@ -70,20 +70,34 @@ export class AppCtx {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
     };
 
+    private probeInProgress: boolean = false;
     private readonly probeSDIPorts = async() => {
-        const infos = await this.api.probe(
-            DECKLINK_PORTS_ORDERED.map(x => DECKLINK_PORT_SETTINGS[x]!.source as MediaSource)
-        );
+        // Don't start another probe if one is already in progress.
+        if (this.probeInProgress) {
+            return;
+        }
+        this.probeInProgress = true;
 
-        for (let i = 1; i <= DECKLINK_PORTS_ORDERED.length; i++) {
-            const o = this.machineInfo.inputPorts[String(i) as DecklinkPort];
-            o.connectedMediaInfo = infos[i - 1]!;
+        try {
+            // Probe time.
+            const infos = await this.api.probe(
+                DECKLINK_PORTS_ORDERED.map(x => DECKLINK_PORT_SETTINGS[x]!.source as MediaSource)
+            );
 
-            // Strictly speaking, `infos[i-1]` being null means "port doesn't exist", and the other case means there's
-            // nothing plugged into it.
-            if (!infos[i - 1] || (!o.connectedMediaInfo.video && !o.connectedMediaInfo.audio)) {
-                delete o.connectedMediaInfo;
+            // Process the results of the probe.
+            for (let i = 1; i <= DECKLINK_PORTS_ORDERED.length; i++) {
+                const o = this.machineInfo.inputPorts[String(i) as DecklinkPort];
+                o.connectedMediaInfo = infos[i - 1]!;
+
+                // Strictly speaking, `infos[i-1]` being null means "port doesn't exist", and the other case means
+                // there's nothing plugged into it.
+                if (!infos[i - 1] || (!o.connectedMediaInfo.video && !o.connectedMediaInfo.audio)) {
+                    delete o.connectedMediaInfo;
+                }
             }
+        } finally {
+            // Allow new probes.
+            this.probeInProgress = false;
         }
     };
 
