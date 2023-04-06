@@ -3,6 +3,8 @@
 #include "configuration/configuration.hpp"
 #include "util/asio.hpp"
 #include "util/json.hpp"
+#include "util/Mutex.hpp"
+#include "util/RaiiFn.hpp"
 #include "util/subprocess.hpp"
 
 #include <charconv>
@@ -11,6 +13,14 @@
 
 namespace
 {
+
+/**
+ * Per-URL mutexes so we don't ffprobe the same thing in parallel.
+ *
+ * Eventually, the plan is to rely on this less by maintaining a monitor coroutine for sources we care about in
+ * Api::ProbeResource. This will still be necessary then in case something not in the monitor list is probed.
+ */
+std::map<std::string, std::weak_ptr<Mutex>> urlMutexes;
 
 /**
  * Parse a fraction from ffmpeg.
@@ -107,7 +117,7 @@ static void from_json(const nlohmann::json &j, AudioStreamInfo &out)
 Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
                                                  std::span<const std::string_view> arguments)
 {
-    /* Run ffprobe. */
+    /* Figure out how to run ffprobe. */
     std::vector<std::string_view> args;
     args.reserve(arguments.size() + 4);
 
@@ -124,8 +134,31 @@ Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_vie
         args.emplace_back(arg);
     }
 
-    // Execution time :)
-    std::string ffprobeResult = co_await Subprocess::getStdout(ioc, "ffprobe", args);
+    /* Run ffprobe with a mutex for the URL. */
+    std::string ffprobeResult;
+    {
+        // Create a mutex to the URL, so we don't probe it in parallel.
+        std::string urlString(url);
+        std::weak_ptr<Mutex> &weakMutex = urlMutexes[urlString]; // The coordinating reference.
+        std::shared_ptr<Mutex> mutex = weakMutex.lock(); // Get the mutex if it exists.
+        if (!mutex) {
+            // Create the mutex if it doesn't, and share it with anything that wnats it next.
+            mutex = std::make_shared<Mutex>(ioc);
+            weakMutex = mutex;
+        }
+
+        // Make sure the mutex gets deleted if no one is using it once we're done.
+        Util::RaiiFn cleanup([&mutex, &weakMutex, &urlString]() {
+            mutex.reset();
+            if (weakMutex.expired()) {
+                urlMutexes.erase(urlString);
+            }
+        });
+
+        // Execute ffmpeg with the mutex locked.
+        Mutex::LockGuard lock = co_await mutex->lockGuard();
+        ffprobeResult = co_await Subprocess::getStdout(ioc, "ffprobe", args);
+    }
 
     /* Parse to JSON. */
     nlohmann::json j = Json::parse(ffprobeResult);
