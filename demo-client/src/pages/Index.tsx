@@ -8,13 +8,13 @@ export default function () {
             <Link to="/demo">
                 <Card>
                     <h2>Demo</h2>
-                    <p>See how the player works</p>
+                    <p>See the player in action</p>
                 </Card>
             </Link>
             <Link to="/how-to">
                 <Card>
                     <h2>How-to</h2>
-                    <p>Learn how to use the player in your project</p>
+                    <p>Use the player in your project</p>
                 </Card>
             </Link>
         </CardContainer>
