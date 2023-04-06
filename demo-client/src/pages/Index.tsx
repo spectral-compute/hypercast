@@ -1,3 +1,7 @@
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/700.css";
+import "@fontsource/montserrat/variable.css";
+
 import {Link} from "react-router-dom";
 import Card, {CardContainer} from "../components/Card";
 import PageTemplate from "./PageTemplate";

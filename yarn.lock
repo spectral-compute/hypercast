@@ -1713,6 +1713,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource/montserrat@npm:^4.5.14":
+  version: 4.5.14
+  resolution: "@fontsource/montserrat@npm:4.5.14"
+  checksum: c5ee54bdc7abb378240d613a0dd59ce4879bdfbe6c5168b324245dd3e031a410e321289bf9be614265e16d7319f16d39090b8f00f54e631c6d35e9cb2f8d652a
+  languageName: node
+  linkType: hard
+
 "@formatjs/ecma402-abstract@npm:1.14.3":
   version: 1.14.3
   resolution: "@formatjs/ecma402-abstract@npm:1.14.3"
@@ -9802,6 +9809,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "live-video-streamer-demo-client@workspace:demo-client"
   dependencies:
+    "@fontsource/montserrat": ^4.5.14
     "@types/node": ^17.0.34
     "@types/react": ^18.0.0
     "@types/react-dom": ^18.0.0
