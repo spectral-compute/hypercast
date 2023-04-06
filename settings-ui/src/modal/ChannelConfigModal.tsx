@@ -38,6 +38,9 @@ function hasStreamWithResolution(channel: Channel, w: number, h: number) {
 }
 
 function getInputPort(appCtx: AppCtx, channel: Channel) {
+    if (!channel.source) {
+        return null; // makeDefaultChannel omits the source if given null, which happens if no port is connected.
+    }
     return appCtx.machineInfo.inputPorts[inputUrlToSDIPortNumber(channel.source.url)!]!;
 }
 
