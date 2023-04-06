@@ -14,6 +14,12 @@ SERVER_TEST(Server, NotFound, server)
     co_await server("alpha/beta", Server::ErrorKind::NotFound);
 }
 
+SERVER_TEST(Server, NotFoundEphemeral, server)
+{
+    server.addEphemeralWhenNotFound("alpha/beta");
+    co_await server("alpha/beta", Server::ErrorKind::NotFound, Server::CacheKind::ephemeral);
+}
+
 SERVER_TEST(Server, Error, server)
 {
     server.addResource("alpha/beta", nullptr);

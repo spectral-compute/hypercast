@@ -220,6 +220,7 @@ struct Http final
 {
     std::optional<std::string> origin = "*";
     unsigned int cacheNonLiveTime = 600;
+    std::vector<std::string> ephemeralWhenNotFound;
 
     bool operator==(const Http &) const;
 };

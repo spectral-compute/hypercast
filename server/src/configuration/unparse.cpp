@@ -173,6 +173,7 @@ static void to_json(nlohmann::json &j, const Http &in)
 {
     j["origin"] = *in.origin;
     j["cacheNonLiveTime"] = in.cacheNonLiveTime;
+    j["ephemeralWhenNotFound"] = in.ephemeralWhenNotFound;
 }
 
 namespace

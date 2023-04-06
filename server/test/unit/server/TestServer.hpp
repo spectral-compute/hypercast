@@ -20,6 +20,7 @@ public:
 
     using Server::removeResource;
     using Server::removeResourceTree;
+    using Server::addEphemeralWhenNotFound;
 
     /**
      * Add a resource with a given set of permissions and capabilities.

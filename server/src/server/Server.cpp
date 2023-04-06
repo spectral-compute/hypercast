@@ -202,6 +202,13 @@ const char *getRequestTypeString(Server::Request::Type type)
 
 Server::Server::~Server() = default;
 
+Server::Server::Server(Log::Log &log) : log(log), logContext(log("server")) {}
+
+void Server::Server::addEphemeralWhenNotFound(Path path)
+{
+    ephemeralWhenNotFound.emplace(std::move(path));
+}
+
 Awaitable<void> Server::Server::operator()(Response &response, Request &request) const
 {
     Log::Context requestLog = log("request");
@@ -211,6 +218,9 @@ Awaitable<void> Server::Server::operator()(Response &response, Request &request)
 
     bool waitForResponse = false; // Call response.wait after the try/catch block, and then return.
     std::string what; // Somewhere to put the internal error message if we can get one.
+
+    /* We need a copy of the original request path in case we need it later. */
+    Path originalPath = request.getPath();
 
     /* Try to handle the request. */
     try {
@@ -244,6 +254,12 @@ Awaitable<void> Server::Server::operator()(Response &response, Request &request)
             // Log the error.
             requestLog << "error" << Log::Level::info << getErrorKindString(e.kind)
                        << (e.message.empty() ? "" : ": ") << e.message;
+
+            // Set the response's cache kind to ephemeral if we have a not found path in the set of ephemeral not
+            // founds.
+            if (e.kind == ErrorKind::NotFound && ephemeralWhenNotFound.contains(originalPath)) {
+                response.setCacheKind(CacheKind::ephemeral);
+            }
 
             // Return the error to the client.
             response.setErrorAndMessage(e.kind, e.message);

@@ -371,10 +371,11 @@ The setting may also be a single string rather than an array of strings.
 
 Server-wide HTTP-specific configuration.
 
-| Field                 | Default | Type             | Description                                                    |
-|-----------------------|---------|------------------|----------------------------------------------------------------|
-| `origin`              | `*`     | String or `null` | The value for the `Access-Control-Allow-Origin` HTTP header.   |
-| `cacheNonLiveTime`    | 600     | Integer          | Time, in seconds, to cache non-live data.                      |
+| Field                   | Default | Type             | Description                                                  |
+|-------------------------|---------|------------------|--------------------------------------------------------------|
+| `origin`                | `*`     | String or `null` | The value for the `Access-Control-Allow-Origin` HTTP header. |
+| `cacheNonLiveTime`      | 600     | Integer          | Time, in seconds, to cache non-live data.                    |
+| `ephemeralWhenNotFound` |         | String `[]`      | Paths that produce ephemeral 404s when they don't exist.     |
 
 
 ### `http.origin`
@@ -383,3 +384,10 @@ The [Access-Control-Allow-Origin](https://developer.mozilla.org/en-US/docs/Web/H
 header describes what URLs the scripts that access this server are allowed to have. It's enforced by the web browser. In
 a production environment, this should be set more restrictively than the default. If set to `null`, this header will not
 be sent.
+
+
+### `http.ephemeralWhenNotFound`
+
+Some resources, such as the `info.json` resources for each channel can appear at short notice. Most non-existing paths
+return a 404 Not Found error with 10 minute caching, but for resources such as `info.json`, this is problematic. This
+field can be used to set the caching for specified resources to a small value.

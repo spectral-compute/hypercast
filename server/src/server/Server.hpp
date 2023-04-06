@@ -5,6 +5,7 @@
 #include "log/Log.hpp"
 
 #include <memory>
+#include <set>
 #include <string>
 
 /**
@@ -98,8 +99,15 @@ public:
         removeResourceOrTree(path, true);
     }
 
+    /**
+     * Add a path to use ephemeral caching for the Not Found responses.
+     *
+     * This is useful for things like info.json, which might be cretaed at short notice
+     */
+    void addEphemeralWhenNotFound(Path path);
+
 protected:
-    explicit Server(Log::Log &log) : log(log), logContext(log("server")) {}
+    explicit Server(Log::Log &log);
 
     /**
      * Handle a request.
@@ -188,6 +196,11 @@ private:
      * using.
      */
     std::shared_ptr<Resource> root;
+
+    /**
+     * Paths that return ephemeral rather than fixed Not Found errors if non-existent.
+     */
+    std::set<Path> ephemeralWhenNotFound;
 };
 
 } // namespace Server

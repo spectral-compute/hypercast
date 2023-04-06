@@ -420,6 +420,11 @@ Server::HttpServer::HttpServer(IOContext &ioc, Log::Log &log, const Config::Netw
                                const Config::Http &httpConfig) :
     Server(log), ioc(ioc), networkConfig(networkConfig), httpConfig(httpConfig), listenContext(log("listen"))
 {
+    /* Record the paths that should return ephemeral not-found errors when they don't exist. */
+    for (const std::string &path: httpConfig.ephemeralWhenNotFound) {
+        addEphemeralWhenNotFound(path);
+    }
+
     /* Start a coroutine in the IO context, so we can return immediately. */
     spawnDetached(ioc, listenContext,
                   [this]() -> Awaitable<void> { return listen(this->networkConfig.port, true); },

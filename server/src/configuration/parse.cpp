@@ -261,6 +261,7 @@ static void from_json(const nlohmann::json &j, Http &out)
     Json::ObjectDeserializer d(j, "http");
     d(out.origin, "origin");
     d(out.cacheNonLiveTime, "cacheNonLiveTime");
+    d(out.ephemeralWhenNotFound, "ephemeralWhenNotFound");
     d();
 }
 
