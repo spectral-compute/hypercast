@@ -37,10 +37,10 @@ export default function () {
 
     // Construct the path to the current location.
 
-    const path = sortedMatches.map((match) => {
+    const path = sortedMatches.map((match, index) => {
         const name = CONFIGURATION[match];
         return <Fragment key={match}>
-            <span className="separator">/</span>
+            {index > 0 && <span className="separator">/</span>}
             <Link className="path" to={match}>{name}</Link>
         </Fragment>;
     });
