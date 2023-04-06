@@ -3,6 +3,7 @@
 #include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
 #include "ffmpeg/ProbeCache.hpp"
+#include "util/Mutex.hpp"
 
 #include <map>
 #include <stdexcept>
@@ -72,6 +73,11 @@ public:
 
 private:
     struct Channel;
+
+    /**
+     * Prevent concurrent calls to applyConfiguration.
+     */
+    Mutex mutex;
 
     std::unique_ptr<Log::Log> log;
 

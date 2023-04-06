@@ -73,6 +73,7 @@ Server::State::State(
 ):
     ioc(ioc),
     requestedConfig(initialCfg),
+    mutex(ioc),
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network, initialCfg.http)
 {
@@ -119,7 +120,7 @@ Awaitable<Ffmpeg::ProbeCache> Server::State::fillInDefaults(Config::Root &newCon
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
 Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
-    // TODO: We probably need a mutex to stop this method from running in parallel with itself in another coroutine.
+    Mutex::LockGuard lock = co_await mutex.lockGuard();
 
     // Fill in the blanks...
     streamingSourceInfos = co_await fillInDefaults(newCfg);
