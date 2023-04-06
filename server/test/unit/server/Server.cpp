@@ -17,7 +17,8 @@ SERVER_TEST(Server, NotFound, server)
 SERVER_TEST(Server, Error, server)
 {
     server.addResource("alpha/beta", nullptr);
-    co_await server("alpha/beta", 0, false, ::Server::Request::Type::get, {}, Server::ErrorKind::Internal);
+    co_await server("alpha/beta", 0, false, ::Server::Request::Type::get, {}, Server::ErrorKind::Internal,
+                    Server::CacheKind::fixed);
 }
 
 SERVER_TEST(Server, Removed, server)

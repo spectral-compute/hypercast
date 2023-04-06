@@ -2,6 +2,7 @@
 
 #include "server/Server.hpp"
 
+#include "server/CacheKind.hpp"
 #include "server/Error.hpp"
 #include "server/Request.hpp"
 
@@ -60,7 +61,20 @@ public:
      */
     Awaitable<void> operator()(::Server::Path path, int expectedResourceIndex = 0, bool isPublic = false,
                                ::Server::Request::Type type = ::Server::Request::Type::get,
-                               std::string_view expectedPath = {}, std::optional<::Server::ErrorKind> expectedError = std::nullopt);
+                               std::string_view expectedPath = {},
+                               std::optional<::Server::ErrorKind> expectedError = std::nullopt,
+                               std::optional<::Server::CacheKind> cacheKind = std::nullopt);
+
+    /**
+     * Try a request, and expect an error that does not originate from a resource.
+     *
+     * @param path The path for the request.
+     * @param errorKind The error to expect.
+     * @param isPublic Whether the request is public.
+     * @param type The type of request.
+     */
+    Awaitable<void> operator()(::Server::Path path, ::Server::ErrorKind errorKind, ::Server::CacheKind cacheKind,
+                               bool isPublic = false, ::Server::Request::Type type = ::Server::Request::Type::get);
 
     /**
      * Try a request, and expect an error that does not originate from a resource.
@@ -71,7 +85,10 @@ public:
      * @param type The type of request.
      */
     Awaitable<void> operator()(::Server::Path path, ::Server::ErrorKind errorKind, bool isPublic = false,
-                               ::Server::Request::Type type = ::Server::Request::Type::get);
+                               ::Server::Request::Type type = ::Server::Request::Type::get)
+    {
+        return (*this)(std::move(path), errorKind, ::Server::CacheKind::fixed, isPublic, type);
+    }
 
 private:
     int testResourceNextIndex = 0;

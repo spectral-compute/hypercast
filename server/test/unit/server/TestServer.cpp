@@ -243,7 +243,7 @@ public:
      * Check that the response is as expected.
      */
     void check(const ServerTestRecord &refRecord, bool expectedRecord,
-               std::optional<::Server::ErrorKind> errorKind) const
+               std::optional<::Server::ErrorKind> errorKind, ::Server::CacheKind cacheKind) const
     {
         EXPECT_TRUE(ended);
         EXPECT_TRUE(awaitedAllWrites);
@@ -251,6 +251,8 @@ public:
         EXPECT_EQ(expectedRecord, written);
         EXPECT_EQ(errorKind, getErrorKind()) << "Expected: " << formatErrorKind(errorKind)
                                              << ", actual: " << formatErrorKind(getErrorKind());
+        EXPECT_EQ(cacheKind, getCacheKind()) << "Expected: " << formatCacheKind(cacheKind)
+                                             << ", actual: " << formatCacheKind(getCacheKind());
         EXPECT_EQ(refRecord.getType() == ServerTestRecord::errorType ? "text/plain" : "",
                   getMimeType()); // Non-empty error messages always have text MIME type.
         EXPECT_EQ(refRecord.getType(), record.getType());
@@ -304,6 +306,20 @@ private:
         return "Unknown: " + std::to_string((int)*errorKind);
     }
 
+    /**
+     * Format a cache kind as a human readable string.
+     */
+    static std::string formatCacheKind(Server::CacheKind cacheKind)
+    {
+        switch (cacheKind) {
+            case Server::CacheKind::none: return "None";
+            case Server::CacheKind::ephemeral: return "Ephemeral";
+            case Server::CacheKind::fixed: return "Fixed";
+            case Server::CacheKind::indefinite: return "Indefinite";
+        }
+        return "Unknown: " + std::to_string((int)cacheKind);
+    }
+
     ServerTestRecord record;
     bool written = false;
     bool ended = false;
@@ -339,21 +355,23 @@ void TestServer::addOrReplaceResource(const ::Server::Path &path, std::nullptr_t
 }
 
 Awaitable<void> TestServer::operator()(::Server::Path path, int expectedResourceIndex, bool isPublic,
-                                       ::Server::Request::Type type, std::string_view expectedPath, std::optional<::Server::ErrorKind> expectedError)
+                                       ::Server::Request::Type type, std::string_view expectedPath,
+                                       std::optional<::Server::ErrorKind> expectedError,
+                                       std::optional<::Server::CacheKind> cacheKind)
 {
     ServerTestRequest request(std::move(path), type, isPublic);
     ServerTestResponse response;
     co_await Server::operator()(response, request);
     response.check(expectedError ? expectedResourceIndex :
                                    ServerTestRecord(type, expectedResourceIndex, std::string(expectedPath)),
-                   true, expectedError);
+                   true, expectedError, cacheKind ? *cacheKind : ::Server::CacheKind::fixed);
 }
 
-Awaitable<void> TestServer::operator()(::Server::Path path, ::Server::ErrorKind errorKind, bool isPublic,
-                                       ::Server::Request::Type type)
+Awaitable<void> TestServer::operator()(::Server::Path path, ::Server::ErrorKind errorKind,
+                                       ::Server::CacheKind cacheKind, bool isPublic, ::Server::Request::Type type)
 {
     ServerTestRequest request(path, type, isPublic);
     ServerTestResponse response;
     co_await Server::operator()(response, request);
-    response.check({}, false, errorKind);
+    response.check({}, false, errorKind, cacheKind);
 }
