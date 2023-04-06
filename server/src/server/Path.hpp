@@ -48,6 +48,11 @@ public:
     template <typename T> Path(const T &path) : Path(std::string_view(path)) {}
 
     /**
+     * Imposes an arbitrary total ordering.
+     */
+    std::strong_ordering operator<=>(const Path &) const noexcept;
+
+    /**
      * Convert the path to a string.
      */
     operator std::string() const;

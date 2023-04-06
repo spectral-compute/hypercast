@@ -47,6 +47,8 @@ Server::Path::Path(std::string_view path)
     }
 }
 
+std::strong_ordering Server::Path::operator<=>(const Path &) const noexcept = default;
+
 Server::Path Server::Path::operator/(const Path &rhs) const
 {
     Server::Path result;
