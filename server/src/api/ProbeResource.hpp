@@ -31,7 +31,8 @@ namespace Api
  *   },
  *   audio: {
  *     sampleRate: integer
- *   }
+ *   },
+ *   inUse: boolean
  * } | null)[]
  * ```
  * and has the same length as the input (with corresponding elements). Either of `video` or `audio` may be absent. If

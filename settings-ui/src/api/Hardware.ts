@@ -12,7 +12,8 @@ export interface MediaSourceInfo {
     },
     audio?: {
         sampleRate: number;
-    }
+    },
+    inUse: boolean
 }
 
 export interface PortDescriptor {

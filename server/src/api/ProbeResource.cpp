@@ -20,6 +20,22 @@ struct Source final
     std::vector<std::string> arguments;
 };
 
+/**
+ * The result of a probe.
+ */
+struct ProbeResult final
+{
+    /**
+     * The source info.
+     */
+    MediaInfo::SourceInfo sourceInfo;
+
+    /**
+     * Whether the source is in use.
+     */
+    bool inUse = false;
+};
+
 void from_json(const nlohmann::json &j, Source &out)
 {
     Json::ObjectDeserializer d(j);
@@ -28,12 +44,12 @@ void from_json(const nlohmann::json &j, Source &out)
     d();
 }
 
-Awaitable<void> probeSource(IOContext &ioc, MediaInfo::SourceInfo &result, const Ffmpeg::ProbeCache &configProbes,
+Awaitable<void> probeSource(IOContext &ioc, ProbeResult &result, const Ffmpeg::ProbeCache &configProbes,
                             const Source &source)
 {
     /* See if the source is in use, and if so return from the cache. */
     if (const MediaInfo::SourceInfo *cachedResult = configProbes[source.url, source.arguments]) {
-        result = *cachedResult;
+        result = { *cachedResult, true };
         co_return;
     }
 
@@ -44,7 +60,7 @@ Awaitable<void> probeSource(IOContext &ioc, MediaInfo::SourceInfo &result, const
 
     /* Try to probe the source to see what it contains. */
     try {
-        result = co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments);
+        result = { co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments) };
     }
 
     /* In case of exception, the source probably isn't connected, or is otherwise not usable. */
@@ -80,21 +96,27 @@ static void to_json(nlohmann::json &j, const AudioStreamInfo &in)
     j["sampleRate"] = in.sampleRate;
 }
 
-static void to_json(nlohmann::json &j, const SourceInfo &in)
+} // namespace MediaInfo
+
+namespace
+{
+
+void to_json(nlohmann::json &j, const ProbeResult &in)
 {
     /* The input is not usable if there's no video. */
-    if (!in.video) {
+    if (!in.sourceInfo.video) {
         return;
     }
 
     /* Fill in the result JSON object. */
-    j["video"] = *in.video;
-    if (in.audio) {
-        j["audio"] = *in.audio;
+    j["video"] = *in.sourceInfo.video;
+    if (in.sourceInfo.audio) {
+        j["audio"] = *in.sourceInfo.audio;
     }
+    j["inUse"] = in.inUse;
 }
 
-} // namespace MediaInfo
+} // namespace
 
 Api::ProbeResource::~ProbeResource() = default;
 
@@ -103,7 +125,7 @@ Awaitable<void> Api::ProbeResource::postAsync(Server::Response &response, Server
     try {
         /* Get all the sources and somewhere to put the result. */
         auto sources = Json::parse(co_await request.readAllAsString()).get<std::vector<Source>>();
-        std::vector<MediaInfo::SourceInfo> result(sources.size());
+        std::vector<ProbeResult> result(sources.size());
 
         /* Run probeSource on each source in parallel. */
         std::vector<Awaitable<void>> awaitables;

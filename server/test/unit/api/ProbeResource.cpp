@@ -15,7 +15,7 @@ CORO_TEST(ApiProbeResource, Simple, ioc)
     Api::ProbeResource resource(ioc, probeCache);
     TestRequest request(Server::Request::Type::post,
                         "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}]");
-    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},"
+    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
                                                "\"video\":{\"frameRate\":[25,1],\"height\":1080,\"width\":1920}}]",
                           "application/json");
 }
@@ -28,11 +28,11 @@ CORO_TEST(ApiProbeResource, Multiple, ioc)
                         "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}," +
                          "{\"url\":\"" + getSmpteDataPath(1920, 1080, 30000, 1001, 48000).string() + "\"}," +
                          "{\"url\":\"" + getSmpteDataPath(1920, 1080, 50, 1, 48000).string() + "\"}]");
-    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},"
+    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
                                                "\"video\":{\"frameRate\":[25,1],\"height\":1080,\"width\":1920}},"
-                                              "{\"audio\":{\"sampleRate\":48000},"
+                                              "{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
                                                "\"video\":{\"frameRate\":[30000,1001],\"height\":1080,\"width\":1920}},"
-                                              "{\"audio\":{\"sampleRate\":48000},"
+                                              "{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
                                                "\"video\":{\"frameRate\":[50,1],\"height\":1080,\"width\":1920}}]",
                           "application/json");
 }
@@ -53,7 +53,7 @@ CORO_TEST(ApiProbeResource, ExistentAndNonExistent, ioc)
     TestRequest request(Server::Request::Type::post,
                         "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}," +
                          "{\"url\":\"squiggle\"}]");
-    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},"
+    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
                                                "\"video\":{\"frameRate\":[25,1],\"height\":1080,\"width\":1920}},"
                                               "null]",
                           "application/json");
@@ -68,7 +68,7 @@ CORO_TEST(ApiProbeResource, InCache, ioc)
 
     Api::ProbeResource resource(ioc, probeCache);
     TestRequest request(Server::Request::Type::post, "[{\"url\":\"" + path + "\"}]");
-    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":0},"
+    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":0},\"inUse\":true,"
                                                "\"video\":{\"frameRate\":[0,0],\"height\":0,\"width\":0}}]",
                           "application/json");
 }
