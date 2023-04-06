@@ -47,7 +47,7 @@ function getInputPort(appCtx: AppCtx, channel: Channel) {
 function inputIsAtLeast(appCtx: AppCtx, channel: Channel, w: number, h: number) {
     const port = getInputPort(appCtx, channel);
     if (port == null) {
-        return true;
+        return false;
     }
 
     // Nothing connected.
