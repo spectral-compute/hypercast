@@ -70,7 +70,7 @@ export class AppCtx {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
     };
 
-    probeSDIPorts = async() => {
+    private readonly probeSDIPorts = async() => {
         const infos = await this.api.probe(
             DECKLINK_PORTS_ORDERED.map(x => DECKLINK_PORT_SETTINGS[x]!.source as MediaSource)
         );
@@ -87,8 +87,8 @@ export class AppCtx {
         }
     };
 
-    portPollTimer: any = null;
-    startPollingPorts() {
+    private portPollTimer: any = null;
+    private startPollingPorts() {
         if (this.portPollTimer != null) {
             return;
         }
