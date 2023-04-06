@@ -36,12 +36,21 @@ export class AppCtx {
         }
     };
 
-    // Find the lowest-numbered input port with something pugged into it.
+    // Find the lowest-numbered input port with something plugged into it and not in use.
     getAvailableInputPort(): DecklinkPort | null {
         for (const [k, v] of Object.entries(this.machineInfo.inputPorts)) {
-            if (v.connectedMediaInfo) {
-                return k as DecklinkPort;
+            // Exclude disconnected ports.
+            if (!v.connectedMediaInfo) {
+                continue;
             }
+
+            // Exclude ports that are in use.
+            if (v.connectedMediaInfo.inUse) {
+                continue;
+            }
+
+            // Done :)
+            return k as DecklinkPort;
         }
 
         return null;
