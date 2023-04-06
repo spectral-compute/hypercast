@@ -9,15 +9,13 @@
 
     gap: 1em;
 
-    padding: 1em;
+    padding: 1em 0;
 }
 
 
 .card {
     color: white;
-    background-color: c.$secondary-bg;
-
-    border-left: 10px solid c.$border-card;
+    background-image: linear-gradient(100deg, c.$secondary-bg 33%, c.$secondary);
     border-radius: 2em;
 
     padding: 1.5em;
@@ -28,7 +26,7 @@
     transition: transform 0.3s, box-shadow 0.1s;
 
     &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0 1em 0 rgba(255, 255, 255, 0.5);
+        transform: translateY(-3px);
+        box-shadow: 0 0 0.75em 0 rgba(255, 255, 255, 0.25);
     }
 }
