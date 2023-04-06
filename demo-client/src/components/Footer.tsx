@@ -25,7 +25,6 @@ export default function Footer() {
                 </ul>
             </div>
             <div className="credits">
-                <span>by</span>
                 <SpecA location="">
                     <img src="/img/spectral-compute-logo.svg" alt="Spectral Compute" />
                 </SpecA>
