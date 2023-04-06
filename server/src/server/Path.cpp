@@ -47,7 +47,10 @@ Server::Path::Path(std::string_view path)
     }
 }
 
-std::strong_ordering Server::Path::operator<=>(const Path &) const noexcept = default;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
+std::strong_ordering Server::Path::operator<=>(const Path &) const noexcept = default; // NOLINT
+#pragma clang diagnostic pop
 
 Server::Path Server::Path::operator/(const Path &rhs) const
 {
