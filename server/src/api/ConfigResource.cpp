@@ -11,11 +11,6 @@ Api::ConfigResource::~ConfigResource() = default;
 Awaitable<void> Api::ConfigResource::getAsync(Server::Response &response, Server::Request &request)
 {
     response.setCacheKind(Server::CacheKind::none);
-
-    if (!(co_await request.readSome()).empty()) {
-        throw Server::Error(Server::ErrorKind::BadRequest);
-    }
-
     response << serverState.requestedConfig.jsonRepresentation;
     co_return;
 }
