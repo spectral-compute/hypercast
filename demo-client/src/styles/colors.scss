@@ -8,10 +8,10 @@ $secondary-bg: rgba(14, 86, 171, 0.8);
 
 $content-bg: #0D2847;
 
-$link: #7f7fff;
+$link: #a0c3ff;
 $link-visited: $link;
 $link-hover: color.scale($link, $lightness: 20%);
 $link-active: color.scale($link, $lightness: -20%);
 
 $border: grey;
-$border-card: color.scale($content-bg, $lightness: 40%);
+$border-card: color.scale($content-bg, $lightness: -20%);
