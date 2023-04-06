@@ -128,6 +128,7 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     // Listen port can be changed only by restarting the process (and will probably break
     // the settings UI if you're doing that on one of the hardware units).
     CANT_CHANGE(network.port);
+    CANT_CHANGE(network.publicPort);
 
     // Reconfigure the logger.
     if (config.log != newCfg.log) {
