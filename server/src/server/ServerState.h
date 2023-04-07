@@ -2,7 +2,6 @@
 
 #include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
-#include "ffmpeg/ProbeCache.hpp"
 #include "util/Mutex.hpp"
 
 #include <map>
@@ -49,16 +48,11 @@ public:
     }
 
     /**
-     * Get a map from URL and arguments that we're streaming from to information about the media source at that URL.
-     *
-     * This exists because some sources, such as DeckLinks, do not like to be ffprobe'd while they're streaming, but we
-     * still want to be able to return information about them via the API.
-     *
-     * @return An object that caches the media source information for all the sources we're streaming from.
+     * Get the set of URs that are in use by the current configuration.
      */
-    const Ffmpeg::ProbeCache &getStreamingSourceInfos() const
+    const std::set<std::string> &getInUseUrls() const
     {
-        return streamingSourceInfos;
+        return inUseUrls;
     }
 
     IOContext& ioc;
@@ -89,9 +83,11 @@ private:
     std::map<std::string, Channel> channels;
 
     /**
-     * The result of ffprobing each URL that's being streamed.
+     * The set of URLs that are in use by the current configuration.
+     *
+     * This is an optimization over analyzing the configuration each time.
      */
-    Ffmpeg::ProbeCache streamingSourceInfos;
+    std::set<std::string> inUseUrls;
 
     // Flag to suppress "you can't change that" for the first run of `applyConfiguration`, allowing us to use
     // `applyConfiguration` for initial configuration.
@@ -99,14 +95,6 @@ private:
 
     /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
     void configCannotChange(bool itChanged, const std::string& name) const;
-
-    /**
-     * Fill in the defaults for a configuration.
-     *
-     * @param newConfig The new configuration to fill in defaults for.
-     * @return A media source probe cache for the new configuration.
-     */
-    Awaitable<Ffmpeg::ProbeCache> fillInDefaults(Config::Root &newConfig);
 
 public:
     /// Perform initial setup/configuration.

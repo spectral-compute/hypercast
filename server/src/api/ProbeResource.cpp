@@ -3,7 +3,6 @@
 #include "configuration/configuration.hpp"
 #include "ffmpeg/Exceptions.hpp"
 #include "ffmpeg/ffprobe.hpp"
-#include "ffmpeg/ProbeCache.hpp"
 #include "server/Request.hpp"
 #include "server/Response.hpp"
 #include "util/asio.hpp"
@@ -45,23 +44,12 @@ void from_json(const nlohmann::json &j, Source &out)
     d();
 }
 
-Awaitable<void> probeSource(IOContext &ioc, ProbeResult &result, const Ffmpeg::ProbeCache &configProbes,
+Awaitable<void> probeSource(IOContext &ioc, ProbeResult &result, const std::set<std::string> &inUseUrls,
                             const Source &source)
 {
-    /* See if the source is in use, and if so return from the cache. */
-    if (const MediaInfo::SourceInfo *cachedResult = configProbes[source.url, source.arguments]) {
-        result = { *cachedResult, true };
-        co_return;
-    }
-
-    /* Don't probe a URL that's in use, even if the arguments differ. */
-    if (configProbes.contains(source.url)) {
-        throw Server::Error(Server::ErrorKind::Conflict);
-    }
-
     /* Try to probe the source to see what it contains. */
     try {
-        result = { co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments) };
+        result = { co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments), inUseUrls.contains(source.url) };
     }
 
     /* Handle the case where the URL is in use with different arguments. */
@@ -137,7 +125,7 @@ Awaitable<void> Api::ProbeResource::postAsync(Server::Response &response, Server
         std::vector<Awaitable<void>> awaitables;
         awaitables.reserve(sources.size());
         for (size_t i = 0; i < sources.size(); i++) {
-            awaitables.emplace_back(probeSource(ioc, result[i], configProbes, sources[i]));
+            awaitables.emplace_back(probeSource(ioc, result[i], inUseUrls, sources[i]));
         }
         co_await awaitTree(awaitables);
 

@@ -87,36 +87,6 @@ void Server::State::configCannotChange(bool itChanged, const std::string& name) 
     }
 }
 
-Awaitable<Ffmpeg::ProbeCache> Server::State::fillInDefaults(Config::Root &newConfig)
-{
-    Ffmpeg::ProbeCache newStreamingSourceInfos;
-    co_await Config::fillInDefaults([this, &newStreamingSourceInfos](const std::string &url,
-                                                                     const std::vector<std::string> &arguments) ->
-                                    Awaitable<MediaInfo::SourceInfo> {
-        /* If we already have a result in the new cache, just return that. */
-        if (const MediaInfo::SourceInfo *sourceInfo = newStreamingSourceInfos[url, arguments]) {
-            co_return *sourceInfo;
-        }
-
-        /* Make sure we're not trying to stream from the same URL with different parameters. */
-        if (newStreamingSourceInfos.contains(url)) {
-            throw std::runtime_error("Configuration contains the same source with different parameters.");
-        }
-
-        /* See if we're already streaming from this source. */
-        if (const MediaInfo::SourceInfo *sourceInfo = streamingSourceInfos[url, arguments]) {
-            newStreamingSourceInfos.insert(*sourceInfo, url, arguments);
-            co_return *sourceInfo;
-        }
-
-        /* We've not seen this resource before, so we'll have to actually probe it. */
-        MediaInfo::SourceInfo sourceInfo = co_await Ffmpeg::ffprobe(ioc, url, arguments);
-        newStreamingSourceInfos.insert(sourceInfo, url, arguments);
-        co_return sourceInfo;
-    }, newConfig);
-    co_return newStreamingSourceInfos;
-}
-
 /// Change the settings. Add as much clever incremental reconfiguration logic here as you like.
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
@@ -124,7 +94,17 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     Mutex::LockGuard lock = co_await mutex.lockGuard();
 
     // Fill in the blanks...
-    streamingSourceInfos = co_await fillInDefaults(newCfg);
+    std::set<std::string> newInUseUrls;
+    std::vector<Ffmpeg::ProbeResult> probes; // Optimization to keep the probe from running twice.
+    co_await Config::fillInDefaults([this, &newInUseUrls, &probes](const std::string &url,
+                                                                   const std::vector<std::string> &arguments) ->
+                                    Awaitable<MediaInfo::SourceInfo> {
+        assert(!newInUseUrls.contains(url)); // This should be imposed by Config::Root::validate.
+        inUseUrls.emplace(url); // The new and old URLs are in use at the same time now, but just temporarily.
+        newInUseUrls.emplace(url);
+        probes.emplace_back(co_await Ffmpeg::ffprobe(ioc, url, arguments));
+        co_return probes.back();
+    }, newCfg);
 
 #define CANT_CHANGE(N) configCannotChange(config.N != newCfg.N, #N)
     // Listen port can be changed only by restarting the process (and will probably break
@@ -183,12 +163,14 @@ Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
     config = std::move(newCfg);
 
     /* Start streaming. */
+    inUseUrls = std::move(newInUseUrls); // Now we've finished with the old channels, show the new ones as in use.
     for (const auto &[channelPath, channelConfig]: config.channels) {
         if (channels.contains(channelPath)) {
             continue;
         }
-        channels.emplace(std::piecewise_construct, std::forward_as_tuple(channelPath),
-                         std::forward_as_tuple(ioc, *log, config, channelConfig, channelPath, server));
+        auto it = channels.emplace(std::piecewise_construct, std::forward_as_tuple(channelPath),
+                                   std::forward_as_tuple(ioc, *log, config, channelConfig, channelPath, server));
+        co_await it.first->second.ffmpeg.waitForProbe(); // Avoid running ffprobe redundantly.
     }
 
     /* Now that we got here, we successfully applied the new configuration, so record it as the new requested

@@ -1,6 +1,6 @@
 #include "api/ProbeResource.hpp"
 
-#include "ffmpeg/ProbeCache.hpp"
+#include "ffmpeg/ffprobe.hpp"
 
 #include "coro_test.hpp"
 #include "data.hpp"
@@ -11,8 +11,9 @@ namespace
 
 CORO_TEST(ApiProbeResource, Simple, ioc)
 {
-    Ffmpeg::ProbeCache probeCache;
-    Api::ProbeResource resource(ioc, probeCache);
+    std::set<std::string> inUseUrls;
+    Api::ProbeResource resource(ioc, inUseUrls);
+
     TestRequest request(Server::Request::Type::post,
                         "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}]");
     co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
@@ -22,8 +23,9 @@ CORO_TEST(ApiProbeResource, Simple, ioc)
 
 CORO_TEST(ApiProbeResource, Multiple, ioc)
 {
-    Ffmpeg::ProbeCache probeCache;
-    Api::ProbeResource resource(ioc, probeCache);
+    std::set<std::string> inUseUrls;
+    Api::ProbeResource resource(ioc, inUseUrls);
+
     TestRequest request(Server::Request::Type::post,
                         "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}," +
                          "{\"url\":\"" + getSmpteDataPath(1920, 1080, 30000, 1001, 48000).string() + "\"}," +
@@ -39,8 +41,9 @@ CORO_TEST(ApiProbeResource, Multiple, ioc)
 
 CORO_TEST(ApiProbeResource, NonExistent, ioc)
 {
-    Ffmpeg::ProbeCache probeCache;
-    Api::ProbeResource resource(ioc, probeCache);
+    std::set<std::string> inUseUrls;
+    Api::ProbeResource resource(ioc, inUseUrls);
+
     TestRequest request(Server::Request::Type::post, "[{\"url\":\"squiggle\"}]");
     co_await testResource(resource, request, "[null]",
                           "application/json");
@@ -48,10 +51,14 @@ CORO_TEST(ApiProbeResource, NonExistent, ioc)
 
 CORO_TEST(ApiProbeResource, ExistentAndNonExistent, ioc)
 {
-    Ffmpeg::ProbeCache probeCache;
-    Api::ProbeResource resource(ioc, probeCache);
+    std::string path = getSmpteDataPath(1920, 1080, 25, 1, 48000).string();
+    Ffmpeg::ProbeResult probeResult = co_await Ffmpeg::ffprobe(ioc, path);
+
+    std::set<std::string> inUseUrls;
+    Api::ProbeResource resource(ioc, inUseUrls);
+
     TestRequest request(Server::Request::Type::post,
-                        "[{\"url\":\"" + getSmpteDataPath(1920, 1080, 25, 1, 48000).string() + "\"}," +
+                        "[{\"url\":\"" + path + "\"}," +
                          "{\"url\":\"squiggle\"}]");
     co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},\"inUse\":false,"
                                                "\"video\":{\"frameRate\":[25,1],\"height\":1080,\"width\":1920}},"
@@ -62,27 +69,24 @@ CORO_TEST(ApiProbeResource, ExistentAndNonExistent, ioc)
 CORO_TEST(ApiProbeResource, InCache, ioc)
 {
     std::string path = getSmpteDataPath(1920, 1080, 25, 1, 48000).string();
+    std::set<std::string> inUseUrls = { path };
+    Api::ProbeResource resource(ioc, inUseUrls);
 
-    Ffmpeg::ProbeCache probeCache;
-    probeCache.insert({ .video = MediaInfo::VideoStreamInfo{}, .audio = MediaInfo::AudioStreamInfo{} }, path, {});
-
-    Api::ProbeResource resource(ioc, probeCache);
     TestRequest request(Server::Request::Type::post, "[{\"url\":\"" + path + "\"}]");
-    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":0},\"inUse\":true,"
-                                               "\"video\":{\"frameRate\":[0,0],\"height\":0,\"width\":0}}]",
+    co_await testResource(resource, request, "[{\"audio\":{\"sampleRate\":48000},\"inUse\":true,"
+                                               "\"video\":{\"frameRate\":[25,1],\"height\":1080,\"width\":1920}}]",
                           "application/json");
 }
 
 CORO_TEST(ApiProbeResource, Conflict, ioc)
 {
     std::string path = getSmpteDataPath(1920, 1080, 25, 1, 48000).string();
+    Ffmpeg::ProbeResult probeResult = co_await Ffmpeg::ffprobe(ioc, path);
 
-    Ffmpeg::ProbeCache probeCache;
-    probeCache.insert({ .video = MediaInfo::VideoStreamInfo{}, .audio = MediaInfo::AudioStreamInfo{} }, path,
-                      { "Argument" });
+    std::set<std::string> inUseUrls = { path };
+    Api::ProbeResource resource(ioc, inUseUrls);
 
-    Api::ProbeResource resource(ioc, probeCache);
-    TestRequest request(Server::Request::Type::post, "[{\"url\":\"" + path + "\"}]");
+    TestRequest request(Server::Request::Type::post, "[{\"url\":\"" + path + "\", \"arguments\": [\"Argument\"]}]");
     co_await testResourceError(resource, request, Server::ErrorKind::Conflict);
 }
 

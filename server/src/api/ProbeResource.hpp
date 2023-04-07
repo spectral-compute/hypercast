@@ -2,14 +2,7 @@
 
 #include "server/Resource.hpp"
 
-class IOcontext;
-
-namespace Ffmpeg
-{
-
-class ProbeCache;
-
-} // namespace Ffmpeg
+#include <set>
 
 namespace Api
 {
@@ -50,10 +43,9 @@ public:
     /**
      * Constructor :)
      *
-     * @param configProbes The cache containing the media probes for the sources in the configuration. This is needed to
-     *                     make sure we don't probe devices that are in use.
+     * @param inUseUrls The set of URLs that are in use, so we can tell the UI about their use.
      */
-    ProbeResource(IOContext &ioc, const Ffmpeg::ProbeCache &configProbes) : ioc(ioc), configProbes(configProbes) {}
+    ProbeResource(IOContext &ioc, const std::set<std::string> &inUseUrls) : ioc(ioc), inUseUrls(inUseUrls) {}
 
     Awaitable<void> postAsync(Server::Response &response, Server::Request &request) override;
 
@@ -61,7 +53,7 @@ public:
 
 private:
     IOContext &ioc;
-    const Ffmpeg::ProbeCache &configProbes;
+    const std::set<std::string> &inUseUrls;
 };
 
 } // namespace Api

@@ -48,7 +48,7 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
 #ifndef NDEBUG
     st.getServer().addResource<Api::FullConfigResource>("api/full_config", st);
 #endif // NDEBUG
-    st.getServer().addResource<Api::ProbeResource>("api/probe", ioc, st.getStreamingSourceInfos());
+    st.getServer().addResource<Api::ProbeResource>("api/probe", ioc, st.getInUseUrls());
 
     /* Run the configuration application process. */
     co_await st.applyConfiguration(config);
