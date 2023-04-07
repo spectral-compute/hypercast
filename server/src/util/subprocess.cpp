@@ -138,21 +138,6 @@ namespace
  */
 struct KillOnDetachProcessInitializer final
 {
-    /*KillOnDetachProcessInitializer()
-    {
-        for (int fd = 3; fd < 1024; fd++) {
-            int flags = fcntl(fd, F_GETFD);
-            if (flags < 0) {
-                continue;
-            }
-            flags &= ~FD_CLOEXEC;
-            if (fcntl(fd, F_SETFD, flags)) {
-                throw std::runtime_error("Error removing FD_CLOEXEC from file descriptor" + std::to_string(fd) + ": " +
-                                         strerror(errno));
-            }
-        }
-    }*/
-
     template <typename... Args>
     boost::process::v2::error_code on_exec_setup(Args &&...)
     {
