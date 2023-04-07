@@ -5,7 +5,7 @@ import "./Player.scss";
 
 export interface PlayerProps extends PlayerOptions {
     sourceURL: string;
-    onDismount: (player: PlayerMain) => void;
+    onDismount?: (player: PlayerMain) => void;
 }
 
 export default function Player(props: PlayerProps): React.ReactElement<HTMLDivElement> {
@@ -34,7 +34,9 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
             if (player) {
                 player.then((p) => {
                     p.stop();
-                    onDismount(p);
+                    if (onDismount) {
+                        onDismount(p);
+                    }
                 }).catch((e) => {
                     console.error("RISE player failed to initialize:");
                     e instanceof Error && console.error(e.message);

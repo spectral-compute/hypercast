@@ -36,6 +36,7 @@ export default function StylingHowTo() {
 `;
 
     return <>
+        <h2>Applying custom styles to the Player</h2>
         <p>
             You are free to style the player with custom CSS.
             When the player is used in a React app, a desided <code>className</code> can be passed to the component.
