@@ -1,7 +1,7 @@
 import {Link} from "react-router-dom";
 
 import {PACKAGE_PLAYER, PACKAGE_PLAYER_REACT} from "../../variables";
-import StyledTypescript from "../../components/StyledTypescript";
+import StyledCode from "../../components/StyledCode";
 
 
 export default function ReactHowTo() {
@@ -42,6 +42,6 @@ export default function PageWithPlayer(props: {sourceURL: string}) {
             The <code>sourceURL</code> prop is the URL of the stream to play, the component will handle the rest.
             The component can be customized with callbacks and <Link to="/how-to/styling">styled</Link>.
         </p>
-        <StyledTypescript code={code}/>
+        <StyledCode code={code}/>
     </>;
 }
