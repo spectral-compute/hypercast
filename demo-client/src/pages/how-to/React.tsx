@@ -1,6 +1,8 @@
 import {Link} from "react-router-dom";
 import SyntaxHighlighter from "react-syntax-highlighter";
 
+import {PACKAGE_PLAYER, PACKAGE_PLAYER_REACT} from "../../variables";
+
 
 export default function ReactHowTo() {
     // TODO: styling the code blocks
@@ -8,7 +10,7 @@ export default function ReactHowTo() {
     // TODO: better text
 
     const code = `\
-import Player from "@spectral/rise-react";
+import Player from "${PACKAGE_PLAYER_REACT}";
 
 export default function PageWithPlayer(props: {sourceURL: string}) {
     // Let's add some extra handlers to the player
@@ -32,10 +34,10 @@ export default function PageWithPlayer(props: {sourceURL: string}) {
     return <>
         <h2>Using the Player from React</h2>
         <p>
-            The <code>@spectral/rise-react</code> npm package provides a simple interface to use the player
+            The <code>{PACKAGE_PLAYER_REACT}</code> npm package provides a simple interface to use the player
             in a React application.
             The <code>Player</code> component is a wrapper around the <code>Player</code> class from
-            the <code>@spectral/rise</code> package.
+            the <code>{PACKAGE_PLAYER}</code> package.
         </p>
         <p>
             This example shows how to use the <code>Player</code> component.
