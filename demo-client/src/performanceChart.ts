@@ -37,8 +37,7 @@ export class PerformanceChart {
             }
         };
         this.latencyChart = new chart.Chart(latencyCanvas, latencyConfig);
-        appendTimelineDataset(this.latencyChart, "Target Buffer", "rgb(255, 127, 0)");
-        appendTimelineDataset(this.latencyChart, "Actual Buffer", "rgb(255, 233, 63)");
+        appendTimelineDataset(this.latencyChart, "Buffer", "rgb(255, 233, 63)");
         appendTimelineDataset(this.latencyChart, "Network Latency", "rgb(0, 255, 0)");
         this.latencyChart.update();
 
@@ -70,16 +69,15 @@ export class PerformanceChart {
         this.dlChart.destroy();
     }
 
-    setBufferControl(bctrl: BufferControl): void {
-        this.bctrl = bctrl;
+    setBufferControl(_bctrl: BufferControl): void {
+        // noop
     }
 
     onBufferControlTick(tickInfo: BufferControlTickInfo): void {
         /* Calculate the timestamp. */
         const t = (tickInfo.timestamp - this.start) / 1000;
 
-        this.getData(this.latencyChart, "Target Buffer").push({x: t, y: this.bctrl.getBufferTarget()});
-        this.getData(this.latencyChart, "Actual Buffer").push({x: t, y: tickInfo.primaryBufferLength});
+        this.getData(this.latencyChart, "Buffer").push({x: t, y: tickInfo.primaryBufferLength});
 
         /* We have a new timeline data point. */
         this.updateTimelines(tickInfo.timestamp);
@@ -238,8 +236,6 @@ export class PerformanceChart {
             c.update();
         }
     }
-
-    private bctrl!: BufferControl;
 
     private readonly start: number; // Timestamp of what we're calling time 0.
     private timelineLatest: number = 0; // The time of the latest data point.
