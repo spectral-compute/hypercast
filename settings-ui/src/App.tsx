@@ -9,7 +9,7 @@ import {ReactComponent as UplinkIcon} from "./assets/icons/upload-cloud.svg";
 import {Channel} from "./api/Config";
 import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
-import {useAsyncDeferred, useAsyncImmediateEx } from './hooks/useAsync';
+import {useAsyncDeferred, useAsyncImmediateEx} from './hooks/useAsync';
 import Kaput from './Kaput';
 import { makeDefaultChannel } from './Constants';
 import { observer } from 'mobx-react-lite';
@@ -27,8 +27,13 @@ export default observer(() => {
           setTimeout(() => loadCfg.run(), 1000);
       }
   }});
+  const initialProbe = useAsyncImmediateEx(appCtx.probeSDIPorts, {
+      onComplete: async() => {
+          appCtx.startPollingPorts();
+      }
+  });
   const saveCfg = useAsyncDeferred(appCtx.saveConfig);
-  const loading = loadCfg.isLoading || saveCfg.isLoading;
+  const loading = loadCfg.isLoading || saveCfg.isLoading || initialProbe.isLoading;
 
   if (loading) {
       return <Kaput message={"Loading..."}></Kaput>;
@@ -70,10 +75,7 @@ export default observer(() => {
   }
 
   function saveChannel(name: string, newValue: Channel) {
-      console.log("New channel");
-      console.log(newValue);
       appCtx.loadedConfiguration.channels[name] = newValue;
-      console.log(appCtx.loadedConfiguration);
       saveCfg.run(appCtx.loadedConfiguration);
   }
 

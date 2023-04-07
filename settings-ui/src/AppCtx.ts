@@ -61,17 +61,13 @@ export class AppCtx {
         if (!this.loadedConfiguration.channels) {
             this.loadedConfiguration.channels = {}; // The rest of the UI expects this.
         }
-
-        // We only get here if the config load succeeded, which suggests that now is a good time to
-        // start polling the ports, too.
-        this.startPollingPorts();
     };
     saveConfig = async(cfg: StreamingConfig) => {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
     };
 
     private portPollTimer: any = null;
-    private readonly probeSDIPorts = async(keepGoing: boolean = false) => {
+    readonly probeSDIPorts = async(keepGoing: boolean = false) => {
         try {
             // Probe time.
             const infos = await this.api.probe(
@@ -97,7 +93,7 @@ export class AppCtx {
         }
     };
 
-    private startPollingPorts() {
+    startPollingPorts() {
         if (this.portPollTimer == null) {
             void this.probeSDIPorts(true);
         }
