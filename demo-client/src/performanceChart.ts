@@ -65,6 +65,11 @@ export class PerformanceChart {
         this.start = Date.now();
     }
 
+    destroy(): void {
+        this.latencyChart.destroy();
+        this.dlChart.destroy();
+    }
+
     setBufferControl(bctrl: BufferControl): void {
         this.bctrl = bctrl;
     }

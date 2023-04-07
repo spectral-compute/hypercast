@@ -12,6 +12,12 @@ export default function () {
         if (!performanceChart.current) {
             performanceChart.current = new PerformanceChart(latencyRef.current!, rateRef.current!);
         }
+        return () => {
+            if (performanceChart.current) {
+                performanceChart.current.destroy();
+                performanceChart.current = null;
+            }
+        };
     }, []);
 
     const plugInGraphMaker = useCallback((player: PlayerMain) => {
