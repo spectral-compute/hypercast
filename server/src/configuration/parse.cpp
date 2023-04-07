@@ -283,6 +283,8 @@ static void from_json(const nlohmann::json &j, Log &out)
 
 } // namespace Config
 
+Config::ParseException::~ParseException() = default;
+
 Config::Root Config::Root::fromJson(std::string_view jsonString)
 {
     /* Try to parse the string into a JSON value. */

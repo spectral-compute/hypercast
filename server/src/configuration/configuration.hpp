@@ -257,7 +257,8 @@ struct Log final
 class ParseException final : public std::runtime_error
 {
 public:
-    ParseException(const std::string &msg) : runtime_error(msg) {}
+    ~ParseException() override;
+    using runtime_error::runtime_error;
 };
 
 /**
