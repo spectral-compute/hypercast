@@ -1,4 +1,4 @@
-#include "ffmpeg/ffmpeg.hpp"
+#include "ffmpeg/Arguments.hpp"
 
 #include "configuration/configuration.hpp"
 
@@ -19,17 +19,17 @@ std::string toPrintable(std::span<const std::string> strings)
     return result;
 }
 
-void check(const std::vector<std::string> &ref, const std::vector<std::string> &test)
+void check(const std::vector<std::string> &ref, const Ffmpeg::Arguments &test)
 {
-    EXPECT_EQ(ref, test);
-    if (ref != test) {
-        EXPECT_EQ(toPrintable(ref) , toPrintable(test));
+    EXPECT_EQ(ref, test.getFfmpegArguments());
+    if (ref != test.getFfmpegArguments()) {
+        EXPECT_EQ(toPrintable(ref) , toPrintable(test.getFfmpegArguments()));
     }
 }
 
 } // namespace
 
-TEST(GetFfmpegArguments, Simple)
+TEST(FfmpegArguments, Simple)
 {
     Config::Channel config = {
         .source = {
@@ -131,10 +131,10 @@ TEST(GetFfmpegArguments, Simple)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::getFfmpegArguments(config, {}, "live/uid"));
+    }, Ffmpeg::Arguments(config, {}, "live/uid"));
 }
 
-TEST(GetFfmpegArguments, Fractional)
+TEST(FfmpegArguments, Fractional)
 {
     Config::Channel config = {
         .source = {
@@ -239,10 +239,46 @@ TEST(GetFfmpegArguments, Fractional)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::getFfmpegArguments(config, {}, "live/uid"));
+    }, Ffmpeg::Arguments(config, {}, "live/uid"));
 }
 
-TEST(GetFfmpegArguments, TwoVideoStreams)
+TEST(FfmpegArguments, Source)
+{
+    Config::Channel config = {
+        .source = {
+            .url = "rtsp://192.0.2.3",
+            .arguments = { "-ss", "10" }
+        },
+        .qualities = {
+            {
+                .video = {
+                    .width = 1920,
+                    .height = 1080,
+                    .frameRate = {
+                        .type = Config::FrameRate::fps,
+                        .numerator = 25
+                    },
+                    .bitrate = 2048,
+                    .minBitrate = 512,
+                    .rateControlBufferLength = 333,
+                    .gop = 375
+                },
+                .audio = {
+                    .sampleRate = 48000
+                }
+            }
+        },
+        .dash = {
+            .segmentDuration = 15050
+        }
+    };
+    Ffmpeg::Arguments test = Ffmpeg::Arguments(config, {}, "live/uid");
+
+    EXPECT_EQ("rtsp://192.0.2.3", test.getSourceUrl());
+    EXPECT_EQ(std::vector<std::string>({ "-ss", "10" }), test.getSourceArguments());
+}
+
+TEST(FfmpegArguments, TwoVideoStreams)
 {
     Config::Channel config = {
         .source = {
@@ -383,5 +419,5 @@ TEST(GetFfmpegArguments, TwoVideoStreams)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::getFfmpegArguments(config, {}, "live/uid"));
+    }, Ffmpeg::Arguments(config, {}, "live/uid"));
 }

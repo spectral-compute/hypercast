@@ -1,5 +1,6 @@
-#include "ffmpeg.hpp"
+#include "Process.hpp"
 
+#include "Arguments.hpp"
 #include "log.hpp"
 
 #include "util/asio.hpp"
@@ -62,11 +63,12 @@ void handleFfmpegStderrLine(Log::Context &log, std::string_view line)
 
 } // namespace
 
-Ffmpeg::FfmpegProcess::FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<const std::string> arguments) :
-    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments, false, false), finishedReadingEvent(ioc)
+Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
+    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments.getFfmpegArguments(), false, false),
+    finishedReadingEvent(ioc)
 {
     /* Log the arguments given to ffmpeg. */
-    this->log << "arguments" << Log::Level::info << getArgumentsForLog(arguments);
+    this->log << "arguments" << Log::Level::info << getArgumentsForLog(arguments.getFfmpegArguments());
 
     /* Create a coroutine to handle the stderr output of ffmpeg and wait for the process termination. */
     spawnDetached(ioc, [this]() -> Awaitable<void> {
@@ -90,7 +92,7 @@ Ffmpeg::FfmpegProcess::FfmpegProcess(IOContext &ioc, Log::Log &log, std::span<co
     });
 }
 
-Awaitable<void> Ffmpeg::FfmpegProcess::kill()
+Awaitable<void> Ffmpeg::Process::kill()
 {
     subprocess.kill();
     while (!finishedReading) {

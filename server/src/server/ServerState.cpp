@@ -1,6 +1,7 @@
 #include "ServerState.h"
-#include "ffmpeg/ffmpeg.hpp"
+#include "ffmpeg/Arguments.hpp"
 #include "ffmpeg/ffprobe.hpp"
+#include "ffmpeg/Process.hpp"
 #include "log/MemoryLog.hpp"
 #include "log/FileLog.hpp"
 #include "media/MediaInfo.hpp"
@@ -49,7 +50,7 @@ struct Server::State::Channel final
     explicit Channel(IOContext &ioc, Log::Log &log, const Config::Root &config, const Config::Channel &channelConfig,
                      const std::string &basePath, Server &server) :
         dash(ioc, log, channelConfig, config.http, basePath, server),
-        ffmpeg(ioc, log, Ffmpeg::getFfmpegArguments(channelConfig, config.network, (std::string)dash.getUidPath()))
+        ffmpeg(ioc, log, Ffmpeg::Arguments(channelConfig, config.network, (std::string)dash.getUidPath()))
     {
     }
 
@@ -61,7 +62,7 @@ struct Server::State::Channel final
     /**
      * The ffmpeg subprocess that's streaming to the server.
      */
-    Ffmpeg::FfmpegProcess ffmpeg;
+    Ffmpeg::Process ffmpeg;
 };
 
 Server::State::~State() = default;

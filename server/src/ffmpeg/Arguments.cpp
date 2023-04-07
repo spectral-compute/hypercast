@@ -1,4 +1,4 @@
-#include "ffmpeg.hpp"
+#include "Arguments.hpp"
 
 #include "configuration/configuration.hpp"
 #include "util/debug.hpp"
@@ -564,15 +564,16 @@ std::vector<std::string> getDashOutputArgs(const Config::Channel &channelConfig,
 
 } // namespace
 
-std::vector<std::string> Ffmpeg::getFfmpegArguments(const Config::Channel &channelConfig,
-                                                    const Config::Network &networkConfig, std::string_view uidPath)
+Ffmpeg::Arguments::~Arguments() = default;
+
+Ffmpeg::Arguments::Arguments(const Config::Channel &channelConfig, const Config::Network &networkConfig,
+                             std::string_view uidPath) :
+    sourceUrl(channelConfig.source.url), sourceArguments(channelConfig.source.arguments)
 {
-    std::vector<std::string> result;
-    append(result, getGlobalArgs());
-    append(result, getInputArgs(channelConfig.source));
-    append(result, getFilterArgs(channelConfig));
-    append(result, getMapArgs(channelConfig.qualities));
-    append(result, getEncoderArgs(channelConfig.qualities));
-    append(result, getDashOutputArgs(channelConfig, networkConfig, uidPath));
-    return result;
+    append(ffmpegArguments, getGlobalArgs());
+    append(ffmpegArguments, getInputArgs(channelConfig.source));
+    append(ffmpegArguments, getFilterArgs(channelConfig));
+    append(ffmpegArguments, getMapArgs(channelConfig.qualities));
+    append(ffmpegArguments, getEncoderArgs(channelConfig.qualities));
+    append(ffmpegArguments, getDashOutputArgs(channelConfig, networkConfig, uidPath));
 }
