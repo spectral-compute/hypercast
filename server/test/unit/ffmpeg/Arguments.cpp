@@ -47,6 +47,7 @@ TEST(FfmpegArguments, Simple)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
+                    .h26xPreset = Config::H26xPreset::faster,
                     .gop = 375
                 },
                 .audio = {
@@ -152,6 +153,7 @@ TEST(FfmpegArguments, Fractional)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
+                    .h26xPreset = Config::H26xPreset::faster,
                     .gop = 375
                 },
                 .audio = {
@@ -261,6 +263,7 @@ TEST(FfmpegArguments, Source)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
+                    .h26xPreset = Config::H26xPreset::faster,
                     .gop = 375
                 },
                 .audio = {
@@ -296,6 +299,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
+                    .h26xPreset = Config::H26xPreset::faster,
                     .gop = 375
                 },
                 .audio = {
@@ -313,6 +317,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
                     .bitrate = 1024,
                     .minBitrate = 256,
                     .rateControlBufferLength = 333,
+                    .h26xPreset = Config::H26xPreset::faster,
                     .gop = 375
                 },
                 .audio = {

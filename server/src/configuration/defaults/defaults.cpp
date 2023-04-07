@@ -9,6 +9,7 @@ Awaitable<void>
 fillInQualitiesFromFfprobe(std::vector<Quality> &qualities, const Source &source, const ProbeFunction &probe);
 
 void fillInQuality(Config::Quality &q, const Root &config, const Channel &channel);
+void fillInCompute(Root &config);
 
 } // namespace Config
 
@@ -42,6 +43,9 @@ Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
             fillInQuality(q, config, channel);
         }
     }
+
+    /* Fill in the compute trade-off. */
+    fillInCompute(config);
 }
 
 Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)

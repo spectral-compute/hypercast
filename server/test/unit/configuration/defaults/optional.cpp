@@ -109,6 +109,7 @@ CORO_TEST(ConfigDefaults, Optional, ioc)
     checker(q.video.bitrate, "bitrate");
     checker(q.video.minBitrate, "minBitrate");
     checker(q.video.rateControlBufferLength, "rateControlBufferLength");
+    checker(q.video.h26xPreset, "h26xPreset");
     checker(q.video.gop, "gop");
 
     checker(q.audio.sampleRate, "sampleRate", false); // Actually optional, but this test case sets it anyway.

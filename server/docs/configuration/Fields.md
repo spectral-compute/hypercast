@@ -70,19 +70,19 @@ audio/video stream.
 
 #### `channels.qualities.video`
 
-| Field                     | Default  | Type                               | Description                          |
-|---------------------------|----------|------------------------------------|--------------------------------------|
-| `width`                   |          | Integer                            | The width of the video stream.       |
-| `height`                  |          | Integer                            | The height of the video stream.      |
-| `frameRate`               |          | `[`Integer`,` Integer`]` or String | The frame rate to use for the video. |
-| `bitrate`                 |          | Integer                            | The bitrate limit in kBit/s.         |
-| `minBitrate`              |          | Integer                            | The minimum bitrate in kBit/s.       |
-| `crf`                     | 25       | Integer                            | Constant rate factor.                |
-| `rateControlBufferLength` |          | Integer                            | Rate control buffer length in ms.    |
-| `codec`                   | `h264`   | String                             | The video codec to use.              |
-| `h26xPreset`              | `faster` | String                             | Preset to use for H.264/H.265.       |
-| `vpXSpeed`                | 8        | Integer                            | Speed to use for VP8/VP9/AV1.        |
-| `gop`                     |          | Integer                            | Group of pictures size in frames.    |
+| Field                     | Default | Type                               | Description                          |
+|---------------------------|---------|------------------------------------|--------------------------------------|
+| `width`                   |         | Integer                            | The width of the video stream.       |
+| `height`                  |         | Integer                            | The height of the video stream.      |
+| `frameRate`               |         | `[`Integer`,` Integer`]` or String | The frame rate to use for the video. |
+| `bitrate`                 |         | Integer                            | The bitrate limit in kBit/s.         |
+| `minBitrate`              |         | Integer                            | The minimum bitrate in kBit/s.       |
+| `crf`                     | 25      | Integer                            | Constant rate factor.                |
+| `rateControlBufferLength` |         | Integer                            | Rate control buffer length in ms.    |
+| `codec`                   | `h264`  | String                             | The video codec to use.              |
+| `h26xPreset`              |         | String                             | Preset to use for H.264/H.265.       |
+| `vpXSpeed`                | 8       | Integer                            | Speed to use for VP8/VP9/AV1.        |
+| `gop`                     |         | Integer                            | Group of pictures size in frames.    |
 
 
 ##### `channels.qualities.video.width`

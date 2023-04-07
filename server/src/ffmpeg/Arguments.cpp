@@ -365,7 +365,7 @@ std::vector<std::vector<std::string>> getH264StreamArgs(const Config::VideoQuali
 {
     return {
         { "-maxrate", std::to_string(*q.bitrate) + "k" }, // Maximum bitrate.
-        { "-preset", h26xPresetToString(q.h26xPreset) }, // Trade-off between CPU and quality/bitrate.
+        { "-preset", h26xPresetToString(*q.h26xPreset) }, // Trade-off between CPU and quality/bitrate.
         { "-tune", "zerolatency" } // Minimal encoder latency.
     };
 }

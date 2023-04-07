@@ -74,7 +74,7 @@ static void to_json(nlohmann::json &j, const VideoQuality &in)
     j["crf"] = in.crf;
     j["rateControlBufferLength"] = *in.rateControlBufferLength;
     j["codec"] = toString(in.codec);
-    j["h26xPreset"] = toString(in.h26xPreset);
+    j["h26xPreset"] = toString(*in.h26xPreset);
     j["vpXSpeed"] = in.vpXSpeed;
     j["gop"] = *in.gop;
 }

@@ -106,7 +106,7 @@ struct VideoQuality final
     unsigned int crf = 25;
     std::optional<unsigned int> rateControlBufferLength;
     Codec::VideoCodec codec = Codec::VideoCodec::h264;
-    H26xPreset h26xPreset = H26xPreset::faster;
+    std::optional<H26xPreset> h26xPreset;
     unsigned int vpXSpeed = 8;
     std::optional<unsigned int> gop;
 
