@@ -8,11 +8,20 @@ import {observer} from "mobx-react-lite";
 import {inputUrlToSDIPortNumber} from "../api/Hardware";
 import {AppCtx} from "../AppCtx";
 import {ReactComponent as Cog} from "../assets/icons/settings.svg";
-import {DecklinkPort, DECKLINK_PORT_SETTINGS, defaultVariantConfig, fuzzyInputMatch, RES_1080p, RES_480p, RES_4k, RES_720p} from "../Constants";
+import {
+    DECKLINK_PORT_SETTINGS,
+    DecklinkPort,
+    defaultVariantConfig,
+    fuzzyInputMatch,
+    RES_1080p,
+    RES_480p,
+    RES_4k,
+    RES_720p
+} from "../Constants";
 import VariantConfigModal from "./VariantConfigModal";
 import BoxBtn from "../components/BoxBtn";
 import BoxRadioGroup from '../components/BoxRadioGroup';
-import {fuzzyApply} from "../Fuzzify";
+import {fuzzyApply, fuzzyMatch, FuzzyMatchResult} from "../Fuzzify";
 import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
 
 export interface ChannelConfigModalProps {
@@ -143,8 +152,12 @@ export default observer((props: ChannelConfigModalProps) => {
                         const p = appCtx.machineInfo.inputPorts[k]!;
 
                         let disabled = p!.connectedMediaInfo == null;
-                        for (const [_k, c] of Object.entries(appCtx.loadedConfiguration.channels)) {
-                            disabled ||= c.source.url == k;
+                        for (const [k2, c] of Object.entries(appCtx.loadedConfiguration.channels)) {
+                            if (k2 == props.channelName) {
+                                continue;
+                            }
+
+                            disabled ||= fuzzyMatch(c, DECKLINK_PORT_SETTINGS[k]) == FuzzyMatchResult.MATCH;
                         }
 
                         return {
