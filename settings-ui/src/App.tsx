@@ -11,8 +11,43 @@ import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
 import {useAsyncDeferred, useAsyncImmediateEx} from './hooks/useAsync';
 import Kaput from './Kaput';
-import { makeDefaultChannel } from './Constants';
+import {DECKLINK_PORT_SETTINGS, DECKLINK_PORTS_ORDERED, DecklinkPort, makeDefaultChannel} from './Constants';
 import { observer } from 'mobx-react-lite';
+import {AppCtx} from "./AppCtx";
+import {fuzzyMatch, FuzzyMatchResult} from "./Fuzzify";
+
+
+export enum InputPortStatus {
+    DISCONNECTED,
+    AVAILABLE
+}
+
+export function getPortStatus(appCtx: AppCtx, k: DecklinkPort): InputPortStatus | string {
+    const p = appCtx.machineInfo.inputPorts[k]!;
+
+    if (p!.connectedMediaInfo == null) {
+        return InputPortStatus.DISCONNECTED;
+    }
+
+    for (const [k2, c] of Object.entries(appCtx.loadedConfiguration.channels)) {
+        if (fuzzyMatch(c, DECKLINK_PORT_SETTINGS[k]) == FuzzyMatchResult.MATCH) {
+            return k2;
+        }
+    }
+
+    return InputPortStatus.AVAILABLE;
+}
+
+export function findUnusedPorts(ctx: AppCtx) {
+    let out = [];
+    for (const p of DECKLINK_PORTS_ORDERED) {
+        if (getPortStatus(ctx, p) == InputPortStatus.AVAILABLE) {
+            out.push(p);
+        }
+    }
+
+    return out;
+}
 
 
 export default observer(() => {
@@ -91,8 +126,12 @@ export default observer(() => {
               <LogoCard/>
               <div className="portList">
                   {
-                      Array.from(Object.entries(appCtx.machineInfo.inputPorts)).map(([k, p]) =>
-                          <PortStatus key={k} connected={p.connectedMediaInfo != null} desc={p}></PortStatus>
+                      DECKLINK_PORTS_ORDERED.map(p =>
+                          <PortStatus
+                              key={p}
+                              port={p}
+                              desc={appCtx.machineInfo.inputPorts[p]}
+                          ></PortStatus>
                   )}
               </div>
 
@@ -117,7 +156,11 @@ export default observer(() => {
                       name={k}
                       config={c}
                   ></StreamBox>)}
-              <NewChannelButton clicked={() => {openNewChannelModal(nameNewChannel());}}/>
+              {findUnusedPorts(appCtx).length > 0 ?
+                <NewChannelButton
+                    clicked={() => {openNewChannelModal(nameNewChannel());}}
+                /> : null
+              }
           </div>
       </div>
 

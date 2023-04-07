@@ -21,8 +21,9 @@ import {
 import VariantConfigModal from "./VariantConfigModal";
 import BoxBtn from "../components/BoxBtn";
 import BoxRadioGroup from '../components/BoxRadioGroup';
-import {fuzzyApply, fuzzyMatch, FuzzyMatchResult} from "../Fuzzify";
+import {fuzzyApply} from "../Fuzzify";
 import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
+import {getPortStatus, InputPortStatus} from "../App";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
@@ -149,16 +150,8 @@ export default observer((props: ChannelConfigModalProps) => {
                 items={
                     Object.keys(DECKLINK_PORT_SETTINGS).map((i) => {
                         const k = i as DecklinkPort;
-                        const p = appCtx.machineInfo.inputPorts[k]!;
-
-                        let disabled = p!.connectedMediaInfo == null;
-                        for (const [k2, c] of Object.entries(appCtx.loadedConfiguration.channels)) {
-                            if (k2 == props.channelName) {
-                                continue;
-                            }
-
-                            disabled ||= fuzzyMatch(c, DECKLINK_PORT_SETTINGS[k]) == FuzzyMatchResult.MATCH;
-                        }
+                        const status = getPortStatus(appCtx, k);
+                        let disabled = status != InputPortStatus.AVAILABLE && status != props.channelName;
 
                         return {
                             value: k,

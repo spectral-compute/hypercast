@@ -119,7 +119,7 @@ export default observer((props: StreamBoxProps) => {
                     shortLabel={true}
                     size={1}
                     desc={appCtx.machineInfo.inputPorts[whichSDI]!}
-                    connected={true}
+                    port={whichSDI}
                 ></PortStatus>
                 : <FileIcon/>}
             </div>
