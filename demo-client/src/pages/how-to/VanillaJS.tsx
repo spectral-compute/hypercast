@@ -4,7 +4,7 @@ import {PACKAGE_PLAYER} from "../../variables";
 import StyledCode from "../../components/StyledCode";
 
 
-export default function ReactHowTo() {
+export default function VanillaJSHowTo() {
     // TODO: the example is awful and the text is too vague
     // TODO: styling the text
 

@@ -2,7 +2,7 @@ import {Link} from "react-router-dom";
 
 import Card, {CardContainer} from "../../components/Card";
 
-export default function () {
+export default function DemoIndex() {
     return <CardContainer>
         <Link to="/demo/latency">
             <Card>

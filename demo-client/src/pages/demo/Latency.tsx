@@ -3,7 +3,7 @@ import {Player as PlayerMain} from "live-video-streamer-client";
 import {PerformanceChart} from "../../performanceChart";
 import {useCallback, useEffect, useRef} from "react";
 
-export default function () {
+export default function LatencyDemo() {
     const latencyRef = useRef<HTMLCanvasElement | null>(null);
     const rateRef = useRef<HTMLCanvasElement | null>(null);
     const performanceChart = useRef<PerformanceChart | null>(null);

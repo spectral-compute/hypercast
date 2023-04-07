@@ -3,7 +3,7 @@ import {Link} from "react-router-dom";
 import Card, {CardContainer} from "../../components/Card";
 
 
-export default function () {
+export default function HowToIndex() {
     return <CardContainer>
         <Link to="/how-to/vanilla-js">
             <Card>

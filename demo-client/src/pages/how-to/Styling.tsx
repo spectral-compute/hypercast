@@ -5,7 +5,7 @@ import StyledCode from "../../components/StyledCode";
 
 const MDN = "https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Video_player_styling_basics";
 
-export default function () {
+export default function StylingHowTo() {
     // TODO: className prop for React
     // TODO: Verify claims
 
