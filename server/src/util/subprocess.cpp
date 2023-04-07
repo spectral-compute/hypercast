@@ -243,7 +243,15 @@ Subprocess::Subprocess::Subprocess(IOContext &ioc, std::string_view executable,
 
 void Subprocess::Subprocess::kill()
 {
-    process->process.request_exit();
+    try {
+        process->process.request_exit();
+    }
+    catch (const boost::system::system_error &e) {
+        if (e.code() == boost::system::errc::no_such_process) {
+            return;
+        }
+        throw;
+    }
 }
 
 Awaitable<int> Subprocess::Subprocess::wait(bool throwOnNonZero)
