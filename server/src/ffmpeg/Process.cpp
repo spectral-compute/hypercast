@@ -64,14 +64,19 @@ void handleFfmpegStderrLine(Log::Context &log, std::string_view line)
 } // namespace
 
 Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
-    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments.getFfmpegArguments(), false, false),
-    finishedReadingEvent(ioc)
+    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments.getFfmpegArguments(), false, false), event(ioc)
 {
     /* Log the arguments given to ffmpeg. */
     this->log << "arguments" << Log::Level::info << getArgumentsForLog(arguments.getFfmpegArguments());
 
     /* Create a coroutine to handle the stderr output of ffmpeg and wait for the process termination. */
-    spawnDetached(ioc, [this]() -> Awaitable<void> {
+    spawnDetached(ioc, [this, &ioc, arguments = std::move(arguments)]() -> Awaitable<void> {
+        // Make sure that while ffmpeg is running, ffprobe returns a cached result.
+        ProbeResult probeResult =
+            co_await ffprobe(ioc, arguments.getSourceUrl(), std::span(arguments.getSourceArguments()));
+        capturedProbe = true;
+        event.notifyAll();
+
         // Read the logging that ffmpeg emits.
         try {
             while (auto line = co_await this->subprocess.readStderrLine()) {
@@ -88,14 +93,21 @@ Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
         // Wait for ffmpeg to terminate, and then notify anything that's waiting that we've done so.
         co_await this->subprocess.wait(false);
         finishedReading = true;
-        finishedReadingEvent.notifyAll();
+        event.notifyAll();
     });
+}
+
+Awaitable<void> Ffmpeg::Process::waitForProbe()
+{
+    while (!capturedProbe) {
+        co_await event.wait();
+    }
 }
 
 Awaitable<void> Ffmpeg::Process::kill()
 {
     subprocess.kill();
     while (!finishedReading) {
-        co_await finishedReadingEvent.wait();
+        co_await event.wait();
     }
 }

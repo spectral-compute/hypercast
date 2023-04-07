@@ -36,6 +36,14 @@ public:
     explicit Process(IOContext &ioc, Log::Log &log, Arguments arguments);
 
     /**
+     * Wait for this object to cache the result of ffprobe.
+     *
+     * This is useful to guarantee that a previously cached probe will remain in scope until this object has a reference
+     * to it, rather than allowing this object to do another probe depending on a race condition.
+     */
+    Awaitable<void> waitForProbe();
+
+    /**
      * Send SIGTERM to the ffmpeg process and wait for it to terminate.
      */
     Awaitable<void> kill();
@@ -43,7 +51,8 @@ public:
 private:
     Log::Context log;
     Subprocess::Subprocess subprocess;
-    Event finishedReadingEvent;
+    Event event;
+    bool capturedProbe = false;
     bool finishedReading = false;
 };
 
