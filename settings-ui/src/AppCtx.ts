@@ -88,7 +88,7 @@ export class AppCtx {
         } finally {
             // Do it again, a little while after your finish.
             if (keepGoing) {
-                this.portPollTimer = setTimeout(this.probeSDIPorts, 2000);
+                this.portPollTimer = setTimeout(async () => this.probeSDIPorts(true), 2000);
             }
         }
     };
