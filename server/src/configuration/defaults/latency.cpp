@@ -321,42 +321,41 @@ public:
         }
         assert(!configValue);
 
-        /* Figure out what to compare to. */
-        bool compareHigh = false;
-        bool compareLow = false;
+        /* Figure out what value to set the parameter to, if any. */
+        double defaultLatency = getAbsoluteBudget(param);
+        double chosenLatency = 0;
+        double chosenValue = 0;
         switch (condition) {
             case FixParameterCondition::ifFixed:
                 return; // Don't do any comparison. Never set any value.
             case FixParameterCondition::lowLatency:
-                compareLow = !higherValueLowerLatency;
-                compareHigh = higherValueLowerLatency;
+                if (defaultLatency >= constraints.minLatency) {
+                    return;
+                }
+                chosenLatency = constraints.minLatency;
+                chosenValue = higherValueLowerLatency ? constraints.maxValue : constraints.minValue;
                 break;
             case FixParameterCondition::highLatency:
-                compareLow = higherValueLowerLatency;
-                compareHigh = !higherValueLowerLatency;
+                if (defaultLatency <= constraints.maxLatency) {
+                    return;
+                }
+                chosenLatency = constraints.maxLatency;
+                chosenValue = higherValueLowerLatency ? constraints.minValue : constraints.maxValue;
                 break;
             case FixParameterCondition::ifNotFixed:
+                chosenLatency = defaultLatency;
+                chosenValue = fn(defaultLatency);
                 break;
-        }
-
-        /* Figure out the latency for the default allocation and its corresponding value. */
-        double defaultLatency = getAbsoluteBudget(param);
-        double defaultValue = fn(defaultLatency);
-
-        /* Don't set a value if the condition is not met. */
-        if (compareHigh && defaultValue < constraints.maxValue) {
-            return;
-        }
-        if (compareLow && defaultValue > constraints.maxValue) {
-            return;
         }
 
         /* If we got here, we set the parameter, and thus should remove it from the budget. */
-        constraints.minValue = defaultValue * scaleFactor;
-        constraints.maxValue = constraints.minValue;
+        assert(chosenValue >= constraints.minValue);
+        assert(chosenValue <= constraints.maxValue);
+        constraints.minValue = chosenValue;
+        constraints.maxValue = chosenValue;
         constraints.fixed = true;
-        configValue = (unsigned int)std::round(constraints.minValue);
-        removeParameter(param, defaultLatency);
+        configValue = (unsigned int)std::round(chosenValue * scaleFactor);
+        removeParameter(param, chosenLatency);
     }
 
     /**
@@ -446,6 +445,8 @@ void allocateLatency(Quality &q, const Root &config, const Channel &channel)
     // Minimum video rate in bytes per second.
     ParameterConstraints minVideoRateConstraints = getMinVideoRateConstraints(q, config, latencyBudget,
                                                                               maxVideoRateConstraints.maxValue);
+    assert(minVideoRateConstraints.maxValue <=
+           maxVideoRateConstraints.maxValue * maxVideoEncoderRateRangeRatio + epsilon); // Not over-constrained.
 
     // Encoder rate control buffer length.
     ParameterConstraints rateControlBufferLengthConstraints =
@@ -474,14 +475,16 @@ void allocateLatency(Quality &q, const Root &config, const Channel &channel)
         // Parameters that are already fixed by the configuration.
         LatencyBudget::FixParameterCondition::ifFixed,
 
+        // Set parameters whose minimum latency is more than (or equal to) what their default allocation would be. This
+        // decreases the remaining budget for everything else, but the fact that it doesn't cause the budget to be
+        // exceeded is enforced by checking the sum of the minimum latencies earlier. This is done first because it
+        // reduces the default allocation of other things. So we allocate all the minimums first, and then see what we
+        // have budget left over for.
+        LatencyBudget::FixParameterCondition::highLatency,
+
         // Set parameters whose maximum latency is less than (or equal to) what their default allocation would be. This
         // increases the remaining budget for everything else.
         LatencyBudget::FixParameterCondition::lowLatency,
-
-        // Set parameters whose minimum latency is more than (or equal to) what their default allocation would be. This
-        // decreases the remaining budget for everything else, but the fact that it doesn't cause the budget to be
-        // exceeded is enforced by checking the sum of the minimum latencies earlier.
-        LatencyBudget::FixParameterCondition::highLatency,
 
         // Everything else should get the default value, which will be in range.
         LatencyBudget::FixParameterCondition::ifNotFixed
@@ -501,18 +504,20 @@ void allocateLatency(Quality &q, const Root &config, const Channel &channel)
     assert(minVideoRateConstraints.minValue == minVideoRateConstraints.maxValue); // I.e: Fixed.
     assert(maxVideoRateConstraints.minValue <= maxVideoRateConstraints.targetValue); // Target in range.
     assert(maxVideoRateConstraints.targetValue <= maxVideoRateConstraints.maxValue); // Target in range.
+
     assert(minVideoRateConstraints.maxValue <=
-           maxVideoRateConstraints.maxValue * maxVideoEncoderRateRangeRatio); // Not over-constrained.
+           maxVideoRateConstraints.maxValue * maxVideoEncoderRateRangeRatio + epsilon); // Not over-constrained.
 
     // Calculate the maximum bitrate to be the target rate, subject to that not over-constraining the encoder.
     double maxVideoRate = std::max(maxVideoRateConstraints.targetValue,
                                    minVideoRateConstraints.maxValue / maxVideoEncoderRateRangeRatio);
-    assert(maxVideoRate >= maxVideoRateConstraints.minValue);
-    assert(maxVideoRate <= maxVideoRateConstraints.maxValue);
+    assert(maxVideoRate >= maxVideoRateConstraints.minValue - epsilon);
+    assert(maxVideoRate <= maxVideoRateConstraints.maxValue + epsilon);
 
     // Set the maximum bitrate.
     // TODO: Account for maximum vs average bitrate.
     q.video.bitrate = maxVideoRate / 125.0;
+    assert(q.video.bitrate > q.video.minBitrate);
 }
 
 } // namespace Config
