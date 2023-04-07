@@ -1,13 +1,11 @@
 import {Link} from "react-router-dom";
-import SyntaxHighlighter from "react-syntax-highlighter";
 
 import {PACKAGE_PLAYER, PACKAGE_PLAYER_REACT} from "../../variables";
+import StyledTypescript from "../../components/StyledTypescript";
 
 
 export default function ReactHowTo() {
-    // TODO: styling the code blocks
     // TODO: styling the text
-    // TODO: better text
 
     const code = `\
 import Player from "${PACKAGE_PLAYER_REACT}";
@@ -44,8 +42,6 @@ export default function PageWithPlayer(props: {sourceURL: string}) {
             The <code>sourceURL</code> prop is the URL of the stream to play, the component will handle the rest.
             The component can be customized with callbacks and <Link to="/how-to/styling">styled</Link>.
         </p>
-        <SyntaxHighlighter language="typescript">
-            {code}
-        </SyntaxHighlighter>
+        <StyledTypescript code={code}/>
     </>;
 }
