@@ -1,19 +1,27 @@
 @use "../styles/colors" as c;
 
 
-
-
 .video-container {
     border-radius: 0.5em;
 
+    box-sizing: border-box;
+    width: 100%;
+    padding: 1em;
+
     background-color: c.$secondary-bg;
 
-    align-self: center;
-
-    width: 100%;
+    & figure {
+        margin: 0;
+    }
 
     & video {
-        border: 1px solid c.$border;
+        // Kind of a hack to remove the gap between the video and its controls.
+        // Should not be a thing if a figure is properly removed, I think.
+        // In any case, the problem is in `inline` which respects whitespace which can create gaps.
+        display: block;
+
+        box-sizing: border-box;
+        border: 1px solid c.$primary-bg;
 
         max-width: 100%;
         max-height: 100vh;
@@ -25,32 +33,46 @@
     & .video-controls {
         display: grid;
 
-        grid-template-columns: auto 1fr auto auto auto;
-        $start-stop: 1;
-        $angle: 3;
-        $quality: 4;
-        $fullscreen: 5;
+        grid-template-columns: auto auto 1fr auto auto auto;
+        grid-template-areas: "start-stop mute . angle quality fullscreen";
 
         gap: 1em;
+        padding: 0.25em;
+
+        background-color: c.$primary-bg;
 
         & > * {
             grid-row: 1;
+
+            border: none;
+            border-radius: 0.2em;
+
+            color: white;
+            background-color: c.$secondary;
         }
 
         & button.start-stop {
-            grid-column: $start-stop;
+            grid-area: start-stop;
+        }
+
+        & button.mute {
+            grid-area: mute;
+        }
+
+        & select {
+            min-width: 4em;
         }
 
         & select.angle {
-            grid-column: $angle;
+            grid-area: angle;
         }
 
         & select.quality {
-            grid-column: $quality;
+            grid-area: quality;
         }
 
         & button.fullscreen {
-            grid-column: $fullscreen;
+            grid-area: fullscreen;
         }
     }
 }

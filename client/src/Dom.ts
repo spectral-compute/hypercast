@@ -36,6 +36,9 @@ export default async function createPlayer(
         }
     }
 
+    // TODO: getting rid of the figure makes the controls get generated 2 times in the debug build...
+    // Investigate and remove figure if it's actually not necessary.
+
     const figure = insertNode(containerElement, "figure", {className: "video-figure"});
     const video = insertNode(figure, "video", {className: "video"});
     video.controls = controlsType === "native";
@@ -84,8 +87,8 @@ export default async function createPlayer(
 }
 
 // Set up the control panel using JS (in place of the browsers' native controls)
-function createControlPanel(figure: HTMLElement, player: Player, video: HTMLVideoElement): void {
-    const controlsDiv = insertNode(figure, "div", {className: "video-controls"});
+function createControlPanel(where: HTMLElement, player: Player, video: HTMLVideoElement): void {
+    const controlsDiv = insertNode(where, "div", {className: "video-controls"});
 
     // Create and wire up the angle and quality selectors
     const angle = insertSelector(controlsDiv, "angle", player.getAngleOptions(), player.getAngle());
@@ -168,8 +171,14 @@ function insertNode(parent: HTMLElement, node: "button", options?: NodeOptions):
 function insertNode(parent: HTMLElement, node: string, options?: NodeOptions): HTMLElement;
 function insertNode(parent: HTMLElement, node: string, options?: NodeOptions): HTMLElement {
     const child = document.createElement(node);
-    child.id = options?.id ?? "";
-    child.className = options?.className ?? "";
+    if (options?.id) {
+        // Assigning an empty string would add an empty id, so let's ony assign if we have a value
+        child.id = options.id;
+    }
+    if (options?.className) {
+        // Assigning an empty string would add an empty class, so let's ony assign if we have a value
+        child.className = options.className;
+    }
     child.innerText = options?.innerText ?? "";
     parent.appendChild(child);
     return child;
