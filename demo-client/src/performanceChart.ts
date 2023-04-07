@@ -11,79 +11,9 @@ chart.Chart.defaults.color = "rgb(191, 191, 191)";
  */
 export class PerformanceChart {
     constructor(latencyCanvas: HTMLCanvasElement, rateCanvas: HTMLCanvasElement) {
-        /* Common configuration between timelines. */
-        const timelineConfig = {
-            type: "line" as const,
-            data: {
-                datasets: [
-                    {
-                        label: "Catch Up Event",
-                        backgroundColor: "rgb(255, 0, 0)",
-                        borderColor: "rgb(255, 0, 0)",
-                        data: [],
-
-                        type: "scatter" as const,
-                        pointStyle: "circle",
-                        pointRadius: 4
-                    }, {
-                        label: "Initial Seek Event",
-                        backgroundColor: "rgb(123,0,127)",
-                        borderColor: "rgb(95,0,127)",
-                        data: [],
-
-                        type: "scatter" as const,
-                        pointStyle: "circle",
-                        pointRadius: 4
-                    }, {
-                        label: "Segment Start",
-                        backgroundColor: "rgb(127, 127, 127)",
-                        borderColor: "rgb(127, 127, 127)",
-                        data: [],
-
-                        type: "scatter" as const,
-                        pointStyle: "circle",
-                        pointRadius: 2
-                    }
-                ]
-            },
-            options: {
-                animation: false as const,
-                aspectRatio: 4,
-                elements: {
-                    line: {
-                        borderWidth: 1
-                    },
-                    point: {
-                        radius: 0
-                    }
-                },
-                scales: {
-                    x: {
-                        type: "linear" as const,
-                        position: "bottom" as const,
-                        ticks: {
-                            format: {minimumFractionDigits: 1, maximumFractionDigits: 1},
-                            maxTicksLimit: 25
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            usePointStyle: true
-                        }
-                    }
-                }
-            }
-        };
-        const copyTimelineConfig = (): chart.ChartConfiguration => {
-            // Javascript needs a better deep copy.
-            return JSON.parse(JSON.stringify(timelineConfig)) as chart.ChartConfiguration;
-        };
-
         /* Function to append a dataset to a timeline chart. */
         const appendTimelineDataset = (c: chart.Chart, label: string, colour: string): void => {
-            c.data.datasets.splice(c.data.datasets.length - copyTimelineConfig().data.datasets.length, 0, {
+            c.data.datasets.splice(c.data.datasets.length - this.getTimelineConfig().data.datasets.length, 0, {
                 label: label,
                 pointStyle: "line",
                 backgroundColor: colour,
@@ -93,7 +23,7 @@ export class PerformanceChart {
         };
 
         /* Latency chart. */
-        const latencyConfig = copyTimelineConfig();
+        const latencyConfig = this.getTimelineConfig();
         latencyConfig.options!.scales = {
             ...latencyConfig.options!.scales,
             y: {
@@ -113,7 +43,7 @@ export class PerformanceChart {
         this.latencyChart.update();
 
         /* Download rate chart. */
-        const dlConfig = copyTimelineConfig();
+        const dlConfig = this.getTimelineConfig();
         dlConfig.options!.scales = {
             ...dlConfig.options!.scales,
             y: {
@@ -143,17 +73,6 @@ export class PerformanceChart {
         /* Calculate the timestamp. */
         const t = (tickInfo.timestamp - this.start) / 1000;
 
-        /* Add the various data points. */
-        if (tickInfo.catchUp) {
-            for (const c of [this.latencyChart, this.dlChart]) {
-                this.getData(c, "Catch Up Event").push({x: t, y: 0});
-            }
-        }
-        if (tickInfo.initialSeek) {
-            for (const c of [this.latencyChart, this.dlChart]) {
-                this.getData(c, "Initial Seek Event").push({x: t, y: 0});
-            }
-        }
         this.getData(this.latencyChart, "Target Buffer").push({x: t, y: this.bctrl.getBufferTarget()});
         this.getData(this.latencyChart, "Actual Buffer").push({x: t, y: tickInfo.primaryBufferLength});
 
@@ -165,11 +84,6 @@ export class PerformanceChart {
         const t = (timestampInfo.sentTimestamp - this.start) / 1000;
         const d = timestampInfo.endReceivedTimestamp - timestampInfo.sentTimestamp;
         this.getData(this.latencyChart, "Network Latency").push({x: t, y: d});
-        if (timestampInfo.firstForInterleave) {
-            for (const c of [this.latencyChart, this.dlChart]) {
-                this.getData(c, "Segment Start").push({x: t, y: 0});
-            }
-        }
         this.updateTimelines(t);
     }
 
@@ -230,6 +144,46 @@ export class PerformanceChart {
         /* Plot it in kBit/s. */
         this.getData(this.dlChart, "Average Download Rate").push({x: (receivedInfo.timestamp - this.start) / 1000,
                                                                   y: avgRate / 128});
+    }
+
+
+    /* Common configuration between timelines. */
+    private getTimelineConfig(): chart.ChartConfiguration {
+        return {
+            type: "line" as const,
+            data: {
+                datasets: []
+            },
+            options: {
+                animation: false as const,
+                aspectRatio: 4,
+                elements: {
+                    line: {
+                        borderWidth: 1
+                    },
+                    point: {
+                        radius: 0
+                    }
+                },
+                scales: {
+                    x: {
+                        type: "linear" as const,
+                        position: "bottom" as const,
+                        ticks: {
+                            format: {minimumFractionDigits: 1, maximumFractionDigits: 1},
+                            maxTicksLimit: 25
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        };
     }
 
     /**
