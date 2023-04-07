@@ -70,14 +70,8 @@ export class AppCtx {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
     };
 
-    private probeInProgress: boolean = false;
-    private readonly probeSDIPorts = async() => {
-        // Don't start another probe if one is already in progress.
-        if (this.probeInProgress) {
-            return;
-        }
-        this.probeInProgress = true;
-
+    private portPollTimer: any = null;
+    private readonly probeSDIPorts = async(keepGoing: boolean = false) => {
         try {
             // Probe time.
             const infos = await this.api.probe(
@@ -96,24 +90,17 @@ export class AppCtx {
                 }
             }
         } finally {
-            // Allow new probes.
-            this.probeInProgress = false;
+            // Do it again, a little while after your finish.
+            if (keepGoing) {
+                this.portPollTimer = setTimeout(this.probeSDIPorts, 2000);
+            }
         }
     };
 
-    private portPollTimer: any = null;
     private startPollingPorts() {
-        if (this.portPollTimer != null) {
-            return;
+        if (this.portPollTimer == null) {
+            void this.probeSDIPorts(true);
         }
-
-        void this.probeSDIPorts().then(() => {
-            if (this.portPollTimer != null) {
-                return;
-            }
-
-            this.portPollTimer = setInterval(this.probeSDIPorts, 5000);
-        });
     }
     stopPollingPorts() {
         if (this.portPollTimer == null) {
