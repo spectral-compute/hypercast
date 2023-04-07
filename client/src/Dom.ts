@@ -17,11 +17,11 @@ export interface PlayerOptions {
  * @param containerElement The DOM element into which the video player will be inserted. Pass either a DOM element that was created in JS, or else pass the ID of an html element.
  * @param options
  */
-export default function createPlayer(
+export default async function createPlayer(
     sourceURL: string,
     containerElement: HTMLElement | string,
     options: PlayerOptions
-): Player {
+): Promise<Player> {
     // Defaults
     const controlsType = options?.controls ?? "js";
 
@@ -65,17 +65,20 @@ export default function createPlayer(
         console.error("An error happened: " + e);
     };
 
-    player.init().then(() => {
-        // Hook up the controls if necessary
-        if (controlsType === "js") {
-            createControlPanel(figure, player, video);
-        }
-
-        options?.onInitialisation?.(player);
-        player.start();
-    }).catch((e) => {
+    try {
+        await player.init();
+    } catch (e) {
+        // TODO cope with failure to initialise
         console.error(e instanceof Error ? "Failed to initialise player: " + e.message : "Failed to initialise player");
-    });
+    }
+
+    // Hook up the controls if necessary
+    if (controlsType === "js") {
+        createControlPanel(figure, player, video);
+    }
+
+    options?.onInitialisation?.(player);
+    player.start();
 
     return player;
 }

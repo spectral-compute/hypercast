@@ -10,19 +10,15 @@ export interface PlayerProps extends PlayerOptions {
 
 export default function Player(props: PlayerProps): React.ReactElement<HTMLDivElement> {
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const playerRef = useRef<PlayerMain | null>(null);
-    const isInitialised = useRef(false);
+    const playerRef = useRef<Promise<PlayerMain> | null>(null);
 
     const {sourceURL, onDismount, ...options} = props;
 
+    // This fires on any prop change. That's why we do dismount cleanup in a separate effect.
     useEffect(() => {
         // Make sure Video.js player is only initialized once
         if (!playerRef.current) {
             playerRef.current = createPlayer(sourceURL, containerRef.current!, {
-                onInitialisation: (player) => {
-                    options.onInitialisation?.(player);
-                    isInitialised.current = true;
-                },
                 ...options
             });
         } else {
@@ -36,17 +32,20 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
         const container = containerRef.current;
         return () => {
             if (player) {
-                if (isInitialised.current) {
-                    player.stop();
-                }
-                onDismount(player);
+                player.then((p) => {
+                    p.stop();
+                    onDismount(p);
+                }).catch((e) => {
+                    console.error("RISE player failed to initialize:");
+                    e instanceof Error && console.error(e.message);
+                });
                 playerRef.current = null;
             }
             if (container) {
                 container.innerHTML = "";
             }
         };
-    }, [onDismount]);
+    }, []);
 
     return <div className="video-container" ref={containerRef} />;
 }
