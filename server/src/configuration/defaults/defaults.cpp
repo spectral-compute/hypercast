@@ -49,6 +49,6 @@ Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
     // This has ot be a co_await because otherwise the lambda would go out of scope.
     co_await fillInDefaults([&ioc](const std::string &url, const std::vector<std::string> &arguments) ->
                             Awaitable<MediaInfo::SourceInfo> {
-        return Ffmpeg::ffprobe(ioc, url, arguments);
+        co_return co_await Ffmpeg::ffprobe(ioc, url, arguments);
     }, config);
 }

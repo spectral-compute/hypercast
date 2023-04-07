@@ -1,6 +1,7 @@
 #include "ProbeResource.hpp"
 
 #include "configuration/configuration.hpp"
+#include "ffmpeg/Exceptions.hpp"
 #include "ffmpeg/ffprobe.hpp"
 #include "ffmpeg/ProbeCache.hpp"
 #include "server/Request.hpp"
@@ -61,6 +62,11 @@ Awaitable<void> probeSource(IOContext &ioc, ProbeResult &result, const Ffmpeg::P
     /* Try to probe the source to see what it contains. */
     try {
         result = { co_await Ffmpeg::ffprobe(ioc, source.url, source.arguments) };
+    }
+
+    /* Handle the case where the URL is in use with different arguments. */
+    catch (const Ffmpeg::InUseException &) {
+        throw Server::Error(Server::ErrorKind::Conflict);
     }
 
     /* In case of exception, the source probably isn't connected, or is otherwise not usable. */

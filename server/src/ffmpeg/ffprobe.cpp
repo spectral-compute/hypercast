@@ -1,26 +1,58 @@
 #include "ffprobe.hpp"
 
+#include "Exceptions.hpp"
+
 #include "configuration/configuration.hpp"
 #include "util/asio.hpp"
+#include "util/Event.hpp"
 #include "util/json.hpp"
-#include "util/Mutex.hpp"
-#include "util/RaiiFn.hpp"
 #include "util/subprocess.hpp"
 
 #include <charconv>
+#include <exception>
 #include <numeric>
 #include <utility>
 
+/**
+ * An entry in the probe cache.
+ *
+ * These entries are deleted once the last reference to them (via ProbeResult) is deleted.
+ */
+struct Ffmpeg::ProbeResult::CacheEntry final
+{
+    explicit CacheEntry(IOContext &ioc, std::vector<std::string> arguments) :
+        arguments(std::move(arguments)), event(ioc)
+    {
+    }
+
+    /**
+     * The actual result.
+     */
+    MediaInfo::SourceInfo result;
+
+    /**
+     * The exception that occurred while trying to get the result, if any.
+     */
+    std::exception_ptr exception;
+
+    /**
+     * The arguments that go along with the URL for this result.
+     */
+    std::vector<std::string> arguments;
+
+    /**
+     * An event that gets notified when the result is filled in.
+     */
+    Event event;
+
+    /**
+     * Whether the result has been filled in by ffprobe.
+     */
+    bool filledIn = false;
+};
+
 namespace
 {
-
-/**
- * Per-URL mutexes so we don't ffprobe the same thing in parallel.
- *
- * Eventually, the plan is to rely on this less by maintaining a monitor coroutine for sources we care about in
- * Api::ProbeResource. This will still be necessary then in case something not in the monitor list is probed.
- */
-std::map<std::string, std::weak_ptr<Mutex>> urlMutexes;
 
 /**
  * Parse a fraction from ffmpeg.
@@ -114,15 +146,50 @@ static void from_json(const nlohmann::json &j, AudioStreamInfo &out)
 
 } // namespace MediaInfo
 
-Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
-                                                 std::span<const std::string_view> arguments)
+Awaitable<Ffmpeg::ProbeResult> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url, std::vector<std::string> arguments)
 {
+    /* Per-URL mutexes so we don't ffprobe the same thing in parallel. */
+    static std::map<std::string, std::weak_ptr<ProbeResult::CacheEntry>> urlResults;
+
+    /* Result caching. */
+    // Create a mutex to the URL, so we don't probe it in parallel.
+    std::string urlString(url);
+    std::weak_ptr<ProbeResult::CacheEntry> &weakResult = urlResults[urlString]; // The coordinating reference.
+    std::shared_ptr<ProbeResult::CacheEntry> result = weakResult.lock(); // Get the mutex if it exists.
+
+    // If the cache entry already exists, wait for it to be filled in and return it.
+    if (result) {
+        // Make sure we've not got conflicting arguments.
+        if (result->arguments != arguments) {
+            throw InUseException("FFmpeg URL in use with different arguments.");
+        }
+
+        // Wait for the result to become ready.
+        while (!result->filledIn) {
+            co_await result->event.wait();
+        }
+
+        // Return the result wrapped in the wrapper cass.
+        co_return ProbeResult(result);
+    }
+
+    // Create a cache entry in the map that deletes itself once it runs out of references.
+    result = std::shared_ptr<ProbeResult::CacheEntry>
+             (new ProbeResult::CacheEntry(ioc, std::move(arguments)),
+              [urlString = std::move(urlString)](ProbeResult::CacheEntry *cacheEntry) {
+        assert(urlResults.contains(urlString));
+        assert(urlResults.at(urlString).expired());
+        urlResults.erase(urlString);
+        delete cacheEntry;
+    });
+    weakResult = result;
+
     /* Figure out how to run ffprobe. */
     std::vector<std::string_view> args;
-    args.reserve(arguments.size() + 4);
+    args.reserve(result->arguments.size() + 4);
 
     // The source's input arguments.
-    for (std::string_view arg: arguments) {
+    for (std::string_view arg: result->arguments) {
         args.emplace_back(arg);
     }
 
@@ -134,37 +201,21 @@ Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_vie
         args.emplace_back(arg);
     }
 
-    /* Run ffprobe with a mutex for the URL. */
-    std::string ffprobeResult;
-    {
-        // Create a mutex to the URL, so we don't probe it in parallel.
-        std::string urlString(url);
-        std::weak_ptr<Mutex> &weakMutex = urlMutexes[urlString]; // The coordinating reference.
-        std::shared_ptr<Mutex> mutex = weakMutex.lock(); // Get the mutex if it exists.
-        if (!mutex) {
-            // Create the mutex if it doesn't, and share it with anything that wnats it next.
-            mutex = std::make_shared<Mutex>(ioc);
-            weakMutex = mutex;
-        }
-
-        // Make sure the mutex gets deleted if no one is using it once we're done.
-        Util::RaiiFn cleanup([&mutex, &weakMutex, &urlString]() {
-            mutex.reset();
-            if (weakMutex.expired()) {
-                urlMutexes.erase(urlString);
-            }
-        });
-
-        // Execute ffmpeg with the mutex locked.
-        Mutex::LockGuard lock = co_await mutex->lockGuard();
-        ffprobeResult = co_await Subprocess::getStdout(ioc, "ffprobe", args);
+    /* Execute ffprobe and parse to JSON. */
+    nlohmann::json j;
+    try {
+        j = Json::parse(co_await Subprocess::getStdout(ioc, "ffprobe", args));
+    }
+    catch (...) {
+        // Store the exception in the result so it can be rethrown when accessed.
+        result->exception = std::current_exception();
+        result->filledIn = true;
+        result->event.notifyAll(); // Alert everything else that's waiting on this result.
+        co_return ProbeResult(result);
     }
 
-    /* Parse to JSON. */
-    nlohmann::json j = Json::parse(ffprobeResult);
-
     /* Build the result. */
-    MediaInfo::SourceInfo result;
+    MediaInfo::SourceInfo &sourceInfo = result->result;
 
     // Parse through each stream looking for the best.
     bool foundDefaultVideo = false;
@@ -175,36 +226,57 @@ Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_vie
 
         if (type == "video") {
             // Prioritize which of multiple streams to use.
-            if (foundDefaultVideo || (result.video && !isDefault)) {
+            if (foundDefaultVideo || (sourceInfo.video && !isDefault)) {
                 continue;
             }
             foundDefaultVideo = isDefault;
 
             // Build the stream info object.
-            result.video = stream.get<MediaInfo::VideoStreamInfo>();
+            sourceInfo.video = stream.get<MediaInfo::VideoStreamInfo>();
         }
         else if (type == "audio") {
             // Prioritize which of multiple streams to use.
-            if (foundDefaultAudio || (result.audio && !isDefault)) {
+            if (foundDefaultAudio || (sourceInfo.audio && !isDefault)) {
                 continue;
             }
             foundDefaultAudio = isDefault;
 
             // Build the stream info object.
-            result.audio = stream.get<MediaInfo::AudioStreamInfo>();
+            sourceInfo.audio = stream.get<MediaInfo::AudioStreamInfo>();
         }
     }
 
     /* Done :) */
-    co_return result;
+    result->filledIn = true;
+    result->event.notifyAll(); // Alert everything else that's waiting on this result.
+    co_return ProbeResult(result);
 }
 
-Awaitable<MediaInfo::SourceInfo> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
-                                                 std::span<const std::string> arguments)
+Awaitable<Ffmpeg::ProbeResult> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
+                                               std::span<const std::string> arguments)
 {
-    std::vector<std::string_view> argumentViews(arguments.size());
+    return ffprobe(ioc, url, std::vector(arguments.begin(), arguments.end()));
+}
+
+Awaitable<Ffmpeg::ProbeResult> Ffmpeg::ffprobe(IOContext &ioc, std::string_view url,
+                                               std::span<const std::string_view> arguments)
+{
+    std::vector<std::string> argumentViews(arguments.size());
     for (size_t i = 0; i < arguments.size(); i++) {
         argumentViews[i] = arguments[i];
     }
-    co_return co_await ffprobe(ioc, url, argumentViews);
+    co_return co_await ffprobe(ioc, url, std::move(argumentViews));
+}
+
+Ffmpeg::ProbeResult::~ProbeResult() = default;
+
+Ffmpeg::ProbeResult &Ffmpeg::ProbeResult::operator=(const ProbeResult &) = default;
+Ffmpeg::ProbeResult &Ffmpeg::ProbeResult::operator=(ProbeResult &&) = default;
+
+Ffmpeg::ProbeResult::operator const MediaInfo::SourceInfo &() const
+{
+    if (cacheEntry->exception) {
+        std::rethrow_exception(cacheEntry->exception);
+    }
+    return cacheEntry->result;
 }
