@@ -107,7 +107,13 @@ export class AppCtx {
             return;
         }
 
-        this.portPollTimer = setInterval(this.probeSDIPorts, 5000);
+        void this.probeSDIPorts().then(() => {
+            if (this.portPollTimer != null) {
+                return;
+            }
+
+            this.portPollTimer = setInterval(this.probeSDIPorts, 5000);
+        });
     }
     stopPollingPorts() {
         if (this.portPollTimer == null) {
