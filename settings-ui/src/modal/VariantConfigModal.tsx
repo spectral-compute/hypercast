@@ -130,7 +130,8 @@ export default (props: VariantConfigModalProps) => {
                 selectedItem={stream.targetLatency}
                 items={[{
                     value: 1000,
-                    label: "1s"
+                    label: "1s",
+                    disabled: stream.video.width < 1280 || stream.video.height < 720
                 }, {
                     value: 2000,
                     label: "2s"

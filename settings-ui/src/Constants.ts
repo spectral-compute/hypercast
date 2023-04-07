@@ -107,7 +107,7 @@ export function defaultVariantConfig(w: number, h: number): StreamVariantConfig 
     return {
         audio: defaultAudioVariantConfig(),
         video: defaultVideoVariantConfig(w, h),
-        targetLatency: 1000,
+        targetLatency: (w < 1280 || h < 720) ? 2000 : 1000,
     };
 }
 
