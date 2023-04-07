@@ -1,11 +1,2 @@
 @use "../styles/variables" as *;
 @use "../styles/colors" as c;
-
-
-main {
-    & .content-width {
-        display: flex;
-        flex-direction: column;
-        gap: 1em;
-    }
-}
