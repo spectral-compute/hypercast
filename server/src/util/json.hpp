@@ -118,6 +118,19 @@ public:
     {
         (*this)(dst, key, false, values);
     }
+    template <typename T> requires(std::is_enum_v<T>)
+    void operator()(std::optional<T> &dst, const char *key, bool required, const std::initializer_list<IntName> &values)
+    {
+        std::optional<int> result = convertWithIntNameMap(key, required, values);
+        if (result) {
+            dst = (T)*result;
+        }
+    }
+    template <typename T> requires(std::is_enum_v<T>)
+    void operator()(std::optional<T> &dst, const char *key, const std::initializer_list<IntName> &values)
+    {
+        (*this)(dst, key, false, values);
+    }
 
     /**
      * Check the elements of the JSON object to make sure every element is in the set of valid keys.
