@@ -1,7 +1,6 @@
 import {Link, useLocation} from "react-router-dom";
 
 import "./Path.scss";
-import {Fragment} from "react";
 
 
 /*
@@ -37,12 +36,12 @@ export default function () {
 
     // Construct the path to the current location.
 
-    const path = sortedMatches.map((match, index) => {
+    const path = sortedMatches.map((match) => {
         const name = CONFIGURATION[match];
-        return <Fragment key={match}>
-            {index > 0 && <span className="separator">/</span>}
-            <Link className="path" to={match}>{name}</Link>
-        </Fragment>;
+        // Outer div is for styling -- otherwise `a::before` would be a part of the link.
+        return <div className="path" key={match}>
+            <Link to={match}>{name}</Link>
+        </div>;
     });
 
     return <nav className="path-container">{path}</nav>;

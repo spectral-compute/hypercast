@@ -11,12 +11,7 @@ nav.path-container {
     justify-items: flex-start;
     gap: $margin;
 
-    & > .separator {
-        color: c.$border;
-        font-size: 1.3em;
-    }
-
-    & > a {
+    & .path a {
         padding: $margin / 2 $margin;
 
         transition: text-decoration 0.2s;
@@ -26,11 +21,27 @@ nav.path-container {
         }
     }
 
-    & :last-child {
+    // Make the last link not look like a link because it's the current page
+    & :last-child a {
         color: c.$primary;
 
         &:hover {
             text-decoration: none;
         }
     }
+
+    // Add a separator between each path component
+    & :not(:first-child)::before {
+        content: "/";
+
+        padding-right: $margin;
+
+        text-decoration: none;
+        color: c.$border;
+
+        // Note:
+        // If the font size is changed, then the height of the nav will differ
+        // between Home and any other pages because of the separator presence on other pages.
+    }
+
 }
