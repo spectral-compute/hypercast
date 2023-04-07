@@ -13,10 +13,7 @@ import {
     DecklinkPort,
     defaultVariantConfig,
     fuzzyInputMatch,
-    RES_1080p,
-    RES_480p,
-    RES_4k,
-    RES_720p
+    RES_4k, RES_1080p, RES_720p, RES_360p,
 } from "../Constants";
 import VariantConfigModal from "./VariantConfigModal";
 import BoxBtn from "../components/BoxBtn";
@@ -193,10 +190,10 @@ export default observer((props: ChannelConfigModalProps) => {
                 onClick={() => toggleStreamExistence(...RES_720p)}
             ></BoxBtn>
             <BoxBtn
-                label="480p"
-                active={hasStreamWithResolution(channel, ...RES_480p) != null}
-                disabled={!inputIsAtLeast(appCtx, channel, ...RES_480p)}
-                onClick={() => toggleStreamExistence(...RES_480p)}
+                label="360p"
+                active={hasStreamWithResolution(channel, ...RES_360p) != null}
+                disabled={!inputIsAtLeast(appCtx, channel, ...RES_360p)}
+                onClick={() => toggleStreamExistence(...RES_360p)}
             ></BoxBtn>
         </div>
 
@@ -226,8 +223,8 @@ export default observer((props: ChannelConfigModalProps) => {
             </BoxBtn>
             <BoxBtn
                 label=""
-                visible={hasStreamWithResolution(channel, ...RES_480p) != null}
-                onClick={() => openSettingsFor(...RES_480p)}
+                visible={hasStreamWithResolution(channel, ...RES_360p) != null}
+                onClick={() => openSettingsFor(...RES_360p)}
             >
                 <Cog/>
             </BoxBtn>
