@@ -4,7 +4,6 @@ import {AudioCodec, AudioVariant, Channel, FrameRate, FrameRateCfg, StreamVarian
 import PortStatus from "./PortStatus";
 import {useContext} from "react";
 import {AppContext} from "./index";
-import {ReactComponent as VideoIcon} from "./assets/icons/image.svg";
 import {ReactComponent as AudioIcon} from "./assets/icons/volume-2.svg";
 import {ReactComponent as NoAudioIcon} from "./assets/icons/volume-x.svg";
 import {ReactComponent as LatencyIcon} from "./assets/icons/clock.svg";
@@ -20,7 +19,7 @@ export interface StreamBoxProps {
     onClick: () => void;
 }
 
-function prettyPrintResolution(w: number, h: number) {
+export function prettyPrintResolution(w: number, h: number) {
     // if (w == 3840 && h == 2160) {
     //     return "4k";
     // } else if (w == 1920 && h == 1080) {
@@ -34,7 +33,7 @@ function prettyPrintResolution(w: number, h: number) {
     // } else if (w == 192 && h == 144) {
     //     return "144p";
     // } else {
-        return w + "x" + h;
+        return w + "\nx\n" + h;
     // }
 }
 
@@ -77,7 +76,6 @@ function renderVariant(variantCfg: StreamVariantConfig, key: number) {
     return <div key={key} className="channelInfoBox">
         <div className="variantInfoRow">
             <BoxBtn label={prettyPrintResolution(videoCfg.width, videoCfg.height)} size={5}>
-                <VideoIcon/>
             </BoxBtn>
             <BoxBtn label={prettyPrintFramerate(videoCfg.frameRate)} size={5}>
                 <FrameRateIcon/>

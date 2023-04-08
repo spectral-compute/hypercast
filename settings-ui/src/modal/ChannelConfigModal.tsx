@@ -21,6 +21,7 @@ import BoxRadioGroup from '../components/BoxRadioGroup';
 import {fuzzyApply} from "../Fuzzify";
 import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
 import {InputPortStatus} from "../App";
+import { prettyPrintResolution } from '../StreamBox';
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
@@ -176,25 +177,25 @@ export default observer((props: ChannelConfigModalProps) => {
             </div>
 
             <BoxBtn
-                label="4k"
+                label={prettyPrintResolution(...RES_4k)}
                 active={hasStreamWithResolution(channel, ...RES_4k) != null}
                 disabled={!inputIsAtLeast(appCtx, channel, ...RES_4k)}
                 onClick={() => toggleStreamExistence(...RES_4k)}
             ></BoxBtn>
             <BoxBtn
-                label="1080p"
+                label={prettyPrintResolution(...RES_1080p)}
                 active={hasStreamWithResolution(channel, ...RES_1080p) != null}
                 disabled={!inputIsAtLeast(appCtx, channel, ...RES_1080p)}
                 onClick={() => toggleStreamExistence(...RES_1080p)}
             ></BoxBtn>
             <BoxBtn
-                label="720p"
+                label={prettyPrintResolution(...RES_720p)}
                 active={hasStreamWithResolution(channel, ...RES_720p) != null}
                 disabled={!inputIsAtLeast(appCtx, channel, ...RES_720p)}
                 onClick={() => toggleStreamExistence(...RES_720p)}
             ></BoxBtn>
             <BoxBtn
-                label="360p"
+                label={prettyPrintResolution(...RES_360p)}
                 active={hasStreamWithResolution(channel, ...RES_360p) != null}
                 disabled={!inputIsAtLeast(appCtx, channel, ...RES_360p)}
                 onClick={() => toggleStreamExistence(...RES_360p)}

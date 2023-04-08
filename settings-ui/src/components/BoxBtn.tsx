@@ -48,7 +48,7 @@ function BoxBtn(p: BoxBtnProps) {
         onClick={props.onClick}
     >
         {props.children ? props.children : null}
-        <span className="boxBtnLabel">{props.label}</span>
+        <p className="boxBtnLabel">{props.label}</p>
     </div>;
 }
 
