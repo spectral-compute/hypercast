@@ -64,14 +64,14 @@ export function fuzzyApply<T>(x: T, fuzz: RecursivePartial<T>) {
     const keys = Object.keys(fuzz) as (keyof T)[];
     for (const k of keys) {
         const v = fuzz[k]! as T[typeof k];
-        if (typeof v == "object") {
+        if (Array.isArray(v) || typeof v != "object") {
+            x[k] = v;
+        } else if (typeof v == "object") {
             if (typeof x[k] != "object") {
                 x[k] = v;
             } else {
                 x[k] = fuzzyApply(x[k], v);
             }
-        } else if (v != x[k]) {
-            x[k] = v;
         }
     }
 
