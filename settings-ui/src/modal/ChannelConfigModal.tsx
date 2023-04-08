@@ -20,7 +20,7 @@ import BoxBtn from "../components/BoxBtn";
 import BoxRadioGroup from '../components/BoxRadioGroup';
 import {fuzzyApply} from "../Fuzzify";
 import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
-import {getPortStatus, InputPortStatus} from "../App";
+import {InputPortStatus} from "../App";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
@@ -151,7 +151,7 @@ export default observer((props: ChannelConfigModalProps) => {
                 items={
                     Object.keys(DECKLINK_PORT_SETTINGS).map((i) => {
                         const k = i as DecklinkPort;
-                        const status = getPortStatus(appCtx, k);
+                        const status = appCtx.getPortStatus(k);
                         let disabled = status != InputPortStatus.AVAILABLE && status != props.channelName;
 
                         return {

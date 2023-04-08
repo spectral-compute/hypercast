@@ -2,7 +2,7 @@ import {ReactComponent as SDI} from "./assets/SDI.svg";
 import {PortDescriptor} from "./api/Hardware";
 import './PortStatus.sass';
 import {DecklinkPort} from "./Constants";
-import {getPortStatus, InputPortStatus} from "./App";
+import {InputPortStatus} from "./App";
 import {useContext} from "react";
 import {AppContext} from "./index";
 
@@ -15,7 +15,7 @@ export interface PortStatusProps {
 
 function PortStatus(p: PortStatusProps) {
     const appCtx = useContext(AppContext);
-    const status = getPortStatus(appCtx, p.port);
+    const status = appCtx.getPortStatus(p.port);
     const props = {
         size: 3,
         ...p

@@ -3,6 +3,8 @@ import {MachineInfo, PortConnector} from "./api/Hardware";
 import {StreamingConfig} from "./api/Config";
 import {DecklinkPort, DECKLINK_PORTS_ORDERED, DECKLINK_PORT_SETTINGS } from "./Constants";
 import {makeObservable, observable} from "mobx";
+import {InputPortStatus} from "./App";
+import {fuzzyMatch, FuzzyMatchResult} from "./Fuzzify";
 
 
 
@@ -37,23 +39,40 @@ export class AppCtx {
     };
 
     // Find the lowest-numbered input port with something plugged into it and not in use.
-    getAvailableInputPort(): DecklinkPort | null {
-        for (const [k, v] of Object.entries(this.machineInfo.inputPorts)) {
-            // Exclude disconnected ports.
-            if (!v.connectedMediaInfo) {
-                continue;
-            }
-
-            // Exclude ports that are in use.
-            if (v.connectedMediaInfo.inUse) {
-                continue;
-            }
-
-            // Done :)
-            return k as DecklinkPort;
+    getAvailableInputPort(): DecklinkPort | undefined {
+        const ps = this.findUnusedPorts();
+        if (ps.length > 0) {
+            return ps[0];
         }
 
-        return null;
+        return undefined;
+    }
+
+    getPortStatus(k: DecklinkPort): InputPortStatus | string {
+        const p = this.machineInfo.inputPorts[k]!;
+
+        if (p!.connectedMediaInfo == null) {
+            return InputPortStatus.DISCONNECTED;
+        }
+
+        for (const [k2, c] of Object.entries(this.loadedConfiguration.channels)) {
+            if (fuzzyMatch(c, DECKLINK_PORT_SETTINGS[k]) == FuzzyMatchResult.MATCH) {
+                return k2;
+            }
+        }
+
+        return InputPortStatus.AVAILABLE;
+    }
+
+    findUnusedPorts(): DecklinkPort[] {
+        let out = [];
+        for (const p of DECKLINK_PORTS_ORDERED) {
+            if (this.getPortStatus(p) == InputPortStatus.AVAILABLE) {
+                out.push(p);
+            }
+        }
+
+        return out as DecklinkPort[];
     }
 
     loadConfig = async() => {
