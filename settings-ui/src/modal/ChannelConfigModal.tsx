@@ -101,6 +101,10 @@ export default observer((props: ChannelConfigModalProps) => {
 
     // Such hacks, very wow.
     const saveFn = () => {
+        if (channel.qualities.length == 0) {
+            return;
+        }
+
         props.onSave(props.channelName, channel);
         props.onClose();
     };
