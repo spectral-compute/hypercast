@@ -5,24 +5,7 @@ import {AppDebugHandler} from "./debug";
 const infoUrl = process.env["INFO_URL"]!;
 
 /* Set an error handler for the video element. */
-const video = document.getElementById("video")! as HTMLVideoElement;
-video.addEventListener("error", (): void => {
-    document.getElementById("change")!.innerText = "Video error: " + video.error!.message;
-});
-
-/* Attach secondary view. */
-const secondaryVideo = document.getElementById("secondaryVideo") as HTMLVideoElement;
-if (process.env["SECONDARY_VIDEO"]) {
-    video.addEventListener("loadedmetadata", (): void => {
-        secondaryVideo.muted = true;
-        /* eslint "@typescript-eslint/no-unsafe-assignment": "off", "@typescript-eslint/no-unsafe-member-access": "off",
-                  "@typescript-eslint/no-unsafe-call": "off" */
-        secondaryVideo.srcObject = (video as any).captureStream(); // Capture stream isn't in TypeScript's types.
-        void secondaryVideo.play();
-    });
-} else {
-    secondaryVideo.hidden = true;
-}
+const video = document.getElementById("video")! as HTMLDivElement;
 
 /* Create the player. */
 const player = new Player(infoUrl, video);

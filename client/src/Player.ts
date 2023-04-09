@@ -10,10 +10,9 @@ export class Player {
     /**
      * @param infoUrl The URL to the server's info JSON object. If set to null, the URL is obtained from the streaminfo
      *                GET parameter.
-     * @param video The video tag to play video into.
+     * @param container The div tag to put a video tag into to play video into.
      */
-    constructor(infoUrl: string | null, video: HTMLVideoElement)
-    {
+    constructor(infoUrl: string | null, container: HTMLDivElement) {
         // Get the URL from the streaminfo GET parameter if no info URL is given.
         if (infoUrl === null) {
             infoUrl = (new URLSearchParams(window.location.search)).get("streaminfo");
@@ -24,7 +23,7 @@ export class Player {
 
         // Set properties :)
         this.infoUrl = infoUrl;
-        this.video = video;
+        this.video = container.appendChild(document.createElement("video"));
     }
 
     /**
