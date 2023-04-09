@@ -105,6 +105,7 @@ static void to_json(nlohmann::json &j, const AudioQuality &in)
 /// @ingroup configuration_implementation
 static void to_json(nlohmann::json &j, const ClientBufferControl &in)
 {
+    j["minBuffer"] = *in.minBuffer;
     j["extraBuffer"] = *in.extraBuffer;
     j["initialBuffer"] = *in.initialBuffer;
     j["seekBuffer"] = *in.seekBuffer;

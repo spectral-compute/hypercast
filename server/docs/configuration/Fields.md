@@ -238,10 +238,20 @@ The timestamps are used for buffer control.
 
 | Field             | Type    | Description                                                                       |
 |-------------------|---------|-----------------------------------------------------------------------------------|
+| `minBuffer`       | Integer | Minimum buffer to allocate, even if this is more than the observed requirement.   |
 | `extraBuffer`     | Integer | Extra buffer above the maximum observed when seeking.                             |
 | `initialBuffer`   | Integer | The size of the target buffer when a stream is first played, in ms.               |
 | `seekBuffer`      | Integer | The buffer to keep when seeking to the live edge, in ms.                          |
 | `minimumInitTime` | Integer | The minimum time to wait before doing the initial seek to get the stream playing. |
+
+
+##### `channels.qualities.clientBufferControl.minBuffer`
+
+This parameter accounts for the various sources of jitter. By default, this is set to cope with the expected sources of
+jitter and the extra buffer. Increasing this parameter makes playback smoother at the expense of latency.
+
+This parameter does not apply before the buffer history is built, when
+`channels.qualities.clientBufferControl.initialBuffer` parameter applies instead.
 
 
 ##### `channels.qualities.clientBufferControl.extraBuffer`

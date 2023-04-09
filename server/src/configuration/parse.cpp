@@ -166,6 +166,7 @@ static void from_json(const nlohmann::json &j, AudioQuality &out)
 static void from_json(const nlohmann::json &j, ClientBufferControl &out)
 {
     Json::ObjectDeserializer d(j, "qualities.clientBufferControl");
+    d(out.minBuffer, "minBuffer");
     d(out.extraBuffer, "extraBuffer");
     d(out.initialBuffer, "initialBuffer");
     d(out.seekBuffer, "seekBuffer");

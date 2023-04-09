@@ -6,6 +6,7 @@ export namespace API {
      * Buffer control information.
      */
     export interface BufferControl {
+        minBuffer: number // The minimum client-side buffer to use.
         extraBuffer: number // Extra buffer, on top of the theoretical minimum measured, in ms.
         initialBuffer: number // The initial target buffer, before any history has been built, in ms.
         seekBuffer: number // The buffer to keep when seeking to the live edge, in ms.

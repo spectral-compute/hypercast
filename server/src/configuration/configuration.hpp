@@ -138,6 +138,7 @@ struct AudioQuality final
  */
 struct ClientBufferControl final
 {
+    std::optional<unsigned int> minBuffer;
     std::optional<unsigned int> extraBuffer;
     std::optional<unsigned int> initialBuffer;
     std::optional<unsigned int> seekBuffer;

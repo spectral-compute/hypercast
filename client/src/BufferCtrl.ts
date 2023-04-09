@@ -211,10 +211,13 @@ export class BufferControl {
             this.maxBuffer = Math.max(this.maxBuffer,
                                       Math.max(this.timestampAutoMinTarget,
                                                this.serverParams.seekBuffer + this.serverParams.extraBuffer));
+            this.maxBuffer = Math.max(this.maxBuffer, this.serverParams.minBuffer);
         }
 
         /* If the above algorithm is asking for this much buffer, then probably the network can't cope. */
-        if (this.maxBuffer >= this.timestampAutoBufferDowngrade && !this.waitingForNewStream) {
+        if (this.maxBuffer >= this.timestampAutoBufferDowngrade + this.serverParams.minBuffer &&
+                              !this.waitingForNewStream)
+        {
             this.waitingForNewStream = true;
             this.onRecommendDowngrade();
         }
@@ -310,6 +313,7 @@ export class BufferControl {
 
     // Settings.
     private serverParams: API.BufferControl = {
+        minBuffer: 0,
         extraBuffer: 180, // 3x maximum opus frame size.
         initialBuffer: 1000,
         seekBuffer: 0,

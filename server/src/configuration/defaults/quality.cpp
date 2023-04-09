@@ -34,6 +34,24 @@ double getVideoRateLatencyContribution(double videoRate, const Quality &q, const
     return config.network.transitBufferSize / (videoRate + getAudioRate(q.audio));
 }
 
+} // namespace Config
+
+namespace
+{
+
+double getVideoRateJitter(Config::Quality &q, const Config::Root &config)
+{
+    double minVideoRateLatency = getVideoRateLatencyContribution(*q.video.minBitrate * 125, q, config);
+    double maxVideoRateLatency = getVideoRateLatencyContribution(*q.video.bitrate * 125, q, config);
+    assert(maxVideoRateLatency < minVideoRateLatency);
+    return minVideoRateLatency - maxVideoRateLatency;
+}
+
+} // namespace
+
+namespace Config
+{
+
 /**
  * Fill in a quality.
  */
@@ -54,7 +72,15 @@ void fillInQuality(Config::Quality &q, const Root &config, const Channel &channe
     assert(q.video.rateControlBufferLength);
     assert(q.clientBufferControl.extraBuffer);
 
-    /* Calculate the interleave window so we know some statistical properties of the minimum interleave rate. */
+    /* Calculate the client's minimum buffer (not part of the allocation above, but containing part of it on the
+       client's side). */
+    // Figure out how much jitter we expect the client to see.
+    unsigned int expectedClientSideJitter = (unsigned int)std::round(
+        getVideoRateJitter(q, config) * 1000 + // CDN jitter from varying bitrate.
+        *q.video.rateControlBufferLength + // Encoder might emit all of this at once.
+        config.network.transitJitter); // Intrinsic network jitter.
+
+    /* Calculate the interleave window, so we know some statistical properties of the minimum interleave rate. */
     if (!q.minInterleaveWindow) {
         q.minInterleaveWindow = std::min(*q.video.rateControlBufferLength / 2, 250u);
     }
@@ -66,16 +92,20 @@ void fillInQuality(Config::Quality &q, const Root &config, const Channel &channe
                                                          *q.minInterleaveWindow * 4);
     }
 
+    // The extra buffer margin should apply to the minimum too.
+    unsigned int expectedClientSideJitterBuffer = expectedClientSideJitter + *q.clientBufferControl.extraBuffer;
+    assert(expectedClientSideJitterBuffer + config.network.transitLatency + *channel.source.latency <= q.targetLatency);
+
+    // Set the minimum buffer based on the expected jitter.
+    if (!q.clientBufferControl.minBuffer) {
+        // This doesn't need to include the interleave window because that's accounted for when calculating the minimum
+        // interleave rate.
+        q.clientBufferControl.minBuffer = expectedClientSideJitterBuffer;
+    }
+
     // Set the initial buffer based on the expected jitter.
     if (!q.clientBufferControl.initialBuffer) {
-        // Get the latencies for the minimum bitrate and maximum bitrate.
-        double minVideoRateLatency = getVideoRateLatencyContribution(*q.video.minBitrate * 125, q, config);
-        double maxVideoRateLatency = getVideoRateLatencyContribution(*q.video.bitrate * 125, q, config);
-        assert(maxVideoRateLatency < minVideoRateLatency);
-
-        // Set the seek buffer based on this implied jitter.
-        q.clientBufferControl.initialBuffer =
-            config.network.transitJitter + std::round((minVideoRateLatency - maxVideoRateLatency) * 1000.0);
+        q.clientBufferControl.initialBuffer = expectedClientSideJitterBuffer;
     }
 
     // By default, set the seek buffer to the extra buffer. This is the one part that doesn't try to fully account for
@@ -83,13 +113,15 @@ void fillInQuality(Config::Quality &q, const Root &config, const Channel &channe
     // TODO: For that, I guess we probably want to make the client keep an estimate of where the leading edge actually
     //       is (ignoring minimum latency).
     if (!q.clientBufferControl.seekBuffer) {
-        q.clientBufferControl.seekBuffer = *q.clientBufferControl.extraBuffer;
+        q.clientBufferControl.seekBuffer =
+            (unsigned int)std::max<int>((int)*q.clientBufferControl.minBuffer - (int)expectedClientSideJitter,
+                                        *q.clientBufferControl.extraBuffer);
     }
 
     /* Calculate a minimum interleave rate. */
     if (!q.minInterleaveRate) {
         double interleaveRateLatency =
-            (q.targetLatency - *q.minInterleaveWindow - *q.clientBufferControl.extraBuffer) / 1000.0 -
+            ((double)q.targetLatency - *q.minInterleaveWindow - *q.clientBufferControl.extraBuffer) / 1000.0 -
             getExplicitLatencySources(config, channel);
         assert(interleaveRateLatency > 0.0);
 

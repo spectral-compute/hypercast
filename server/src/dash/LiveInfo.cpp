@@ -64,6 +64,7 @@ nlohmann::json getVideoConfig(const Config::Quality &q)
         {
             "bufferCtrl",
             {
+                { "minBuffer", *q.clientBufferControl.minBuffer },
                 { "extraBuffer", *q.clientBufferControl.extraBuffer },
                 { "initialBuffer", *q.clientBufferControl.initialBuffer },
                 { "seekBuffer", *q.clientBufferControl.seekBuffer },
