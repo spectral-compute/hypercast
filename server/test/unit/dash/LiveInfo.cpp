@@ -25,6 +25,7 @@ TEST(DashLiveInfo, Simple)
                     .sampleRate = 48000
                 },
                 .clientBufferControl = {
+                    .minBuffer = 500,
                     .extraBuffer = 180,
                     .initialBuffer = 1000,
                     .seekBuffer = 250,
@@ -36,8 +37,9 @@ TEST(DashLiveInfo, Simple)
     EXPECT_EQ("{\"angles\":[{\"name\":\"Main\",\"path\":\"/live/test\"}],"
               "\"audioConfigs\":[{\"bitrate\":64,\"codec\":\"aac\"}],\"avMap\":[[0,1]],\"segmentDuration\":15000,"
               "\"segmentPreavailability\":4000,\"videoConfigs\":[{\"bitrate\":2048,"
-              "\"bufferCtrl\":{\"extraBuffer\":180,\"initialBuffer\":1000,\"minimumInitTime\":2000,\"seekBuffer\":250},"
-              "\"codec\":\"h264\",\"height\":1080,\"width\":1920}]}", infoJson);
+              "\"bufferCtrl\":{\"extraBuffer\":180,\"initialBuffer\":1000,\"minBuffer\":500,"
+                              "\"minimumInitTime\":2000,"
+              "\"seekBuffer\":250},\"codec\":\"h264\",\"height\":1080,\"width\":1920}]}", infoJson);
 }
 
 TEST(DashLiveInfo, Complex)
@@ -54,6 +56,7 @@ TEST(DashLiveInfo, Complex)
                     .sampleRate = 48000
                 },
                 .clientBufferControl = {
+                    .minBuffer = 500,
                     .extraBuffer = 180,
                     .initialBuffer = 1000,
                     .seekBuffer = 250,
@@ -67,6 +70,7 @@ TEST(DashLiveInfo, Complex)
                     .bitrate = 1024
                 },
                 .clientBufferControl = {
+                    .minBuffer = 1000,
                     .extraBuffer = 360,
                     .initialBuffer = 2000,
                     .seekBuffer = 500,
@@ -83,6 +87,7 @@ TEST(DashLiveInfo, Complex)
                     .sampleRate = 48000
                 },
                 .clientBufferControl = {
+                    .minBuffer = 2000,
                     .extraBuffer = 500,
                     .initialBuffer = 2000,
                     .seekBuffer = 500,
@@ -94,10 +99,16 @@ TEST(DashLiveInfo, Complex)
     EXPECT_EQ("{\"angles\":[{\"name\":\"Main\",\"path\":\"/live/test\"}],"
               "\"audioConfigs\":[{\"bitrate\":64,\"codec\":\"aac\"},{\"bitrate\":64,\"codec\":\"aac\"}],"
               "\"avMap\":[[0,3],[1,null],[2,4]],\"segmentDuration\":15000,\"segmentPreavailability\":4000,"
-              "\"videoConfigs\":[{\"bitrate\":2048,\"bufferCtrl\":{\"extraBuffer\":180,\"initialBuffer\":1000,"
-              "\"minimumInitTime\":2000,\"seekBuffer\":250},\"codec\":\"h264\",\"height\":1080,\"width\":1920},"
-              "{\"bitrate\":1024,\"bufferCtrl\":{\"extraBuffer\":360,\"initialBuffer\":2000,\"minimumInitTime\":4000,"
-              "\"seekBuffer\":500},\"codec\":\"h264\",\"height\":720,\"width\":1280},"
-              "{\"bitrate\":512,\"bufferCtrl\":{\"extraBuffer\":500,\"initialBuffer\":2000,\"minimumInitTime\":4000,"
-              "\"seekBuffer\":500},\"codec\":\"h264\",\"height\":360,\"width\":640}]}", infoJson);
+              "\"videoConfigs\":[{\"bitrate\":2048,"
+                                 "\"bufferCtrl\":{\"extraBuffer\":180,\"initialBuffer\":1000,\"minBuffer\":500,"
+                                                 "\"minimumInitTime\":2000,\"seekBuffer\":250},"
+                                 "\"codec\":\"h264\",\"height\":1080,\"width\":1920},"
+                                "{\"bitrate\":1024,"
+                                 "\"bufferCtrl\":{\"extraBuffer\":360,\"initialBuffer\":2000,\"minBuffer\":1000,"
+                                                 "\"minimumInitTime\":4000,\"seekBuffer\":500},"
+                                 "\"codec\":\"h264\",\"height\":720,\"width\":1280},"
+                                "{\"bitrate\":512,"
+                                 "\"bufferCtrl\":{\"extraBuffer\":500,\"initialBuffer\":2000,\"minBuffer\":2000,"
+                                                 "\"minimumInitTime\":4000,\"seekBuffer\":500},"
+                                 "\"codec\":\"h264\",\"height\":360,\"width\":640}]}", infoJson);
 }

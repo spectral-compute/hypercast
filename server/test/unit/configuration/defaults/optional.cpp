@@ -114,6 +114,7 @@ CORO_TEST(ConfigDefaults, Optional, ioc)
 
     checker(q.audio.sampleRate, "sampleRate", false); // Actually optional, but this test case sets it anyway.
 
+    checker(q.clientBufferControl.minBuffer, "minBuffer");
     checker(q.clientBufferControl.extraBuffer, "extraBuffer");
     checker(q.clientBufferControl.initialBuffer, "initialBuffer");
     checker(q.clientBufferControl.seekBuffer, "seekBuffer");
