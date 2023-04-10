@@ -1,4 +1,4 @@
-import {Player} from "./Main";
+import {Player} from "./Player";
 import {DebugHandler} from "./Debug";
 
 type ControlsType = "native" | "js";
@@ -56,10 +56,10 @@ export default async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(sourceURL, video, process.env.NODE_ENV === "development");
+    const player = new Player(sourceURL, video, process.env["NODE_ENV"] === "development");
 
     /* Performance/debug event handling. */
-    if (process.env.NODE_ENV === "development" && options.debugHandler) {
+    if (process.env["NODE_ENV"] === "development" && options.debugHandler) {
         player.setDebugHandler(options.debugHandler);
     }
 

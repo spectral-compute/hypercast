@@ -36,7 +36,7 @@ export class BufferControl {
         this.mediaElement = mediaElement;
         this.onRecommendDowngrade = onRecommendDowngrade;
         this.verbose = verbose;
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
             this.setDebugHandler(debugHandler);
         }
     }
