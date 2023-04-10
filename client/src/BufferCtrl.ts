@@ -36,9 +36,7 @@ export class BufferControl {
         this.mediaElement = mediaElement;
         this.onRecommendDowngrade = onRecommendDowngrade;
         this.verbose = verbose;
-        if (process.env["NODE_ENV"] === "development") {
-            this.setDebugHandler(debugHandler);
-        }
+        this.setDebugHandler(debugHandler);
     }
 
     /**
@@ -87,12 +85,10 @@ export class BufferControl {
      * Set the handler to receive the performance and debugging information about the buffer.
      */
     setDebugHandler(debugHandler: DebugHandler | null): void {
-        if (process.env["NODE_ENV"] === "development") {
-            if (debugHandler !== null) {
-                debugHandler.setBufferControl(this);
-            }
-            this.debugHandler = debugHandler;
+        if (debugHandler !== null) {
+            debugHandler.setBufferControl(this);
         }
+        this.debugHandler = debugHandler;
     }
 
     /**
@@ -107,10 +103,8 @@ export class BufferControl {
         this.timestampInfos = (sliceStart < 0) ? [] : this.timestampInfos.slice(sliceStart, this.timestampInfos.length);
         this.timestampInfos.push(timestampInfo);
 
-        if (process.env["NODE_ENV"] === "development") {
-            if (this.debugHandler !== null) {
-                this.debugHandler.onTimestamp(timestampInfo);
-            }
+        if (this.debugHandler !== null) {
+            this.debugHandler.onTimestamp(timestampInfo);
         }
     }
 
@@ -120,10 +114,8 @@ export class BufferControl {
      * @param receivedInfo Information about the received data.
      */
     onRecieved(receivedInfo: ReceivedInfo): void {
-        if (process.env["NODE_ENV"] === "development") {
-            if (this.debugHandler !== null) {
-                this.debugHandler.onReceived(receivedInfo);
-            }
+        if (this.debugHandler !== null) {
+            this.debugHandler.onReceived(receivedInfo);
         }
     }
 
@@ -300,9 +292,6 @@ export class BufferControl {
     }
 
     private debugBufferControlTick(tickInfo: BufferControlTickInfo): void {
-        if (process.env["NODE_ENV"] !== "development") {
-            return;
-        }
         if (this.debugHandler === null) {
             return;
         }
