@@ -11,10 +11,11 @@ Server::PutResource::~PutResource() = default;
 
 Awaitable<void> Server::PutResource::getAsync(Response &response, Request &)
 {
-    response.setCacheKind(cacheKind);
     if (!hasBeenPut) {
+        response.setCacheKind(CacheKind::ephemeral); // Presumably, this is expected to appear in the next few seconds.
         throw Error(ErrorKind::NotFound, "PUT resource was GET'd before being PUT");
     }
+    response.setCacheKind(cacheKind);
     response << data;
     co_return;
 }

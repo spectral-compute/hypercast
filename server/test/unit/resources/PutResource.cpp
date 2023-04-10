@@ -39,7 +39,8 @@ CORO_TEST(PutResource, NotFound, ioc)
 {
     Server::PutResource resource;
     TestRequest request(Server::Request::Type::get, "", true);
-    co_await testResourceError(resource, request, "PUT resource was GET'd before being PUT", Server::ErrorKind::NotFound);
+    co_await testResourceError(resource, request, "PUT resource was GET'd before being PUT",
+                               Server::ErrorKind::NotFound, Server::CacheKind::ephemeral);
 }
 
 CORO_TEST(PutResource, Rewrite, ioc)
