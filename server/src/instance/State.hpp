@@ -1,7 +1,7 @@
 #pragma once
 
-#include "HttpServer.hpp"
 #include "configuration/configuration.hpp"
+#include "server/HttpServer.hpp"
 #include "util/Mutex.hpp"
 
 #include <map>
@@ -14,7 +14,19 @@ struct SourceInfo;
 
 } // namespace MediaInfo
 
-namespace Server {
+/**
+ * @defgroup state State
+ *
+ * Stuff that is global to an instance of the video streaming server.
+ */
+/// @addtogroup state
+/// @{
+
+/**
+ * Stuff that is global to an instance of the video streaming server.
+ */
+namespace Instance
+{
 
 /**
  * An exception that's thrown by State::applyConfiguration if the configuration modification can't be applied.
@@ -26,7 +38,7 @@ public:
 };
 
 /// A place to keep the server's per-instance state.
-struct State final
+class State final
 {
 public:
     ~State();
@@ -34,7 +46,7 @@ public:
     /**
      * Get the server that this object is the associated state for.
      */
-    Server &getServer()
+    Server::Server &getServer()
     {
         return server;
     }
@@ -75,7 +87,7 @@ private:
 
     std::unique_ptr<Log::Log> log;
 
-    HttpServer server;
+    Server::HttpServer server;
 
     /**
      * The state for the channel that's streaming.
@@ -116,5 +128,6 @@ public:
     Awaitable<void> applyConfiguration(Config::Root newCfg);
 };
 
+} // namespace Instance
 
-} // namespace Server
+/// @}

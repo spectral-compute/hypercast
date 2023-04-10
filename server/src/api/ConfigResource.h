@@ -1,9 +1,15 @@
 #pragma once
 
 #include "server/Resource.hpp"
-#include "server/ServerState.h"
 
 #include <filesystem>
+
+namespace Instance
+{
+
+class State;
+
+} // namespace Instance
 
 /**
  * @defgroup api API
@@ -24,7 +30,7 @@ class ConfigResource final : public Server::Resource
 {
 public:
     ~ConfigResource() override;
-    ConfigResource(Server::State &state, const std::filesystem::path &configPath) :
+    ConfigResource(Instance::State &state, const std::filesystem::path &configPath) :
         Resource(false), serverState(state), configPath(configPath)
     {
     }
@@ -35,7 +41,7 @@ public:
     size_t getMaxPutRequestLength() const noexcept override;
 
 private:
-    Server::State &serverState;
+    Instance::State &serverState;
     const std::filesystem::path &configPath;
 };
 

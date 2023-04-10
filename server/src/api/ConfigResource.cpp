@@ -1,8 +1,9 @@
 #include "ConfigResource.h"
 
+#include "configuration/configuration.hpp"
+#include "instance/State.hpp"
 #include "server/Request.hpp"
 #include "server/Response.hpp"
-#include "server/ServerState.h"
 #include "util/asio.hpp"
 #include "util/File.hpp"
 
@@ -27,7 +28,7 @@ Awaitable<void> Api::ConfigResource::putAsync(Server::Response &response, Server
     catch (const Config::ParseException &e) {
         throw Server::Error(Server::ErrorKind::BadRequest, e.what());
     }
-    catch (const Server::BadConfigurationReplacementException &e) {
+    catch (const Instance::BadConfigurationReplacementException &e) {
         throw Server::Error(Server::ErrorKind::BadRequest, e.what());
     }
 

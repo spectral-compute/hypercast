@@ -3,13 +3,13 @@
 #include "api/ProbeResource.hpp"
 #include "configuration/configuration.hpp"
 #include "configuration/defaults.hpp"
+#include "instance/State.hpp"
 #include "log/FileLog.hpp"
 #include "log/MemoryLog.hpp"
 #include "server/HttpServer.hpp"
 #include "server/Path.hpp"
 #include "util/Event.hpp"
 #include "util/util.hpp"
-#include "server/ServerState.h"
 
 #include <stdexcept>
 
@@ -41,7 +41,7 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     // Load and populate a config object.
     Config::Root config = loadConfig(configPath);
 
-    Server::State st{config, ioc};
+    Instance::State st{config, ioc};
 
     /* Create global resources for the API. */
     st.getServer().addResource<Api::ConfigResource>("api/config", st, configPath);

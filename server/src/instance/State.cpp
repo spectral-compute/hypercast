@@ -1,4 +1,4 @@
-#include "ServerState.h"
+#include "State.hpp"
 #include "ffmpeg/Arguments.hpp"
 #include "ffmpeg/ffprobe.hpp"
 #include "ffmpeg/Process.hpp"
@@ -42,13 +42,13 @@ void addFilesystemPathsToServer(Server::Server &server, const std::map<std::stri
 /**
  * Represents state for a single channel.
  */
-struct Server::State::Channel final
+struct Instance::State::Channel final
 {
     /**
      * Start streaming.
      */
     explicit Channel(IOContext &ioc, Log::Log &log, const Config::Root &config, const Config::Channel &channelConfig,
-                     const std::string &basePath, Server &server) :
+                     const std::string &basePath, Server::Server &server) :
         dash(ioc, log, channelConfig, config.http, basePath, server),
         ffmpeg(ioc, log, Ffmpeg::Arguments(channelConfig, config.network, (std::string)dash.getUidPath()))
     {
@@ -65,13 +65,10 @@ struct Server::State::Channel final
     Ffmpeg::Process ffmpeg;
 };
 
-Server::State::~State() = default;
+Instance::State::~State() = default;
 
 /// Perform initial setup/configuration.
-Server::State::State(
-    const Config::Root& initialCfg,
-    IOContext& ioc
-):
+Instance::State::State(const Config::Root &initialCfg, IOContext &ioc) :
     ioc(ioc),
     requestedConfig(initialCfg),
     mutex(ioc),
@@ -81,7 +78,8 @@ Server::State::State(
 }
 
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
-void Server::State::configCannotChange(bool itChanged, const std::string& name) const {
+void Instance::State::configCannotChange(bool itChanged, const std::string &name) const
+{
     if (!performingStartup && itChanged) {
         throw BadConfigurationReplacementException("This configuration field cannot be changed at runtime: " + name);
     }
@@ -90,7 +88,8 @@ void Server::State::configCannotChange(bool itChanged, const std::string& name) 
 /// Change the settings. Add as much clever incremental reconfiguration logic here as you like.
 /// Various options are re-read every time they're used and don't require explicit reconfiguration,
 /// so they don't appear specifically within this function.
-Awaitable<void> Server::State::applyConfiguration(Config::Root newCfg) {
+Awaitable<void> Instance::State::applyConfiguration(Config::Root newCfg)
+{
     Mutex::LockGuard lock = co_await mutex.lockGuard();
 
     // Fill in the blanks...
