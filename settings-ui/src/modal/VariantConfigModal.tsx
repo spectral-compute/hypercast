@@ -10,6 +10,7 @@ import {
 } from "../Constants";
 import {fuzzyApply} from "../Fuzzify";
 import {useState} from "react";
+import {useTranslation} from "react-i18next";
 
 export interface VariantConfigModalProps {
     onSave: (cfg: StreamVariantConfig) => void;
@@ -25,6 +26,7 @@ export default (props: VariantConfigModalProps) => {
     const [video, setVideo] = useState<VideoVariant>(props.cfg.video);
     const [audio, setAudio] = useState<AudioVariant>(props.cfg.audio);
     const [stream, setStream] = useState<StreamVariantConfig>(props.cfg);
+    const {t} = useTranslation();
 
     function doSave() {
         const result = {...stream};
@@ -34,16 +36,15 @@ export default (props: VariantConfigModalProps) => {
     }
 
     return <Modal
-        title={"Configuring " + props.title}
+        title={t("Configuring") + " " + props.title}
         onClose={props.onCancel}
         onSave={() => doSave()}
     >
         <div className="btnRow">
             <div className="btnDesc">
-                <span>Image Quality</span>
+                <span>{t("ImageQuality")}</span>
 
-                Higher settings will consume more CPU resources to produce a better image quality at each resolution
-                selected.
+                {t("ImageQualityDesc")}
             </div>
 
             <BoxRadioGroup<FuzzyVideoQuality>
@@ -53,16 +54,16 @@ export default (props: VariantConfigModalProps) => {
                 selectedItem={fuzzyVideoQualityMatch(video)}
                 items={[{
                     value: "LOW",
-                    label: "Low"
+                    label: t("Low")!
                 }, {
                     value: "MEDIUM",
-                    label: "Medium"
+                    label: t("Medium")!
                 }, {
                     value: "HIGH",
-                    label: "High"
+                    label: t("High")!
                 }, {
                     value: "VERY_HIGH",
-                    label: "Highest"
+                    label: t("Highest")!
                 }]}
             ></BoxRadioGroup>
         </div>
@@ -71,9 +72,8 @@ export default (props: VariantConfigModalProps) => {
 
         <div className="btnRow">
             <div className="btnDesc">
-                <span>Audio Quality</span>
+                <span>{t("AudioQuality")}</span>
             </div>
-
 
             <BoxRadioGroup<FuzzyAudioQuality>
                 onSelected={(v) => {
@@ -82,13 +82,13 @@ export default (props: VariantConfigModalProps) => {
                 selectedItem={fuzzyAudioQualityMatch(audio)}
                 items={[{
                     value: "LOW",
-                    label: "Low"
+                    label: t("Low")!
                 }, {
                     value: "MEDIUM",
-                    label: "Medium"
+                    label: t("Medium")!
                 }, {
                     value: "HIGH",
-                    label: "High"
+                    label: t("High")!
                 }]}
             ></BoxRadioGroup>
         </div>
@@ -97,9 +97,8 @@ export default (props: VariantConfigModalProps) => {
 
         <div className="btnRow">
             <div className="btnDesc">
-                <span>Frame Rate</span>
-                Do you want to halve the framerate compared to the source material in this stream variant?
-                This can improve the experience for viewers on poor connections.
+                <span>{t("FrameRate")}</span>
+                {t("FrameRateDesc")}
             </div>
 
             <BoxRadioGroup<FrameRateSpecial>
@@ -107,10 +106,10 @@ export default (props: VariantConfigModalProps) => {
                 onSelected={(v) => setVideo({...video, frameRate: v})}
                 items={[{
                     value: undefined,
-                    label: "native"
+                    label: t("Native")!
                 }, {
                     value: "half",
-                    label: "half"
+                    label: t("Half")!
                 }]}
             ></BoxRadioGroup>
         </div>
@@ -119,11 +118,8 @@ export default (props: VariantConfigModalProps) => {
 
         <div className="btnRow">
             <div className="btnDesc">
-                <span>Target Latency</span>
-
-                The target amount of time between an event being seen by the camera, and it reaching viewers.
-
-                Lower latency settings may use a little more bandwidth than higher-latency ones.
+                <span>{t("TargetLatency")}</span>
+                {t("TargetLatencyDesc")}
             </div>
             <BoxRadioGroup<number>
                 onSelected={(v) => setStream({...stream, targetLatency: v})}

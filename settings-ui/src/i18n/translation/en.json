@@ -1,4 +1,36 @@
 {
+  "Loading": "Loading",
+  "ShitsFuckedYo": "A fatal error occurred :(",
+
+  "Cancel": "Cancel",
+  "Save": "Save",
   "Status": "Status",
-  "Idle": "Idle"
+  "Idle": "Idle",
+
+  "Low": "Low",
+  "Medium": "Medium",
+  "High": "High",
+  "Highest": "Very\nHigh",
+
+  "MediaSource": "Media Source",
+  "MediaSourceDesc": "What to stream. Ports with nothing connected, or which are in use by another channel, are disabled.",
+
+  "Variants": "Variants",
+  "VariantsDesc": "Select which resolutions this stream should be made available in. Each one can be configured separately.",
+
+  "ImageQuality": "Image Quality",
+  "ImageQualityDesc": "Higher settings will consume more CPU resources to produce a better image quality at each resolution selected.",
+
+  "AudioQuality": "Audio Quality",
+
+  "FrameRate": "Frame Rate",
+  "FrameRateDesc": " Do you want to halve the framerate compared to the source material in this stream variant?\nThis can improve the experience for viewers on poor connections.",
+  "Native": "native",
+  "Half": "half",
+  "None": "None",
+
+  "TargetLatency": "Target Latency",
+  "TargetLatencyDesc": "The target amount of time between an event being seen by the camera, and it reaching viewers.\nLower latency settings may use a little more bandwidth than higher-latency ones.",
+
+  "Configuring": "Configuring"
 }

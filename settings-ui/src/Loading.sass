@@ -1,0 +1,70 @@
+.kaput
+    display: flex
+    color: var(--colour-primary)
+    flex-direction: column
+    gap: 0.2em
+    font-size: 3em
+    font-weight: bold
+    width: 100vw
+    height: 100vh
+    align-items: center
+    justify-content: center
+    user-select: none
+
+@keyframes spinner
+  0%
+    transform: rotate(0)
+    animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19)
+
+  50%
+    transform: rotate(900deg)
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1)
+
+  100%
+    transform: rotate(1800deg)
+
+
+.happyContainer
+  // Make all the copies be on top of each other.
+  position: relative
+  width: 8em
+  height: 8em
+
+.happy
+  position: absolute
+  animation: spinner 1.4s infinite
+  top: 0
+  left: 0
+  opacity: 0.1
+
+  // Well, this is insane :D
+  &.logo0
+    animation-delay: 3ms
+  &.logo1
+    animation-delay: 6ms
+  &.logo2
+    animation-delay: 9ms
+  &.logo3
+    animation-delay: 12ms
+  &.logo4
+    animation-delay: 15ms
+  &.logo5
+    animation-delay: 18ms
+  &.logo6
+    animation-delay: 21ms
+  &.logo7
+    animation-delay: 24ms
+  &.logo8
+    animation-delay: 27ms
+  &.logo9
+    animation-delay: 30ms
+  &.logo10
+    animation-delay: 33ms
+  &.logo11
+    animation-delay: 36ms
+  &.logo12
+    animation-delay: 39ms
+  &.logo13
+    animation-delay: 42ms
+  &.logo14
+    animation-delay: 45ms

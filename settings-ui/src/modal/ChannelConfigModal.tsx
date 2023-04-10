@@ -22,6 +22,7 @@ import {fuzzyApply} from "../Fuzzify";
 import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
 import {InputPortStatus} from "../App";
 import { prettyPrintResolution } from '../StreamBox';
+import {useTranslation} from "react-i18next";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
@@ -69,6 +70,7 @@ function inputIsAtLeast(appCtx: AppCtx, channel: Channel, w: number, h: number) 
 
 export default observer((props: ChannelConfigModalProps) => {
     const appCtx = useContext(AppContext);
+    const {t} = useTranslation();
 
     const [channel, setChannel] = useState<Channel>(props.channel);
     const [variantBeingEdited, setVariantBeingEdited] = useState<number | null>(null);
@@ -133,15 +135,15 @@ export default observer((props: ChannelConfigModalProps) => {
                 <Trash/>
             </BoxBtn> : null
         }
-        title={"Configuring " + props.channelName.slice(5)}
+        title={t("Configuring") + " " + props.channelName.slice(5)}
         onClose={props.onClose}
         onSave={saveFn}
     >
         <div className="btnRow">
             <div className="btnDesc">
-                <span>Media Source</span>
+                <span>{t("MediaSource")}</span>
 
-                What to stream. Ports with nothing connected, or which are in use by another channel, are disabled.
+                {t("MediaSourceDesc")}
             </div>
 
             <BoxRadioGroup<DecklinkPort>
@@ -171,9 +173,8 @@ export default observer((props: ChannelConfigModalProps) => {
 
         <div className="btnRow">
             <div className="btnDesc">
-                <span>Variants</span>
-                Select which resolutions this stream should be made available in.
-                Each one can be configured separately.
+                <span>{t("Variants")}</span>
+                {t("VariantsDesc")}
             </div>
 
             <BoxBtn

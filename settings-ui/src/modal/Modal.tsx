@@ -1,6 +1,7 @@
 import './Modal.sass';
 import {ReactComponent as Cross} from "../assets/icons/x-circle.svg";
 import {ReactComponent as Save} from "../assets/icons/save.svg";
+import {useTranslation} from "react-i18next";
 
 export interface ModalProps {
     title: string;
@@ -13,6 +14,8 @@ export interface ModalProps {
 }
 
 function Modal(props: ModalProps) {
+    const {t} = useTranslation();
+
     return <div className="modalBg">
         <div className="modal">
             <div className="modalHead">
@@ -23,10 +26,10 @@ function Modal(props: ModalProps) {
 
             <div className="modalBtnRow">
                 <div className="modalBtn left" onClick={props.onClose}>
-                    <Cross/>Cancel
+                    <Cross/>{t("Cancel")}
                 </div>
                 <div className="modalBtn right" onClick={props.onSave}>
-                    <Save/>Save
+                    <Save/>{t("Save")}
                 </div>
             </div>
         </div>

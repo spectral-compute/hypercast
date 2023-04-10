@@ -13,6 +13,7 @@ import {useAsyncDeferred, useAsyncImmediateEx} from './hooks/useAsync';
 import Kaput from './Kaput';
 import {DECKLINK_PORTS_ORDERED, makeDefaultChannel} from './Constants';
 import { observer } from 'mobx-react-lite';
+import Loading from "./Loading";
 
 
 export enum InputPortStatus {
@@ -42,12 +43,12 @@ export default observer(() => {
   const loading = loadCfg.isLoading || saveCfg.isLoading || initialProbe.isLoading;
 
   if (loading) {
-      return <Kaput message={"Loading..."}></Kaput>;
+      return <Loading/>;
   }
 
   if (loadCfg.error && loadCfg.error!.message == "Failed to fetch") {
       // Special case: server isn't up yet.
-      return <Kaput message={"Loading..."}></Kaput>;
+      return <Loading/>;
   }
 
   if (loadCfg.error || saveCfg.error) {

@@ -42,10 +42,7 @@ export async function initialiseTranslationLibrary() {
         .use(initReactI18next)
         .init({
             resources,
-            detection: {
-                caches: ['localStorage'],
-                lookupLocalStorage: CURRENT_LANGUAGE_LS_KEY
-            },
+            lng: "nl", // Plausibly wanna set this as a build flag or such.
             supportedLngs: ['en', 'nl'],
             fallbackLng: "en",
 

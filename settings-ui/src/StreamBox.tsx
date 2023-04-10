@@ -12,6 +12,7 @@ import {inputUrlToSDIPortNumber} from "./api/Hardware";
 import {ReactComponent as FileIcon} from "./assets/icons/file.svg";
 import BoxBtn from "./components/BoxBtn";
 import { observer } from 'mobx-react-lite';
+import {useTranslation} from "react-i18next";
 
 export interface StreamBoxProps {
     name: string;
@@ -37,11 +38,11 @@ export function prettyPrintResolution(w: number, h: number) {
     // }
 }
 
-function renderAudioStatus(audioCfg: AudioVariant) {
+function renderAudioStatus(t: any, audioCfg: AudioVariant) {
     const hasAudio = audioCfg.codec != AudioCodec.none;
     const icon = hasAudio ? <AudioIcon/> : <NoAudioIcon/>;
 
-    let label = hasAudio ? audioCfg.bitrate + "k" : "None";
+    let label = hasAudio ? audioCfg.bitrate + "k" : t("None");
 
     return <BoxBtn label={label} size={5}>
         {icon}
@@ -56,9 +57,9 @@ function prettyPrintTargetLatency(l: number) {
     }
 }
 
-function prettyPrintFramerate(f: FrameRateCfg | undefined) {
+function prettyPrintFramerate(t: any, f: FrameRateCfg | undefined) {
     if (f == null) {
-        return "native";
+        return t("Native");
     }
 
     if (typeof f == "object") {
@@ -72,16 +73,17 @@ function prettyPrintFramerate(f: FrameRateCfg | undefined) {
 function renderVariant(variantCfg: StreamVariantConfig, key: number) {
     const videoCfg = variantCfg.video;
     const audioCfg = variantCfg.audio;
+    const {t} = useTranslation();
 
     return <div key={key} className="channelInfoBox">
         <div className="variantInfoRow">
             <BoxBtn label={prettyPrintResolution(videoCfg.width, videoCfg.height)} size={5}>
             </BoxBtn>
-            <BoxBtn label={prettyPrintFramerate(videoCfg.frameRate)} size={5}>
+            <BoxBtn label={prettyPrintFramerate(t, videoCfg.frameRate)} size={5}>
                 <FrameRateIcon/>
             </BoxBtn>
 
-            {renderAudioStatus(audioCfg)}
+            {renderAudioStatus(t, audioCfg)}
 
             <BoxBtn label={prettyPrintTargetLatency(variantCfg.targetLatency)} size={5}>
                 <LatencyIcon/>
