@@ -195,6 +195,7 @@ struct Channel final
     std::vector<Quality> qualities;
     Dash dash;
     History history;
+    std::string name;
 
     bool operator==(const Channel &) const;
 };
@@ -250,6 +251,16 @@ struct Log final
     ::Log::Level level = ::Log::Level::info;
 
     bool operator==(const Log &) const;
+};
+
+/**
+ * The features key.
+ */
+struct Features final
+{
+    bool channelIndex = true;
+
+    bool operator==(const Features &) const;
 };
 
 /**
@@ -309,6 +320,7 @@ public:
     Network network;
     Http http;
     Log log;
+    Features features;
 
     bool operator==(const Root &) const;
 

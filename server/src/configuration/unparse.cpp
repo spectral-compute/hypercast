@@ -146,6 +146,7 @@ static void to_json(nlohmann::json &j, const Channel &in)
     j["qualities"] = in.qualities;
     j["dash"] = in.dash;
     j["history"] = in.history;
+    j["name"] = in.name;
 }
 
 /// @ingroup configuration_implementation
@@ -203,6 +204,12 @@ static void to_json(nlohmann::json &j, const Log &in)
     j["level"] = toString(in.level);
 }
 
+/// @ingroup configuration_implementation
+static void to_json(nlohmann::json &j, const Features &in)
+{
+    j["channelIndex"] = in.channelIndex;
+}
+
 } // namespace Config
 
 std::string Config::Root::toJson() const
@@ -213,6 +220,7 @@ std::string Config::Root::toJson() const
     j["network"] = network;
     j["http"] = http;
     j["log"] = log;
+    j["features"] = features;
     return Json::dump(j);
 }
 

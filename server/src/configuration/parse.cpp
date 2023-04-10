@@ -215,6 +215,7 @@ static void from_json(const nlohmann::json &j, Channel &out)
     d(out.qualities, "qualities");
     d(out.dash, "dash");
     d(out.history, "history");
+    d(out.name, "name");
     d();
 }
 
@@ -282,6 +283,14 @@ static void from_json(const nlohmann::json &j, Log &out)
     d();
 }
 
+/// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, Features &out)
+{
+    Json::ObjectDeserializer d(j, "features");
+    d(out.channelIndex, "channelIndex");
+    d();
+}
+
 } // namespace Config
 
 Config::ParseException::~ParseException() = default;
@@ -308,6 +317,7 @@ Config::Root Config::Root::fromJson(std::string_view jsonString)
         d(root.network, "network");
         d(root.http, "http");
         d(root.log, "log");
+        d(root.features, "features");
         d();
     }
     catch (const Json::ObjectDeserializer::Exception &e) {

@@ -111,8 +111,9 @@ Awaitable<void> Instance::State::applyConfiguration(Config::Root newCfg)
     CANT_CHANGE(network.port);
     CANT_CHANGE(network.publicPort);
 
-    // We don't currently have the code to change this.
+    // We don't currently have the code to change these.
     CANT_CHANGE(http.ephemeralWhenNotFound);
+    CANT_CHANGE(features);
 
     // Reconfigure the logger.
     if (config.log != newCfg.log) {

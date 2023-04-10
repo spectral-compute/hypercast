@@ -3,6 +3,7 @@
 #include "api/ProbeResource.hpp"
 #include "configuration/configuration.hpp"
 #include "configuration/defaults.hpp"
+#include "instance/ChannelsIndexResource.hpp"
 #include "instance/State.hpp"
 #include "log/FileLog.hpp"
 #include "log/MemoryLog.hpp"
@@ -49,6 +50,12 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     st.getServer().addResource<Api::FullConfigResource>("api/full_config", st.getConfiguration());
 #endif // NDEBUG
     st.getServer().addResource<Api::ProbeResource>("api/probe", ioc, st.getInUseUrls());
+
+    /* Create other instance global resources. */
+    if (config.features.channelIndex) {
+        st.getServer().addResource<Instance::ChannelsIndexResource>("channelsIndex.json",
+                                                                    st.getConfiguration().channels);
+    }
 
     /* Run the configuration application process. */
     co_await st.applyConfiguration(config);

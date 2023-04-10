@@ -16,6 +16,7 @@ exists, it is described. Otherwise, the default is computed based on other setti
 | `network`     |         | Object | Lower level network configuration.                  |
 | `http`        |         | Object | HTTP server configuration.                          |
 | `log`         |         | Object | How to do logging.                                  |
+| `features`    |         | Object | Enable and disable server features.                 |
 
 
 ## `channels`
@@ -30,6 +31,7 @@ the following keys:
 | `qualities` |            | Array of objects | The set of qualities to make available.        |
 | `dash`      |            | Object           | Settings related to DASH.                      |
 | `history`   |            | Object           | What historical information to keep available. |
+| `name`      |            | String           | The human-readable name to give the channel.   |
 
 
 ### `channels.source`
@@ -401,3 +403,10 @@ field can be used to set the caching for specified resources to a small value.
 | `path`  |         | String  | The file to log to. If not set, logging is in memory and printed to standard error. |
 | `print` |         | Boolean | Whether to print the log to standard error.                                         |
 | `level` | `info`  | Boolean | Minimum log level, out of: `debug`, `info`, `warning`, `error`, and `fatal`.        |
+
+
+## `features`
+
+| Field          | Default | Type    | Description                                      |
+|----------------|---------|---------|--------------------------------------------------|
+| `channelIndex` | True    | Boolean | Enable the channel index (`/channelIndex.json`). |

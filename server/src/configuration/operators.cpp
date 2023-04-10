@@ -28,4 +28,5 @@ bool Config::Directory::operator==(const Directory &) const = default;
 bool Config::Network::operator==(const Network &) const = default;
 bool Config::Http::operator==(const Http &) const = default;
 bool Config::Log::operator==(const Log &) const = default;
+bool Config::Features::operator==(const Features &) const = default;
 bool Config::Root::operator==(const Root &) const = default;
