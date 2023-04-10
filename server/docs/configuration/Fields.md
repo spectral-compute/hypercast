@@ -331,15 +331,6 @@ Ephemeral caching sets a very short (e.g: 1 s) cache timeout. This is useful for
 short notice. It's also useful for debugging.
 
 
-## `log`
-
-| Field   | Default | Type    | Description                                                                         |
-|---------|---------|---------|-------------------------------------------------------------------------------------|
-| `path`  |         | String  | The file to log to. If not set, logging is in memory and printed to standard error. |
-| `print` |         | Boolean | Whether to print the log to standard error.                                         |
-| `level` | `info`  | Boolean | Minimum log level, out of: `debug`, `info`, `warning`, `error`, and `fatal`.        |
-
-
 ## `network`
 
 Low level (or at least low-ish level) network configuration.
@@ -401,3 +392,12 @@ be sent.
 Some resources, such as the `info.json` resources for each channel can appear at short notice. Most non-existing paths
 return a 404 Not Found error with 10 minute caching, but for resources such as `info.json`, this is problematic. This
 field can be used to set the caching for specified resources to a small value.
+
+
+## `log`
+
+| Field   | Default | Type    | Description                                                                         |
+|---------|---------|---------|-------------------------------------------------------------------------------------|
+| `path`  |         | String  | The file to log to. If not set, logging is in memory and printed to standard error. |
+| `print` |         | Boolean | Whether to print the log to standard error.                                         |
+| `level` | `info`  | Boolean | Minimum log level, out of: `debug`, `info`, `warning`, `error`, and `fatal`.        |
