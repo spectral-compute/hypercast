@@ -4,12 +4,12 @@
 
 #include "server/SynchronousResource.hpp"
 
-namespace Server
+namespace Config
 {
 
-struct State;
+class Root;
 
-} // namespace Server
+} // namespace Config
 
 namespace Api
 {
@@ -24,12 +24,12 @@ class FullConfigResource final : public Server::SynchronousNullaryResource
 {
 public:
     ~FullConfigResource() override;
-    FullConfigResource(Server::State &state) : state(state) {}
+    FullConfigResource(const Config::Root &config) : config(config) {}
 
     void getSync(Server::Response &response, const Server::Request &request) override;
 
 private:
-    Server::State &state;
+    const Config::Root &config;
 };
 
 } // namespace Api

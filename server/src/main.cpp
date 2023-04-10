@@ -46,7 +46,7 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
     /* Create global resources for the API. */
     st.getServer().addResource<Api::ConfigResource>("api/config", st, configPath);
 #ifndef NDEBUG
-    st.getServer().addResource<Api::FullConfigResource>("api/full_config", st);
+    st.getServer().addResource<Api::FullConfigResource>("api/full_config", st.getConfiguration());
 #endif // NDEBUG
     st.getServer().addResource<Api::ProbeResource>("api/probe", ioc, st.getInUseUrls());
 
