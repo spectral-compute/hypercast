@@ -3,7 +3,7 @@ import {DebugHandler} from "./Debug";
 
 type ControlsType = "native" | "js";
 
-export interface PlayerOptions {
+export interface CreatePlayerOptions {
     secondarySource?: string;
     controls?: ControlsType;
     debugHandler?: DebugHandler;
@@ -20,7 +20,7 @@ export interface PlayerOptions {
 export async function createPlayer(
     sourceURL: string,
     containerElement: HTMLElement | string,
-    options: PlayerOptions
+    options: CreatePlayerOptions
 ): Promise<Player> {
     // Defaults
     const controlsType = options?.controls ?? "js";

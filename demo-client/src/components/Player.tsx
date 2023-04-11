@@ -1,9 +1,9 @@
 import React, {useEffect, useRef} from "react";
-import {createPlayer, Player as PlayerMain, PlayerOptions} from "live-video-streamer-client";
+import {createPlayer, Player as PlayerMain, CreatePlayerOptions} from "live-video-streamer-client";
 
 import "./Player.scss";
 
-export interface PlayerProps extends PlayerOptions {
+export interface PlayerProps extends CreatePlayerOptions {
     sourceURL: string;
     onDismount?: (player: PlayerMain) => void;
 }
