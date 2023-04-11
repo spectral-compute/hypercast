@@ -56,7 +56,7 @@ export async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(sourceURL, video, process.env["NODE_ENV"] === "development");
+    const player = new Player(sourceURL, video);
 
     /* Performance/debug event handling. */
     if (process.env["NODE_ENV"] === "development" && options.debugHandler) {

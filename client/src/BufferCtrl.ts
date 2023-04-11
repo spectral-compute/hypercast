@@ -28,14 +28,12 @@ export class BufferControl {
      * Control the buffer level of an HTMLMediaElement, and keep secondary media elements in sync.
      *
      * @param mediaElement The HTML media element to control the buffer level of.
-     * @param verbose If true, some debug information is printed.
      * @param debugHandler The object to handle performance and debugging information.
      */
-    constructor(mediaElement: HTMLMediaElement, verbose: boolean, onRecommendDowngrade: (() => void),
+    constructor(mediaElement: HTMLMediaElement, onRecommendDowngrade: (() => void),
                 debugHandler: DebugHandler | null = null) {
         this.mediaElement = mediaElement;
         this.onRecommendDowngrade = onRecommendDowngrade;
-        this.verbose = verbose;
         this.setDebugHandler(debugHandler);
     }
 
@@ -259,9 +257,6 @@ export class BufferControl {
         const bufferRange = this.mediaElement.buffered;
         const seekRange = this.mediaElement.seekable;
         if (seekRange.length === 0 || bufferRange.length === 0) {
-            if (this.verbose && !initialSeek) {
-                console.warn("Cannot seek to catch up");
-            }
             this.debugBufferControlTick(tickInfo);
             return;
         }
@@ -331,7 +326,6 @@ export class BufferControl {
     // Constructor inputs.
     private readonly mediaElement: HTMLMediaElement;
     private readonly onRecommendDowngrade: (() => void); // Called when a quality downgrade is recommended.
-    private readonly verbose: boolean;
 
     // Buffer mode.
     private maxBuffer: number = 0;

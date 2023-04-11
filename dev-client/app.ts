@@ -25,7 +25,7 @@ if (process.env["SECONDARY_VIDEO"]) {
 }
 
 /* Create the player. */
-const player = new Player(infoUrl, video, process.env["NODE_ENV"] === "development");
+const player = new Player(infoUrl, video);
 (document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getInfoUrl();
 
 /* Performance/debug event handling. */

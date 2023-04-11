@@ -11,9 +11,9 @@ export class Player {
      * @param infoUrl The URL to the server's info JSON object. If set to null, the URL is obtained from the streaminfo
      *                GET parameter.
      * @param video The video tag to play video into.
-     * @param verbose Whether or not to be verbose.
      */
-    constructor(infoUrl: string | null, video: HTMLVideoElement, verbose: boolean = false) {
+    constructor(infoUrl: string | null, video: HTMLVideoElement)
+    {
         // Get the URL from the streaminfo GET parameter if no info URL is given.
         if (infoUrl === null) {
             infoUrl = (new URLSearchParams(window.location.search)).get("streaminfo");
@@ -25,7 +25,6 @@ export class Player {
         // Set properties :)
         this.infoUrl = infoUrl;
         this.video = video;
-        this.verbose = verbose;
     }
 
     /**
@@ -35,10 +34,6 @@ export class Player {
      */
     async init(): Promise<void> {
         try {
-            if (this.verbose) {
-                console.log("Start up at " + new Date(Date.now()).toISOString());
-            }
-
             const response: Response = await fetch(this.infoUrl);
             if (response.status !== 200) {
                 throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
@@ -83,7 +78,7 @@ export class Player {
             });
 
             /* Set up buffer control for the player. */
-            this.bctrl = new BufferCtrl.BufferControl(this.video, this.verbose, (): void => {
+            this.bctrl = new BufferCtrl.BufferControl(this.video, (): void => {
                 if (this.quality < this.qualityOptions.length - 1) {
                     this.quality++; // Quality is actually reversed.
                 }
@@ -115,15 +110,6 @@ export class Player {
     start = (): void => {
         this.stream!.start();
         this.bctrl!.start();
-
-        /* Verbose logging. */
-        if (!this.verbose) {
-            return;
-        }
-        this.startTime = Date.now();
-        this.verboseInterval = window.setInterval((): void => {
-            this.printVerboseInvervalInfo();
-        }, 1000);
     };
 
     /**
@@ -132,9 +118,6 @@ export class Player {
      * This resets the player back to the state it was in before start() was called.
      */
     stop = (): void => {
-        if (this.verboseInterval) {
-            clearInterval(this.verboseInterval);
-        }
         this.stream!.stop();
         this.bctrl!.stop();
     };
@@ -324,65 +307,13 @@ export class Player {
         this.bctrl!.setBufferControlParameters(this.serverInfo.videoConfigs[this.videoStream]!.bufferCtrl);
     }
 
-    /**
-     * Prints verbose information about the current state of streaming.
-     */
-    private printVerboseInvervalInfo(): void {
-        if (this.video.paused) {
-            return;
-        }
-
-        const bufferLength = this.bctrl!.getBufferLength();
-        const maxBuffer = this.bctrl!.getBufferTarget();
-        const catchUpStats = this.bctrl!.getCatchUpStats();
-
-        const videoUnprunedBufferLength =
-            (this.video.buffered.length === 0) ? 0 :
-            (this.video.buffered.end(this.video.buffered.length - 1) - this.video.buffered.start(0));
-
-        const netStats = this.bctrl!.getNetworkTimingStats();
-        const sNetStats = this.bctrl!.getNetworkTimingStats(true);
-
-        console.log(
-            `Run time: ${(Date.now() - this.startTime!) / 1000} s\n` +
-            `Buffer length: ${bufferLength} ms\n` +
-            `Unpruned buffer length: ${videoUnprunedBufferLength * 1000} ms\n` +
-            `Video playback rate: ${this.video.playbackRate}\n` +
-            `Network delay history length: count = ${netStats.historyLength} (${sNetStats.historyLength})\n` +
-            `                              time  = ${netStats.historyAge / 1000} s\n` +
-            `Delay normal: µ = ${netStats.delayMean} ms (${sNetStats.delayMean} ms)\n` +
-            `              σ = ${netStats.delayStdDev} ms (${sNetStats.delayStdDev} ms)\n` +
-            `Delay deciles: min             = ${netStats.delayMin} ms (${sNetStats.delayMin} ms)\n` +
-            `               10th percentile = ${netStats.delayPercentile10} ms (${sNetStats.delayPercentile10} ms)\n` +
-            `               median          = ${netStats.delayMedian} ms (${sNetStats.delayMedian} ms)\n` +
-            `               90th percentile = ${netStats.delayPercentile90} ms (${sNetStats.delayPercentile90} ms)\n` +
-            `               max             = ${netStats.delayMax} ms (${sNetStats.delayMax} ms)\n` +
-            `Jitter normal: µ = ${netStats.delayMean - netStats.delayMin} ms` +
-                              ` (${sNetStats.delayMean - sNetStats.delayMin} ms)\n` +
-            `Jitter deciles: 10th percentile = ${netStats.delayPercentile10 - netStats.delayMin} ms` +
-                                             ` (${sNetStats.delayPercentile10 - sNetStats.delayMin} ms)\n` +
-            `                median          = ${netStats.delayMedian - netStats.delayMin} ms` +
-                                             ` (${sNetStats.delayMedian - sNetStats.delayMin} ms)\n` +
-            `                90th percentile = ${netStats.delayPercentile90 - netStats.delayMin} ms` +
-                                             ` (${sNetStats.delayPercentile90 - sNetStats.delayMin} ms)\n` +
-            `                max             = ${netStats.delayMax - netStats.delayMin} ms` +
-                                             ` (${sNetStats.delayMax - sNetStats.delayMin} ms)\n` +
-            `Catch up events: n = ${catchUpStats.eventCount}\n` +
-            `                 µ = ${catchUpStats.averageTimeBetweenEvents / 1000} s\n` +
-            `Buffer target: ${maxBuffer} ms\n` +
-            `Server parameters: ${JSON.stringify(this.bctrl!.getServerParams())}\n`
-        );
-    }
-
     // Stuff from the constructor.
-    private readonly verbose: boolean;
     private readonly video: HTMLVideoElement;
     private readonly infoUrl: string;
 
     // Worker objects.
     private stream: Stream.MseWrapper | null = null;
     private bctrl: BufferCtrl.BufferControl | null = null;
-    private verboseInterval: number | null = null;
 
     // Server information.
     private serverInfo!: API.ServerInfo;
@@ -402,6 +333,5 @@ export class Player {
     private electiveChangeInProgress: boolean = false;
 
     // Debug/performance tracking related stuff.
-    private startTime: number | null = null;
     private debugHandler: DebugHandler | null = null;
 }
