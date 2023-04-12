@@ -264,10 +264,8 @@ class SegmentDownloader {
     }
 
     stop(): void {
-        // Stop any existing download.
-        if (this.currentResponse) {
-            void this.currentResponse.cancel();
-        }
+        // Stop anything that's downloading.
+        this.aborter.abort();
 
         // Stop the timers.
         this.segmentIndex = Infinity; // Stop the download of any new segments.
@@ -290,7 +288,8 @@ class SegmentDownloader {
         /* Schedule periodic updates to the download scheduler. */
         const timeoutFn = async (): Promise<void> => {
             try {
-                const response: Response = await fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`);
+                const response: Response = await fetch(`${this.baseUrl}/chunk-stream${this.streamIndex}-index.json`,
+                                                       { signal: this.aborter.signal });
                 if (response.status !== 200) {
                     throw new Error(`Fetching stream index descriptor gave HTTP status code ${response.status}`);
                 }
@@ -299,11 +298,14 @@ class SegmentDownloader {
                 this.setSegmentDownloadSchedule(newInfo);
             } catch (ex: any) {
                 const e = ex as Error;
+                if (e.name === 'AbortError') {
+                    return;
+                }
                 this.onError(`Error downloading stream index descriptor: ${e.message}`);
             }
         };
         this.schedulerTimeout = window.setTimeout((): void => {
-            void timeoutFn();
+            void timeoutFn(); // Cancellable via the combination of this.schedulerTimeout and this.aborter.
         }, this.segmentDuration * DownloadSchedulerUpdatePeriod);
 
         /* The currently available index. */
@@ -354,7 +356,7 @@ class SegmentDownloader {
         /* Download the current segment. */
         void (async (): Promise<void> => {
             try {
-                const response: Response = await fetch(url);
+                const response: Response = await fetch(url, { signal: this.aborter.signal });
 
                 // Handle the error case.
                 if (response.status !== 200) {
@@ -368,14 +370,13 @@ class SegmentDownloader {
                     return;
                 }
 
-                // Get the reader and save it where it can be cancelled in case we get stopped.
-                const reader: ReadableStreamDefaultReader = response.body!.getReader();
-                this.currentResponse = reader;
-
                 // Start reading from the response.
-                await this.pump(reader, `Stream ${this.streamIndex}, segment ${segmentIndex}`);
+                await this.pump(response.body!.getReader(), `Stream ${this.streamIndex}, segment ${segmentIndex}`);
             } catch (ex: any) {
                 const e = ex as Error;
+                if (e.name === 'AbortError') {
+                    return;
+                }
                 this.onError(`Error fetching chunk ${url}: ${e.message}`);
             }
         })();
@@ -455,6 +456,9 @@ class SegmentDownloader {
             }
         } catch (ex: any) {
             const e = ex as Error;
+            if (e.name === 'AbortError') {
+                return;
+            }
             this.onError(`Error downloading or playing segment: ${e.message}`);
         }
     }
@@ -475,7 +479,7 @@ class SegmentDownloader {
     private nextSegmentStart: number = 0;
     private downloadTimeout: number | null = null;
     private schedulerTimeout: number | null = null;
-    private currentResponse: ReadableStreamDefaultReader | null = null;
+    private aborter: AbortController = new AbortController();
 }
 
 export class MseWrapper {
@@ -492,6 +496,11 @@ export class MseWrapper {
 
     setSource(baseUrl: string, videoStream: number, audioStream: number | null, interleaved: boolean): void {
         /* Stop downloading any existing stream. */
+        if (this.aborter) {
+            this.aborter.abort();
+        }
+        this.aborter = null;
+
         if (this.segmentDownloader) {
             this.segmentDownloader.stop();
         }
@@ -563,6 +572,11 @@ export class MseWrapper {
     onNewStreamStart: (() => void) | null = null;
 
     private cleaup(): void {
+        if (this.aborter) {
+            this.aborter.abort();
+        }
+        this.aborter = null;
+
         if (this.segmentDownloader) {
             this.segmentDownloader.stop();
         }
@@ -575,9 +589,12 @@ export class MseWrapper {
      * Start streaming with the source previously given by setSource().
      */
     private startSetStreams(): void {
+        this.aborter = new AbortController();
+
         /* Fetch the manifest, stream info and initial data. Once we have it, set up streaming. */
         const manifestPromise: Promise<string> =
-        fetch(`${this.baseUrl!}/manifest.mpd`).then((response: Response): Promise<string> => {
+        fetch(`${this.baseUrl!}/manifest.mpd`, { signal: this.aborter!.signal }).
+        then((response: Response): Promise<string> => {
             if (response.status !== 200) {
                 throw Error(`Manifest HTTP status code is not OK: ${response.status}`);
             }
@@ -589,6 +606,9 @@ export class MseWrapper {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1]);
             }).catch((ex: any): void => {
                 const e = ex as Error;
+                if (e.name === 'AbortError') {
+                    return;
+                }
                 this.onError(`Error initializing streams: ${e.message}`);
             });
         } else {
@@ -599,6 +619,9 @@ export class MseWrapper {
                 this.setupStreams(fetched[0], fetched[1][0], fetched[1][1], fetched[2][0], fetched[2][1]);
             }).catch((ex: any): void => {
                 const e = ex as Error;
+                if (e.name === 'AbortError') {
+                    return;
+                }
                 this.onError(`Error initializing streams: ${e.message}`);
             });
         }
@@ -675,8 +698,8 @@ export class MseWrapper {
      */
     private getStreamInfoAndInit(index: number): Promise<[any, ArrayBuffer]> {
         return Promise.all([
-            fetch(`${this.baseUrl!}/chunk-stream${index}-index.json`),
-            fetch(`${this.baseUrl!}/init-stream${index}.m4s`)
+            fetch(`${this.baseUrl!}/chunk-stream${index}-index.json`, { signal: this.aborter!.signal }),
+            fetch(`${this.baseUrl!}/init-stream${index}.m4s`, { signal: this.aborter!.signal })
         ]).then((responses: Response[]): Promise<[any, ArrayBuffer]> => {
             for (const response of responses) {
                 if (response.status !== 200) {
@@ -722,4 +745,6 @@ export class MseWrapper {
     private audioStream: Stream | null = null;
 
     private playing: boolean = false;
+
+    private aborter: AbortController | null = null;
 }
