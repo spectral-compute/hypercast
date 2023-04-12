@@ -10,12 +10,12 @@ export interface CreatePlayerOptions {
 
 /**
  * Construct an instance of the RISE player with a control panel
- * @param sourceURL the URL of the video stream
+ * @param channelsUrl the URL to the index of channels
  * @param containerElement The DOM element into which the video player will be inserted. Pass either a DOM element that was created in JS, or else pass the ID of an html element.
  * @param options
  */
 export async function createPlayer(
-    sourceURL: string,
+    channelsUrl: string,
     containerElement: HTMLDivElement | string,
     options: CreatePlayerOptions
 ): Promise<Player> {
@@ -36,7 +36,7 @@ export async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(sourceURL, containerElement, {onError});
+    const player = new Player(channelsUrl, containerElement, {onError});
     const controlsDiv = insertNode(containerElement, "div", {className: "video-controls"});
 
     /* Performance/debug event handling. */

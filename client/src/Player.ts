@@ -30,22 +30,22 @@ export interface PlayerEventListeners {
 
 export class Player {
     /**
-     * @param infoUrl The URL to the server's info JSON object. If set to null, the URL is obtained from the streaminfo
-     *                GET parameter.
+     * @param channelIndexUrl The URL to the server's JSON channel index.
+     *                        If set to null, the URL is obtained from the "channelindex" GET parameter.
      * @param container The div tag to put a video tag into to play video into.
      * @param listeners Functions which will be called during key streaming events. See {@link PlayerEventListeners}
      */
-    constructor(infoUrl: string | null, container: HTMLDivElement, listeners: PlayerEventListeners) {
+    constructor(channelIndexUrl: string | null, container: HTMLDivElement, listeners: PlayerEventListeners) {
         // Get the URL from the streaminfo GET parameter if no info URL is given.
-        if (infoUrl === null) {
-            infoUrl = (new URLSearchParams(window.location.search)).get("streaminfo");
-            if (infoUrl === null) {
-                throw Error(`Could not get "streaminfo" GET parameter from window location "${window.location.href}".`);
+        if (channelIndexUrl === null) {
+            channelIndexUrl = (new URLSearchParams(window.location.search)).get("channelindex");
+            if (channelIndexUrl === null) {
+                throw Error(`Could not get "channelindex" parameter from window location "${window.location.href}".`);
             }
         }
 
         // Set properties :)
-        this.infoUrl = infoUrl;
+        this.channelIndexUrl = channelIndexUrl;
         this.video = container.appendChild(document.createElement("video"));
         this.video.controls = false;
         if (listeners.onError !== undefined) {
@@ -72,71 +72,17 @@ export class Player {
      */
     async init(): Promise<void> {
         try {
-            const response: Response = await fetch(this.infoUrl);
-            if (response.status !== 200) {
-                throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
-            }
-            const serverInfo: unknown = await response.json();
+            // Extract base Url from the channel index url because it might be on a different domain/port.
+            this.baseUrl = this.channelIndexUrl.replace(/^((?:([^:]+:[/]{2})[^/]+)?)[/].*$/, "$1");
 
-            /* Extract and parse the server info. */
-            assertType<API.ServerInfo>(serverInfo);
-            this.serverInfo = serverInfo;
-            const urlPrefix = this.infoUrl.replace(/^((?:([^:]+:[/]{2})[^/]+)?)[/].*$/, "$1");
+            await this.loadChannels();
 
-            // Extract angle information.
-            for (const angle of this.serverInfo.angles) {
-                this.angleOptions.push(angle.name);
-                this.angleUrls.push(urlPrefix + angle.path);
-            }
+            // Now let's select the first channel.
+            // TODO: Make this configurable.
+            // TODO: Make this not crash if there are no channels.
+            this.selectedChannelUrl = this.baseUrl + Object.keys(this.channelIndex)[0]!;
 
-            // Extract quality information.
-            this.serverInfo.videoConfigs.forEach((value: API.VideoConfig) => {
-                this.qualityOptions.push([value.width, value.height]);
-            });
-
-            /* Start muted. This helps prevent browsers from blocking the auto-play. */
-            this.video.muted = true;
-
-            /* Make sure the video is paused (no auto-play). */
-            this.video.pause();
-
-            /* Create the streamer. */
-            this.stream = new MseWrapper(
-                this.video,
-                this.serverInfo.segmentDuration,
-                this.serverInfo.segmentPreavailability,
-                (timestampInfo: TimestampInfo): void => {
-                    this.bctrl!.onTimestamp(timestampInfo);
-                },
-                (recievedInfo: ReceivedInfo): void => {
-                    this.bctrl!.onRecieved(recievedInfo);
-                },
-                (data: ArrayBuffer, controlChunkType: number): void => {
-                    this.onControlChunk(data, controlChunkType)
-                },
-                this.onError ?? ((): void => {}),
-            );
-
-            /* Set up buffer control for the player. */
-            this.bctrl = new BufferControl(this.video, (): void => {
-                if (this.quality < this.qualityOptions.length - 1) {
-                    this.quality++; // Quality is actually reversed.
-                }
-
-                // The stream has severely stalled, so stop playing it and try the new one (if there is a new one). This
-                // does not wait for a new segment, or reuse the MSE wrapper/stream/etc.
-                this.updateQualityAndAngle();
-            }, this.debugHandler);
-
-            /* Set up the "on new source playing" event handler. */
-            this.stream.onNewStreamStart = (): void => {
-                this.bctrl!.onNewStreamStart();
-                this.onStartPlaying?.(this.electiveChangeInProgress);
-                this.electiveChangeInProgress = false;
-            };
-
-            /* Set the quality to an initial default. */
-            this.updateQualityAndAngle();
+            await this.initCurrentChannel();
         } catch (ex: any) {
             const e = ex as Error;
             if (this.onError) {
@@ -166,12 +112,36 @@ export class Player {
     };
 
     /**
-     * Get the URL from which the info JSON was loaded (or is to be loaded).
+     * Get the URL from which the channel index JSON was loaded (or is to be loaded).
      *
      * This method can be called before init().
      */
-    getInfoUrl(): string {
-        return this.infoUrl;
+    getChannelIndexUrl(): string {
+        return this.channelIndexUrl;
+    }
+
+    /**
+     * Get available channels.
+     *
+     * This can be changed whenever the channel list is reloaded.
+     */
+    getChannelIndex(): API.ChannelIndex {
+        return this.channelIndex;
+    }
+
+    /**
+     * Get the URL from which the info JSON of the current channel was loaded.
+     */
+    getChannelUrl(): string {
+        return this.selectedChannelUrl;
+    }
+
+    /**
+     * Set channel to play from the channel index.
+     */
+    setChannel(channelPath: string): void {
+        this.selectedChannelUrl = this.baseUrl + channelPath;
+        this.initCurrentChannel();
     }
 
     /**
@@ -375,6 +345,92 @@ export class Player {
     }
 
     /**
+     * (Re)load the channel index.
+     */
+    private async loadChannels(): Promise<void> {
+        // Fetch the channel index
+        const channelIndexResponse: Response = await fetch(this.channelIndexUrl);
+        if (channelIndexResponse.status !== 200) {
+            throw Error(`Fetching channel index JSON gave HTTP status code ${channelIndexResponse.status}`);
+        }
+        const channelIndex: unknown = await channelIndexResponse.json();
+
+        // Parse the channel index
+        assertType<API.ChannelIndex>(channelIndex);
+        this.channelIndex = channelIndex;
+    }
+
+    /**
+     * (Re)initialize the player to play the currently selected channel.
+     */
+    private async initCurrentChannel(): Promise<void> {
+        const response: Response = await fetch(this.selectedChannelUrl);
+        if (response.status !== 200) {
+            throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
+        }
+        const serverInfo: unknown = await response.json();
+
+        /* Extract and parse the server info. */
+        assertType<API.ServerInfo>(serverInfo);
+        this.serverInfo = serverInfo;
+
+        // Extract angle information.
+        for (const angle of this.serverInfo.angles) {
+            this.angleOptions.push(angle.name);
+            this.angleUrls.push(this.baseUrl + angle.path);
+        }
+
+        // Extract quality information.
+        this.serverInfo.videoConfigs.forEach((value: API.VideoConfig) => {
+            this.qualityOptions.push([value.width, value.height]);
+        });
+
+        /* Start muted. This helps prevent browsers from blocking the auto-play. */
+        this.video.muted = true;
+
+        /* Make sure the video is paused (no auto-play). */
+        this.video.pause();
+
+        /* Create the streamer. */
+        this.stream = new MseWrapper(
+            this.video,
+            this.serverInfo.segmentDuration,
+            this.serverInfo.segmentPreavailability,
+            (timestampInfo: TimestampInfo): void => {
+                this.bctrl!.onTimestamp(timestampInfo);
+            },
+            (recievedInfo: ReceivedInfo): void => {
+                this.bctrl!.onRecieved(recievedInfo);
+            },
+            (data: ArrayBuffer, controlChunkType: number): void => {
+                this.onControlChunk(data, controlChunkType)
+            },
+            this.onError ?? ((): void => {}),
+        );
+
+        /* Set up buffer control for the player. */
+        this.bctrl = new BufferControl(this.video, (): void => {
+            if (this.quality < this.qualityOptions.length - 1) {
+                this.quality++; // Quality is actually reversed.
+            }
+
+            // The stream has severely stalled, so stop playing it and try the new one (if there is a new one). This
+            // does not wait for a new segment, or reuse the MSE wrapper/stream/etc.
+            this.updateQualityAndAngle();
+        }, this.debugHandler);
+
+        /* Set up the "on new source playing" event handler. */
+        this.stream.onNewStreamStart = (): void => {
+            this.bctrl!.onNewStreamStart();
+            this.onStartPlaying?.(this.electiveChangeInProgress);
+            this.electiveChangeInProgress = false;
+        };
+
+        /* Set the quality to an initial default. */
+        this.updateQualityAndAngle();
+    }
+
+    /**
      * This must be called whenever the current quality or angle changes.
      */
     private updateQualityAndAngle(): void {
@@ -402,13 +458,16 @@ export class Player {
 
     // Stuff from the constructor.
     private readonly video: HTMLVideoElement;
-    private readonly infoUrl: string;
+    private readonly channelIndexUrl: string;
 
     // Worker objects.
     private stream: MseWrapper | null = null;
     private bctrl: BufferControl | null = null;
 
     // Server information.
+    private channelIndex!: API.ChannelIndex;
+    private baseUrl!: string;
+    private selectedChannelUrl!: string;
     private serverInfo!: API.ServerInfo;
     private readonly angleUrls: string[] = [];
     private readonly angleOptions: string[] = [];

@@ -28,7 +28,7 @@ function onBroadcastObject(o: any) {
 
 /* Create the player. */
 const player = new Player(infoUrl, video, {onError, onStartPlaying, onBroadcastObject: onBroadcastObject});
-(document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getInfoUrl();
+(document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getChannelIndexUrl();
 
 /* Performance/debug event handling. */
 if (process.env["NODE_ENV"] === "development") {

@@ -72,4 +72,11 @@ export namespace API {
         userString = 50,
         discard = 255
     }
+
+    /**
+     * Index of channels available on the server.
+     */
+    export interface ChannelIndex {
+        [infoUrl: string]: string | null,
+    }
 }
