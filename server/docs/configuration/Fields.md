@@ -84,7 +84,7 @@ audio/video stream.
 | `codec`                   | `h264`  | String                             | The video codec to use.              |
 | `h26xPreset`              |         | String                             | Preset to use for H.264/H.265.       |
 | `vpXSpeed`                | 8       | Integer                            | Speed to use for VP8/VP9/AV1.        |
-| `gop`                     |         | Integer                            | Group of pictures size in frames.    |
+| `gopsPerSegment`          | 1       | Integer                            | Number of (forced) GOPs per segment. |
 
 
 ##### `channels.qualities.video.width`
@@ -160,12 +160,11 @@ This sets `ffmpeg`'s `-speed` option for VP8/VP9/AV1. It should be between 0 and
 should use the smallest value that works reliably for your application for best quality for a given bitrate.
 
 
-##### `channels.qualities.video.gop`
+##### `channels.qualities.video.gopsPerSegment`
 
-A segment must be an integer multiple of this number of frames. If this is chosen so that the average segment duration
-is more than a few hundred ms off of an integer multiple of this, then the client may struggle to maintain
-synchronization with the stream. By default, this parameter is chosen to make each segment one GOP in length. This
-parameter can be used to force a shorter GOP, but otherwise it should be left to its default.
+Forced keyframes are inserted at regular intervals. There must be one at the start of each segment. This parameter can
+be used to force a shorter GOP (by increasing the number of GOPs per segment), but otherwise it should be left to its
+default.
 
 
 #### `channels.qualities.audio`

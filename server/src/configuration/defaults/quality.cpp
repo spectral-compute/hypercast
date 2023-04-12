@@ -59,12 +59,6 @@ void fillInQuality(Config::Quality &q, const Root &config, const Channel &channe
 {
     assert(q.video.frameRate.type == Config::FrameRate::fps);
 
-    /* Set the GOP size. */
-    if (!q.video.gop) {
-        q.video.gop = (q.video.frameRate.numerator * channel.dash.segmentDuration + 500) /
-                      (q.video.frameRate.denominator * 1000);
-    }
-
     /* Allocate the latency budget between the various things that use it. This also sets the maximum video bitrate. */
     allocateLatency(q, config, channel);
     assert(q.video.bitrate);

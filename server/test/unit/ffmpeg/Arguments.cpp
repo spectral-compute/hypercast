@@ -47,8 +47,7 @@ TEST(FfmpegArguments, Simple)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
-                    .h26xPreset = Config::H26xPreset::faster,
-                    .gop = 375
+                    .h26xPreset = Config::H26xPreset::faster
                 },
                 .audio = {
                     .sampleRate = 48000
@@ -92,7 +91,7 @@ TEST(FfmpegArguments, Simple)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
-        "-g:v:0", "375", "-force_key_frames:v:0", "expr:eq(mod(n, 375), 0)",
+        "-force_key_frames:v:0", "expr:gte(t, n_forced * 15000 / 1000)",
 
         // Codec-specific arguments.
         "-maxrate:v:0", "2048k",
@@ -153,8 +152,7 @@ TEST(FfmpegArguments, Fractional)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
-                    .h26xPreset = Config::H26xPreset::faster,
-                    .gop = 375
+                    .h26xPreset = Config::H26xPreset::faster
                 },
                 .audio = {
                     .sampleRate = 48000
@@ -201,7 +199,7 @@ TEST(FfmpegArguments, Fractional)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
-        "-g:v:0", "375", "-force_key_frames:v:0", "expr:eq(mod(n, 375), 0)",
+        "-force_key_frames:v:0", "expr:gte(t, n_forced * 15050 / 1000)",
 
         // Codec-specific arguments.
         "-maxrate:v:0", "2048k",
@@ -263,8 +261,7 @@ TEST(FfmpegArguments, Source)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
-                    .h26xPreset = Config::H26xPreset::faster,
-                    .gop = 375
+                    .h26xPreset = Config::H26xPreset::faster
                 },
                 .audio = {
                     .sampleRate = 48000
@@ -299,8 +296,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
                     .bitrate = 2048,
                     .minBitrate = 512,
                     .rateControlBufferLength = 333,
-                    .h26xPreset = Config::H26xPreset::faster,
-                    .gop = 375
+                    .h26xPreset = Config::H26xPreset::faster
                 },
                 .audio = {
                     .sampleRate = 48000
@@ -317,8 +313,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
                     .bitrate = 1024,
                     .minBitrate = 256,
                     .rateControlBufferLength = 333,
-                    .h26xPreset = Config::H26xPreset::faster,
-                    .gop = 375
+                    .h26xPreset = Config::H26xPreset::faster
                 },
                 .audio = {
                     .sampleRate = 48000
@@ -366,7 +361,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
-        "-g:v:0", "375", "-force_key_frames:v:0", "expr:eq(mod(n, 375), 0)",
+        "-force_key_frames:v:0", "expr:gte(t, n_forced * 15000 / 1000)",
 
         // Codec-specific arguments.
         "-maxrate:v:0", "2048k",
@@ -379,7 +374,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-crf:v:1", "25",
         "-minrate:v:1", "256",
         "-bufsize:v:1", "340k",
-        "-g:v:1", "375", "-force_key_frames:v:1", "expr:eq(mod(n, 375), 0)",
+        "-force_key_frames:v:1", "expr:gte(t, n_forced * 15500 / 1000)",
 
         // First codec-specific arguments.
         "-maxrate:v:1", "1024k",

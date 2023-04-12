@@ -311,7 +311,7 @@ std::string getFfmpegCodecName(Codec::AudioCodec codec)
  * @return A vector of stream-type specific arguments. The first element of the inner vector should have a stream specifier
  *         appended.
  */
-std::vector<std::vector<std::string>> getVideoStreamArgs(const Config::VideoQuality &q)
+std::vector<std::vector<std::string>> getVideoStreamArgs(const Config::VideoQuality &q, const Config::Dash &dash)
 {
     return {
         { "-c", getFfmpegCodecName(q.codec) }, // Codec.
@@ -321,9 +321,9 @@ std::vector<std::vector<std::string>> getVideoStreamArgs(const Config::VideoQual
         // Rate control buffer size. Used to impose the maximum bitrate.
         { "-bufsize", std::to_string(*q.bitrate * *q.rateControlBufferLength / 1000) + "k" },
 
-        // Force GOP size.
-        { "-g", std::to_string(*q.gop) },
-        { "-force_key_frames", "expr:eq(mod(n, " + std::to_string(*q.gop) + "), 0)" }
+        // Force keyframes at segment boundaries.
+        { "-force_key_frames", "expr:gte(t, n_forced * " + std::to_string(dash.segmentDuration) + " / " +
+                                                           std::to_string(q.gopsPerSegment * 1000) + ")" }
     };
 }
 
@@ -419,7 +419,7 @@ std::vector<std::vector<std::string>> getVideoStreamArgsForCodec(const Config::V
 /**
  * Generate the arguments for encoding the streams.
  */
-std::vector<std::string> getEncoderArgs(std::span<const Config::Quality> qualities)
+std::vector<std::string> getEncoderArgs(const Config::Channel &channel)
 {
     std::vector<std::string> result;
 
@@ -428,16 +428,16 @@ std::vector<std::string> getEncoderArgs(std::span<const Config::Quality> qualiti
     append(result, getAudioStreamArgs(), ":a");
 
     /* Per stream arguments for video. */
-    for (size_t i = 0; i < qualities.size(); i++) {
+    for (size_t i = 0; i < channel.qualities.size(); i++) {
         std::string suffix = ":v:" + std::to_string(i);
-        append(result, getVideoStreamArgs(qualities[i].video), suffix);
-        append(result, getVideoStreamArgsForCodec(qualities[i].video), suffix);
+        append(result, getVideoStreamArgs(channel.qualities[i].video, channel.dash), suffix);
+        append(result, getVideoStreamArgsForCodec(channel.qualities[i].video), suffix);
     }
 
     /* Per stream arguments for video. */
     {
         size_t audioStreamIndex = 0;
-        for (const Config::Quality &q: qualities) {
+        for (const Config::Quality &q: channel.qualities) {
             if (!q.audio) {
                 continue;
             }
@@ -574,6 +574,6 @@ Ffmpeg::Arguments::Arguments(const Config::Channel &channelConfig, const Config:
     append(ffmpegArguments, getInputArgs(channelConfig.source));
     append(ffmpegArguments, getFilterArgs(channelConfig));
     append(ffmpegArguments, getMapArgs(channelConfig.qualities));
-    append(ffmpegArguments, getEncoderArgs(channelConfig.qualities));
+    append(ffmpegArguments, getEncoderArgs(channelConfig));
     append(ffmpegArguments, getDashOutputArgs(channelConfig, networkConfig, uidPath));
 }

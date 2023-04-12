@@ -145,7 +145,7 @@ static void from_json(const nlohmann::json &j, VideoQuality &out)
         { H26xPreset::placebo, "placebo "}
     });
     d(out.vpXSpeed, "vpXSpeed");
-    d(out.gop, "gop");
+    d(out.gopsPerSegment, "gopsPerSegment");
     d();
 }
 

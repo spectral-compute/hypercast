@@ -64,7 +64,7 @@ private:
 Awaitable<void> test(IOContext &ioc,
 
                      // Video parameters.
-                     TestValue bitrate, TestValue minBitrate, TestValue rateControlBufferLength, TestValue gop,
+                     TestValue bitrate, TestValue minBitrate, TestValue rateControlBufferLength,
 
                      // Interleave parameters.
                      TestValue minInterleaveRate, TestValue minInterleaveWindow,
@@ -104,7 +104,6 @@ Awaitable<void> test(IOContext &ioc,
         { "q.video.bitrate", q.video.bitrate, bitrate },
         { "q.video.minBitrate", q.video.minBitrate, minBitrate },
         { "q.video.rateControlBufferLength", q.video.rateControlBufferLength, rateControlBufferLength },
-        { "q.video.gop", q.video.gop, gop },
 
         { "q.minInterleaveRate", q.minInterleaveRate, minInterleaveRate },
         { "q.minInterleaveWindow", q.minInterleaveWindow, minInterleaveWindow },
@@ -182,7 +181,7 @@ CORO_TEST(ConfigQualityDefaults, Default, ioc)
         ioc,
 
         // Video parameters.
-        {2500, 3500}, {250, 500}, {500, 1000}, {375, 375},
+        {2500, 3500}, {250, 500}, {500, 1000},
 
         // Interleave parameters.
         {150, 250}, {100, 250},
@@ -200,7 +199,7 @@ CORO_TEST(ConfigQualityDefaults, Default1s, ioc)
         ioc,
 
         // Video parameters.
-        {2500, 3500}, {500, 1000}, {250, 500}, {375, 375},
+        {2500, 3500}, {500, 1000}, {250, 500},
 
         // Interleave parameters.
         {300, 700}, {100, 250},
@@ -219,7 +218,7 @@ CORO_TEST(ConfigQualityDefaults, PresetRateControlBufferLength, ioc)
         ioc,
 
         // Video parameters.
-        {2500, 3500}, {250, 500}, 1000, {375, 375},
+        {2500, 3500}, {250, 500}, 1000,
 
         // Interleave parameters.
         {150, 250}, {100, 250},

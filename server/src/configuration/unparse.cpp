@@ -76,7 +76,7 @@ static void to_json(nlohmann::json &j, const VideoQuality &in)
     j["codec"] = toString(in.codec);
     j["h26xPreset"] = toString(*in.h26xPreset);
     j["vpXSpeed"] = in.vpXSpeed;
-    j["gop"] = *in.gop;
+    j["gopsPerSegment"] = in.gopsPerSegment;
 }
 
 namespace

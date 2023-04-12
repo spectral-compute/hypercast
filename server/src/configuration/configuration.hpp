@@ -108,7 +108,7 @@ struct VideoQuality final
     Codec::VideoCodec codec = Codec::VideoCodec::h264;
     std::optional<H26xPreset> h26xPreset;
     unsigned int vpXSpeed = 8;
-    std::optional<unsigned int> gop;
+    unsigned int gopsPerSegment = 1;
 
     bool operator==(const VideoQuality &) const;
 };
