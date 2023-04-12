@@ -17,7 +17,7 @@ export interface PlayerOptions {
  * @param containerElement The DOM element into which the video player will be inserted. Pass either a DOM element that was created in JS, or else pass the ID of an html element.
  * @param options
  */
-export default async function createPlayer(
+export async function createPlayer(
     sourceURL: string,
     containerElement: HTMLElement | string,
     options: PlayerOptions

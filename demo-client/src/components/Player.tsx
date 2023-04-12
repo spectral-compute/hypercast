@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from "react";
-import createPlayer, {Player as PlayerMain, PlayerOptions} from "live-video-streamer-client";
+import {createPlayer, Player as PlayerMain, PlayerOptions} from "live-video-streamer-client";
 
 import "./Player.scss";
 
