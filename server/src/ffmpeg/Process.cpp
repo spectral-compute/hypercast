@@ -37,9 +37,9 @@ std::string getArgumentsForLog(std::span<const std::string> arguments)
                 result += c;
             }
         }
-        result += "\", ";
+        result += "\" ";
     }
-    result.resize(result.size() - 2); // Remove the trailing ", ".
+    result.resize(result.size() - 1); // Remove the trailing space.
     return result;
 }
 
