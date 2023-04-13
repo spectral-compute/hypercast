@@ -50,7 +50,7 @@ export namespace API {
     }
 
     /**
-     * Main server information object.
+     * Information about a single channel.
      *
      * This is exposed as `/live/live.json` by default.
      */
@@ -75,6 +75,8 @@ export namespace API {
 
     /**
      * Index of channels available on the server.
+     *
+     * Contains a mapping of channel URLs (see `ServerInfo` interface) to channel names.
      */
     export interface ChannelIndex {
         [infoUrl: string]: string | null,

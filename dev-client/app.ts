@@ -47,6 +47,23 @@ function setupSelector(id: string, options: string[], index: number, visible: bo
     document.getElementById(id + "Label")!.hidden = !visible;
 }
 
+function setupNamedSelector(
+    id: string,
+    options: {[optionValue: string]: string | null},
+    selectedOption: string,
+    visible: boolean = true
+): void {
+    const selector = document.getElementById(id)! as HTMLSelectElement;
+    selector.innerHTML = "";
+    Object.entries(options).forEach(([optionValue, optionName]): void => {
+        const isSelected = optionValue === selectedOption;
+        selector.innerHTML += `<option value="${optionValue}" ${isSelected ? "selected" : ""}>${optionName ?? optionValue}</option>`;
+    });
+    selector.value = selectedOption;
+    selector.hidden = !visible;
+    document.getElementById(id + "Label")!.hidden = !visible;
+}
+
 /**
  * Convert an array of resolutions to an array of strings.
  */
@@ -61,7 +78,8 @@ function getQualityOptionNames(qualityOptions: [number, number][]): string[] {
 /* A function to set up the UI. */
 function setupUi(elective: boolean): void {
     /* Update the selectors. */
-    setupSelector("angle", player.getAngleOptions(), player.getAngle());
+    setupNamedSelector("channel", player.getChannelIndex(), player.getChannelPath());
+    //setupSelector("angle", player.getAngleOptions(), player.getAngle());
     setupSelector("quality", getQualityOptionNames(player.getQualityOptions()), player.getQuality());
 
     /* Update the mute button. */
@@ -80,9 +98,15 @@ function setupUi(elective: boolean): void {
 }
 
 /* Wire up the UI's outputs. */
+/*
 const angle = document.getElementById("angle")! as HTMLSelectElement;
 angle.onchange = (): void => {
     player.setAngle(parseInt(angle.value));
+};
+*/
+const channel = document.getElementById("channel")! as HTMLSelectElement;
+channel.onchange = (): void => {
+    player.setChannelPath(channel.value);
 };
 const quality = document.getElementById("quality")! as HTMLSelectElement;
 quality.onchange = (): void => {

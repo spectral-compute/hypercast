@@ -75,12 +75,12 @@ export class Player {
             // Extract base Url from the channel index url because it might be on a different domain/port.
             this.baseUrl = this.channelIndexUrl.replace(/^((?:([^:]+:[/]{2})[^/]+)?)[/].*$/, "$1");
 
-            await this.loadChannels();
+            await this.loadChannelIndex();
 
             // Now let's select the first channel.
             // TODO: Make this configurable.
-            // TODO: Make this not crash if there are no channels.
-            this.selectedChannelUrl = this.baseUrl + Object.keys(this.channelIndex)[0]!;
+            // TODO: Make this not crash if there are no channels?
+            this.selectedChannelPath = Object.keys(this.channelIndex)[0]!;
 
             await this.initCurrentChannel();
         } catch (ex: any) {
@@ -124,23 +124,30 @@ export class Player {
      * Get available channels.
      *
      * This can be changed whenever the channel list is reloaded.
+     *
+     * The channel paths don't include the base URL of the channel index.
+     *
+     * @return A map of channel paths (as keys) to channel names (as values, or null if the name is not defined).
      */
-    getChannelIndex(): API.ChannelIndex {
+    getChannelIndex(): Record<string, string | null> {
         return this.channelIndex;
     }
 
     /**
-     * Get the URL from which the info JSON of the current channel was loaded.
+     * Get the path from which the info JSON of the current channel was loaded.
+     * Does not include the base URL of the channel index.
      */
-    getChannelUrl(): string {
-        return this.selectedChannelUrl;
+    getChannelPath(): string {
+        return this.selectedChannelPath;
     }
 
     /**
      * Set channel to play from the channel index.
+     *
+     * @param channelPath The path relative to the base URL of the channel index.
      */
-    setChannel(channelPath: string): void {
-        this.selectedChannelUrl = this.baseUrl + channelPath;
+    setChannelPath(channelPath: string): void {
+        this.selectedChannelPath = channelPath;
         this.initCurrentChannel();
     }
 
@@ -347,7 +354,7 @@ export class Player {
     /**
      * (Re)load the channel index.
      */
-    private async loadChannels(): Promise<void> {
+    private async loadChannelIndex(): Promise<void> {
         // Fetch the channel index
         const channelIndexResponse: Response = await fetch(this.channelIndexUrl);
         if (channelIndexResponse.status !== 200) {
@@ -364,7 +371,14 @@ export class Player {
      * (Re)initialize the player to play the currently selected channel.
      */
     private async initCurrentChannel(): Promise<void> {
-        const response: Response = await fetch(this.selectedChannelUrl);
+        const wasPlaying = !this.video.paused;
+
+        // Stop the current playback.
+        // It will be restarted if it was playing before the channel change.
+        this.stream?.stop();
+        this.bctrl?.stop();
+
+        const response: Response = await fetch(this.baseUrl + this.selectedChannelPath);
         if (response.status !== 200) {
             throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
         }
@@ -375,12 +389,15 @@ export class Player {
         this.serverInfo = serverInfo;
 
         // Extract angle information.
+        this.angleOptions = [];
+        this.angleUrls = [];
         for (const angle of this.serverInfo.angles) {
             this.angleOptions.push(angle.name);
             this.angleUrls.push(this.baseUrl + angle.path);
         }
 
         // Extract quality information.
+        this.qualityOptions = [];
         this.serverInfo.videoConfigs.forEach((value: API.VideoConfig) => {
             this.qualityOptions.push([value.width, value.height]);
         });
@@ -427,7 +444,13 @@ export class Player {
         };
 
         /* Set the quality to an initial default. */
+        this.quality = 0; // TODO: find the closest quality to the previous one
+        this.angle = 0;
         this.updateQualityAndAngle();
+
+        if (wasPlaying) {
+            this.start();
+        }
     }
 
     /**
@@ -467,11 +490,11 @@ export class Player {
     // Server information.
     private channelIndex!: API.ChannelIndex;
     private baseUrl!: string;
-    private selectedChannelUrl!: string;
+    private selectedChannelPath!: string;
     private serverInfo!: API.ServerInfo;
-    private readonly angleUrls: string[] = [];
-    private readonly angleOptions: string[] = [];
-    private readonly qualityOptions: [number, number][] = []; // Map: quality -> (width,height).
+    private angleUrls: string[] = [];
+    private angleOptions: string[] = [];
+    private qualityOptions: [number, number][] = []; // Map: quality -> (width,height).
 
     // Current settings.
     private angle: number = 0;

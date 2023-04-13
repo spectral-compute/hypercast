@@ -61,11 +61,13 @@ export async function createPlayer(
 
 // Set up the control panel using JS (in place of the browsers' native controls)
 function createControlPanel(controlsDiv: HTMLDivElement, player: Player): void {
-    // Create and wire up the angle and quality selectors
-    const angle = insertSelector(controlsDiv, "angle", player.getAngleOptions(), player.getAngle());
-    angle.onchange = (): void => {
-        player.setAngle(parseInt(angle.value));
+    // Create and wire up the channel selector
+    const channel = insertNamedSelector(controlsDiv, "channel", player.getChannelIndex(), player.getChannelPath());
+    channel.onchange = (): void => {
+        player.setChannelPath(channel.value);
     };
+
+    // Create and wire up the quality selector
     const qualityOptionNames = getQualityOptionNames(player.getQualityOptions());
     const quality = insertSelector(controlsDiv, "quality", qualityOptionNames, player.getQuality());
     quality.onchange = (): void => {
@@ -119,13 +121,28 @@ function createControlPanel(controlsDiv: HTMLDivElement, player: Player): void {
     };
 }
 
-// Create a selector input with specified options and wire it up
+// Create a selector input with specified options (index-based) and wire it up
 function insertSelector(parent: HTMLElement, className: string, options: string[], index: number): HTMLSelectElement {
     const selector = insertNode(parent, "select", {className});
     options.forEach((name: string, nameIndex: number): void => {
         selector.innerHTML += `<option value="${nameIndex}">${name}</option>`;
     });
     selector.value = `${index}`;
+    return selector;
+}
+
+// Create a selector input with specified options (name-based) and wire it up
+function insertNamedSelector(
+    parent: HTMLElement,
+    className: string,
+    options: {[optionValue: string]: string | null /* option name */},
+    selectedValue: string
+): HTMLSelectElement {
+    const selector = insertNode(parent, "select", {className});
+    Object.entries(options).forEach(([optionValue, optionName]): void => {
+        selector.innerHTML += `<option value="${optionValue}">${optionName ?? optionValue}</option>`;
+    });
+    selector.value = selectedValue;
     return selector;
 }
 
