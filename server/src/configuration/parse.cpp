@@ -216,6 +216,7 @@ static void from_json(const nlohmann::json &j, Channel &out)
     d(out.dash, "dash");
     d(out.history, "history");
     d(out.name, "name");
+    d(out.uid, "uid");
     d();
 }
 

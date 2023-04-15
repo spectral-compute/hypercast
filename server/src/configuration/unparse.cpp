@@ -147,6 +147,7 @@ static void to_json(nlohmann::json &j, const Channel &in)
     j["dash"] = in.dash;
     j["history"] = in.history;
     j["name"] = in.name;
+    j["uid"] = in.uid;
 }
 
 /// @ingroup configuration_implementation

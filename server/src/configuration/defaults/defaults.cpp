@@ -2,6 +2,32 @@
 #include "configuration/configuration.hpp"
 #include "ffmpeg/ffprobe.hpp"
 
+namespace
+{
+
+/**
+ * Generate a unique ID.
+ *
+ * This is useful for URLs that might otherwise conflict with stale versions in a cache.
+ */
+std::string generateUid()
+{
+    constexpr const char alphabet[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    constexpr int alphabetSize = sizeof(alphabet) - 1; // The -1 removes the null terminator.
+
+    uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>
+                  (std::chrono::system_clock::now().time_since_epoch()).count();
+
+    std::string result;
+    while (ms > 0) {
+        result += alphabet[ms % alphabetSize];
+        ms /= alphabetSize;
+    }
+    return result;
+}
+
+} // namespace
+
 namespace Config
 {
 
@@ -36,6 +62,11 @@ Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
         // Fill in prerequisites to the latency tracker.
         if (!channel.source.latency) {
             channel.source.latency = 0; // TODO: fill this in based on source type or even see if ffprobe can help.
+        }
+
+        // Fill in other per-channel parameters.
+        if (channel.uid.empty()) {
+            channel.uid = generateUid();
         }
 
         // Fill in other parameters of each quality.

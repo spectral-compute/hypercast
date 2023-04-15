@@ -143,7 +143,7 @@ Awaitable<void> Instance::State::applyConfiguration(Config::Root newCfg)
     for (const auto &[channelPath, channelConfig]: newCfg.channels) {
         if (channels.contains(channelPath)) {
             // Only restart streaming if the channel configuration changed.
-            if (channelConfig == config.channels.at(channelPath)) {
+            if (channelConfig.differsByUidOnly(config.channels.at(channelPath))) {
                 continue;
             }
 

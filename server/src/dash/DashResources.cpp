@@ -30,27 +30,6 @@ namespace
 {
 
 /**
- * Generate a unique ID.
- *
- * This is useful for URLs that might otherwise conflict with stale versions in a cache.
- */
-std::string getUid()
-{
-    constexpr const char alphabet[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    constexpr int alphabetSize = sizeof(alphabet) - 1; // The -1 removes the null terminator.
-
-    uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>
-                  (std::chrono::system_clock::now().time_since_epoch()).count();
-
-    std::string result;
-    while (ms > 0) {
-        result += alphabet[ms % alphabetSize];
-        ms /= alphabetSize;
-    }
-    return result;
-}
-
-/**
  * Format the current time as a lexicographically sortable human readable timestamp.
  */
 std::string formatPersistenceTimestamp()
@@ -427,7 +406,7 @@ Dash::DashResources::~DashResources()
 Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &channelConfig,
                                    const Config::Http &httpConfig, Server::Path basePath, Server::Server &server) :
     ioc(ioc), log(log), logContext(log("dash")), config(channelConfig), server(server),
-    basePath(std::move(basePath)), uidPath(this->basePath / getUid()),
+    basePath(std::move(basePath)), uidPath(this->basePath / channelConfig.uid),
     persistenceDirectory(config.history.persistentStorage.empty() ? std::filesystem::path{} :
                          std::filesystem::path(config.history.persistentStorage) / formatPersistenceTimestamp()),
     exists(std::make_shared<char>(0))

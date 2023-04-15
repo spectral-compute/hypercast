@@ -196,8 +196,14 @@ struct Channel final
     Dash dash;
     History history;
     std::string name;
+    std::string uid;
 
     bool operator==(const Channel &) const;
+
+    /**
+     * Determine whether the channel differs only by its UID and things that are calculated from it by default.
+     */
+    bool differsByUidOnly(const Channel &other) const;
 };
 
 /**

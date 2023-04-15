@@ -30,3 +30,25 @@ bool Config::Http::operator==(const Http &) const = default;
 bool Config::Log::operator==(const Log &) const = default;
 bool Config::Features::operator==(const Features &) const = default;
 bool Config::Root::operator==(const Root &) const = default;
+
+bool Config::Channel::differsByUidOnly(const Channel &other) const
+{
+    /* We need to move some options out of both sides temporarily, even though the operation as a whole is semantically
+       const. */
+    Channel &This = const_cast<Channel &>(*this);
+    Channel &Other = const_cast<Channel &>(other);
+
+    /* Move the UID-based values out of the operands. */
+    std::string thisUidTmp = std::move(This.uid);
+    std::string otherUidTmp = std::move(Other.uid);
+
+    /* Compare with the UID-based values empty (and thus the same). */
+    bool result = *this == other;
+
+    /* Restore the UID-based values. */
+    This.uid = std::move(thisUidTmp);
+    Other.uid = std::move(otherUidTmp);
+
+    /* Done :) */
+    return result;
+}

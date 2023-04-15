@@ -32,6 +32,7 @@ the following keys:
 | `dash`      |            | Object           | Settings related to DASH.                      |
 | `history`   |            | Object           | What historical information to keep available. |
 | `name`      |            | String           | The human-readable name to give the channel.   |
+| `uid`       |            | String           | A UID for the channel.                         |
 
 
 ### `channels.source`
@@ -306,6 +307,12 @@ Due to HTTP cache timing resolution limitations, this should be greater than 100
 |---------------------|---------|---------|---------------------------------------------------------------------------|
 | `historyLength`     | 90      | Integer | The amount of time, in seconds, to make historical segments available.    |
 | `persistentStorage` |         | String  | Where to store the DASH files permanently. They're not stored if not set. |
+
+
+### `channels.uid`
+
+The UID to use for the channel. This is useful for URLs that might otherwise conflict with stale versions in a cache.
+If not given, this is automatically filled in with a value that's intended to be unique each time.
 
 
 ## `directories`
