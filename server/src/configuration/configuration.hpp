@@ -164,7 +164,7 @@ struct Quality final
 };
 
 /**
- * The dash key.
+ * The channels.dash key.
  */
 struct Dash final
 {
