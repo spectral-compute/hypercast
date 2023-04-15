@@ -361,7 +361,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
-        "-force_key_frames:v:0", "expr:gte(t, n_forced * 15000 / 1000)",
+        "-force_key_frames:v:0", "expr:gte(t, n_forced * 15500 / 1000)",
 
         // Codec-specific arguments.
         "-maxrate:v:0", "2048k",
