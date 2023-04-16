@@ -207,8 +207,11 @@ std::string getVideoFilter(const Config::Channel &config)
     // inserting it arbitrarily somewhere, just create a separate null source and sink for it.
     std::string result = "nullsrc,zmq=bind_address='" + escapeFilterArgument(config.ffmpeg.filterZmq) + "',nullsink; ";
 
+    /* Blankable input. */
+    result += "[0:v]drawbox@vblank=thickness=fill:c=#000000:enable=0[vsrc]; ";
+
     /* Split the input. */
-    result += "[0:v]split=" + std::to_string(config.qualities.size());
+    result += "[vsrc]split=" + std::to_string(config.qualities.size());
     for (size_t i = 0; i < config.qualities.size(); i++) {
         result += "[vin" + std::to_string(i) + "]";
     }
@@ -237,10 +240,24 @@ std::string getVideoFilter(const Config::Channel &config)
         result += "[v" + std::to_string(i) + "]";
 
         // Next filter.
-        if (i != config.qualities.size() - 1) {
-            result += "; ";
-        }
+        result += "; ";
     }
+
+    /* Done :) */
+    return result;
+}
+
+/**
+ * Create the audio filter string.
+ *
+ * This assumes a single audio input stream. The output stream is a0.
+ */
+std::string getAudioFilter()
+{
+    std::string result;
+
+    /* Blankable input. */
+    result += "[0:a]volume@ablank=volume=0.0:enable=0[a0]";
 
     /* Done :) */
     return result;
@@ -251,7 +268,7 @@ std::string getVideoFilter(const Config::Channel &config)
  */
 std::vector<std::string> getFilterArgs(const Config::Channel &config)
 {
-    return { "-filter_complex", getVideoFilter(config) };
+    return { "-filter_complex", getVideoFilter(config) + getAudioFilter() };
 }
 
 /**
@@ -271,7 +288,7 @@ std::vector<std::string> getMapArgs(std::span<const Config::Quality> qualities)
         if (!q.audio) {
             continue;
         }
-        result.insert(result.end(), { "-map", "0:a" });
+        result.insert(result.end(), { "-map", "[a0]" });
     }
 
     /* Done :) */

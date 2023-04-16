@@ -1,5 +1,6 @@
 #include "DashResources.hpp"
 
+#include "api/channel/BlankResource.hpp"
 #include "api/channel/SendDataResource.hpp"
 #include "configuration/configuration.hpp"
 #include "dash/SegmentResource.hpp"
@@ -426,6 +427,7 @@ Dash::DashResources::~DashResources()
     streams.clear();
     interleaves.clear();
     server.removeResourceTree(basePath);
+    server.removeResourceTree(Server::Path("api/channels") / basePath);
 }
 
 Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &channelConfig,
@@ -442,6 +444,7 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     /* Create the API resources. */
     {
         Server::Path apiBasePath = Server::Path("api/channels") / this->basePath;
+        server.addResource<Api::Channel::BlankResource>(apiBasePath / "blank", ioc, channelConfig.ffmpeg.filterZmq);
         server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_json", *this,
                                                            Api::Channel::SendDataResource::Kind::userJson);
         server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_binary", *this,

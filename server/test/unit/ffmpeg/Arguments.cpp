@@ -79,11 +79,13 @@ TEST(FfmpegArguments, Simple)
 
         /* Filtering. */
         "-filter_complex", "nullsrc,zmq=bind_address='ipc\\:///tmp/live/abcd',nullsink; "
-                           "[0:v]split=1[vin0]; "
-                           "[vin0]fps=25/1,scale=1920x1080[v0]",
+                           "[0:v]drawbox@vblank=thickness=fill:c=#000000:enable=0[vsrc]; "
+                           "[vsrc]split=1[vin0]; "
+                           "[vin0]fps=25/1,scale=1920x1080[v0]; "
+                           "[0:a]volume@ablank=volume=0.0:enable=0[a0]",
 
         /* Map. */
-        "-map", "[v0]", "-map", "0:a",
+        "-map", "[v0]", "-map", "[a0]",
 
         /* Per stream-type arguments. */
         "-pix_fmt:v", "yuv420p",
@@ -189,11 +191,13 @@ TEST(FfmpegArguments, Fractional)
 
         /* Filtering. */
         "-filter_complex", "nullsrc,zmq=bind_address='',nullsink; "
-                           "[0:v]split=1[vin0]; "
-                           "[vin0]fps=25/1,scale=1920x1080[v0]",
+                           "[0:v]drawbox@vblank=thickness=fill:c=#000000:enable=0[vsrc]; "
+                           "[vsrc]split=1[vin0]; "
+                           "[vin0]fps=25/1,scale=1920x1080[v0]; "
+                           "[0:a]volume@ablank=volume=0.0:enable=0[a0]",
 
         /* Map. */
-        "-map", "[v0]", "-map", "0:a",
+        "-map", "[v0]", "-map", "[a0]",
 
         /* Per stream-type arguments. */
         "-pix_fmt:v", "yuv420p",
@@ -352,12 +356,14 @@ TEST(FfmpegArguments, TwoVideoStreams)
 
         /* Filtering. */
         "-filter_complex", "nullsrc,zmq=bind_address='',nullsink; "
-                           "[0:v]split=2[vin0][vin1]; "
+                           "[0:v]drawbox@vblank=thickness=fill:c=#000000:enable=0[vsrc]; "
+                           "[vsrc]split=2[vin0][vin1]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]; "
-                           "[vin1]fps=25/1,scale=1280x720[v1]",
+                           "[vin1]fps=25/1,scale=1280x720[v1]; "
+                           "[0:a]volume@ablank=volume=0.0:enable=0[a0]",
 
         /* Map. */
-        "-map", "[v0]", "-map", "[v1]", "-map", "0:a", "-map", "0:a",
+        "-map", "[v0]", "-map", "[v1]", "-map", "[a0]", "-map", "[a0]",
 
         /* Per stream-type arguments. */
         "-pix_fmt:v", "yuv420p",
