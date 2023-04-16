@@ -39,6 +39,12 @@ CORO_TEST(SubprocessGetStdout, Large, ioc)
     EXPECT_EQ(1000000, (co_await Subprocess::getStdout(ioc, "bash", {"-c", "head -c 1000000 /dev/zero"})).size());
 }
 
+CORO_TEST(SubprocessGetStdout, Cat, ioc)
+{
+    EXPECT_EQ("triangle\nhexagon",
+              (co_await Subprocess::getStdout(ioc, "bash", {"-c", "echo triangle ; cat"}, "hexagon")));
+}
+
 CORO_TEST(SubprocessGetStdout, FalseStderr, ioc)
 {
     try {

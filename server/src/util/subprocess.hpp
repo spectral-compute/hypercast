@@ -259,17 +259,19 @@ private:
  *
  * @param executable The executable to run. This is searched for in PATH.
  * @param arguments The arguments (excluding the executable) to give to the subprocess.
+ * @param stdinData The data to give to the subprocess's standard input.
  * @return What the subprocess wrote to stdout.
  * @throws std::runtime_error If the sub-process returns non-zero.
  */
 Awaitable<std::string> getStdout(IOContext &ioc, std::string_view executable,
-                                 std::span<const std::string_view> arguments = {});
+                                 std::span<const std::string_view> arguments = {}, std::string_view stdinData = {});
 
 /**
  * @copydoc getStdout
  */
 Awaitable<std::string> getStdout(IOContext &ioc, std::string_view executable,
-                                 std::initializer_list<std::string_view> arguments = {});
+                                 std::initializer_list<std::string_view> arguments = {},
+                                 std::string_view stdinData = {});
 
 } // namespace Subprocess
 

@@ -349,10 +349,16 @@ void Subprocess::Subprocess::closeStderr()
 }
 
 Awaitable<std::string> Subprocess::getStdout(IOContext &ioc, std::string_view executable,
-                                             std::span<const std::string_view> arguments)
+                                             std::span<const std::string_view> arguments, std::string_view stdinData)
 {
     /* Start the subprocess. */
-    Subprocess subprocess(ioc, executable, arguments, false);
+    Subprocess subprocess(ioc, executable, arguments, !stdinData.empty());
+
+    /* Write stdin. */
+    if (!stdinData.empty()) {
+        co_await subprocess.writeStdin(stdinData);
+        subprocess.closeStdin();
+    }
 
     /* Read stdout and stderr. */
     auto [stdoutString, stderrString] =
@@ -370,7 +376,8 @@ Awaitable<std::string> Subprocess::getStdout(IOContext &ioc, std::string_view ex
 }
 
 Awaitable<std::string> Subprocess::getStdout(IOContext &ioc, std::string_view executable,
-                                             std::initializer_list<std::string_view> arguments)
+                                             std::initializer_list<std::string_view> arguments,
+                                             std::string_view stdinData)
 {
-    return getStdout(ioc, executable, std::span(arguments.begin(), arguments.end()));
+    return getStdout(ioc, executable, std::span(arguments.begin(), arguments.end()), stdinData);
 }
