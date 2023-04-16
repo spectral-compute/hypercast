@@ -263,13 +263,13 @@ private:
  * @throws std::runtime_error If the sub-process returns non-zero.
  */
 Awaitable<std::string> getStdout(IOContext &ioc, std::string_view executable,
-                                 std::span<const std::string_view> arguments);
+                                 std::span<const std::string_view> arguments = {});
 
 /**
  * @copydoc getStdout
  */
 Awaitable<std::string> getStdout(IOContext &ioc, std::string_view executable,
-                                 std::initializer_list<std::string_view> arguments);
+                                 std::initializer_list<std::string_view> arguments = {});
 
 } // namespace Subprocess
 
