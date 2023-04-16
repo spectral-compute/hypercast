@@ -140,12 +140,19 @@ static void to_json(nlohmann::json &j, const History &in)
 }
 
 /// @ingroup configuration_implementation
+static void to_json(nlohmann::json &j, const ChannelFfmpeg &in)
+{
+    j["filterZmq"] = in.filterZmq;
+}
+
+/// @ingroup configuration_implementation
 static void to_json(nlohmann::json &j, const Channel &in)
 {
     j["source"] = in.source;
     j["qualities"] = in.qualities;
     j["dash"] = in.dash;
     j["history"] = in.history;
+    j["ffmpeg"] = in.ffmpeg;
     j["name"] = in.name;
     j["uid"] = in.uid;
 }

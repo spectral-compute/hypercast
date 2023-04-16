@@ -208,6 +208,14 @@ static void from_json(const nlohmann::json &j, History &out)
 }
 
 /// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, ChannelFfmpeg &out)
+{
+    Json::ObjectDeserializer d(j, "ffmpeg");
+    d(out.filterZmq, "filterZmq");
+    d();
+}
+
+/// @ingroup configuration_implementation
 static void from_json(const nlohmann::json &j, Channel &out)
 {
     Json::ObjectDeserializer d(j, "channel");
@@ -215,6 +223,7 @@ static void from_json(const nlohmann::json &j, Channel &out)
     d(out.qualities, "qualities");
     d(out.dash, "dash");
     d(out.history, "history");
+    d(out.ffmpeg, "ffmpeg");
     d(out.name, "name");
     d(out.uid, "uid");
     d();

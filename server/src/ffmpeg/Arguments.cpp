@@ -165,6 +165,24 @@ std::vector<std::string> getInputArgs(const Config::Source &source)
 }
 
 /**
+ * Quote and escape an FFMPEG filter graph argument.
+ */
+std::string escapeFilterArgument(std::string_view argument)
+{
+    std::string result;
+    for (char c: argument) {
+        switch (c) {
+            case ':':
+            case '\'':
+            case '\\':
+                result += '\\';
+        }
+        result += c;
+    }
+    return result;
+}
+
+/**
  * Get a filter string to print a timestamp onto the video.
  */
 std::string getTimestampFilter(unsigned int width)
@@ -184,8 +202,13 @@ std::string getTimestampFilter(unsigned int width)
  */
 std::string getVideoFilter(const Config::Channel &config)
 {
+    /* Add the ZMQ interface. */
+    // The ZMQ interface is a filter that needs to be sandwiched between a source and sink of some kind. Rather than
+    // inserting it arbitrarily somewhere, just create a separate null source and sink for it.
+    std::string result = "nullsrc,zmq=bind_address='" + escapeFilterArgument(config.ffmpeg.filterZmq) + "',nullsink; ";
+
     /* Split the input. */
-    std::string result = "[0:v]split=" + std::to_string(config.qualities.size());
+    result += "[0:v]split=" + std::to_string(config.qualities.size());
     for (size_t i = 0; i < config.qualities.size(); i++) {
         result += "[vin" + std::to_string(i) + "]";
     }

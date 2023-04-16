@@ -1,6 +1,7 @@
 #include "configuration/defaults.hpp"
 #include "configuration/configuration.hpp"
 #include "ffmpeg/ffprobe.hpp"
+#include "server/Path.hpp"
 
 namespace
 {
@@ -22,6 +23,19 @@ std::string generateUid()
     while (ms > 0) {
         result += alphabet[ms % alphabetSize];
         ms /= alphabetSize;
+    }
+    return result;
+}
+
+/**
+ * Replace characters in a path to include only safe characters and no path separators.
+ */
+std::string sanitizePathToFilename(std::string_view path)
+{
+    std::string result;
+    for (char c: path) {
+        result += ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '.' || c == '-') ?
+                  c : '_';
     }
     return result;
 }
@@ -67,6 +81,9 @@ Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
         // Fill in other per-channel parameters.
         if (channel.uid.empty()) {
             channel.uid = generateUid();
+        }
+        if (channel.ffmpeg.filterZmq.empty()) {
+            channel.ffmpeg.filterZmq = "ipc:///tmp/rise-ffmpeg-zmq_" + sanitizePathToFilename(path + "_" + channel.uid);
         }
 
         // Fill in other parameters of each quality.

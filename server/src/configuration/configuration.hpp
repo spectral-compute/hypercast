@@ -176,6 +176,16 @@ struct Dash final
 };
 
 /**
+ * The channels.ffmpeg key.
+ */
+struct ChannelFfmpeg final
+{
+    std::string filterZmq;
+
+    bool operator==(const ChannelFfmpeg &) const;
+};
+
+/**
  * The history key.
  */
 struct History final
@@ -195,6 +205,7 @@ struct Channel final
     std::vector<Quality> qualities;
     Dash dash;
     History history;
+    ChannelFfmpeg ffmpeg;
     std::string name;
     std::string uid;
 

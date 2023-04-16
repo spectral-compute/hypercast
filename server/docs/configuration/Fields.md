@@ -25,14 +25,15 @@ The keys of the `channels` object are base paths to export on the server for the
 `/live`, then the information JSON resource will be `/live/info.json`. The value for each key should be an object with
 the following keys:
 
-| Field       | Default    | Type             | Description                                    |
-|-------------|------------|------------------|------------------------------------------------|
-| `source`    | *Required* | Object or string | The video (and audio) source.                  |
-| `qualities` |            | Array of objects | The set of qualities to make available.        |
-| `dash`      |            | Object           | Settings related to DASH.                      |
-| `history`   |            | Object           | What historical information to keep available. |
-| `name`      |            | String           | The human-readable name to give the channel.   |
-| `uid`       |            | String           | A UID for the channel.                         |
+| Field       | Default    | Type             | Description                                      |
+|-------------|------------|------------------|--------------------------------------------------|
+| `source`    | *Required* | Object or string | The video (and audio) source.                    |
+| `qualities` |            | Array of objects | The set of qualities to make available.          |
+| `dash`      |            | Object           | Settings related to DASH.                        |
+| `history`   |            | Object           | What historical information to keep available.   |
+| `ffmpeg`    |            | Object           | Settings that control `ffmpeg` for this channel. |
+| `name`      |            | String           | The human-readable name to give the channel.     |
+| `uid`       |            | String           | A UID for the channel.                           |
 
 
 ### `channels.source`
@@ -307,6 +308,13 @@ Due to HTTP cache timing resolution limitations, this should be greater than 100
 |---------------------|---------|---------|---------------------------------------------------------------------------|
 | `historyLength`     | 90      | Integer | The amount of time, in seconds, to make historical segments available.    |
 | `persistentStorage` |         | String  | Where to store the DASH files permanently. They're not stored if not set. |
+
+
+### `channels.ffmpeg`
+
+| Field       | Default        | Type   | Description                                                |
+|-------------|----------------|--------|------------------------------------------------------------|
+| `filterZmq` | An IPC address | String | The address to bind to for ZMQ access to the filter graph. |
 
 
 ### `channels.uid`

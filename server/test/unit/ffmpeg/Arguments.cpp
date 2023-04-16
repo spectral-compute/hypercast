@@ -53,6 +53,9 @@ TEST(FfmpegArguments, Simple)
                     .sampleRate = 48000
                 }
             }
+        },
+        .ffmpeg = {
+            .filterZmq = "ipc:///tmp/live/abcd"
         }
     };
 
@@ -75,7 +78,8 @@ TEST(FfmpegArguments, Simple)
         "-i", "rtsp://192.0.2.3",
 
         /* Filtering. */
-        "-filter_complex", "[0:v]split=1[vin0]; "
+        "-filter_complex", "nullsrc,zmq=bind_address='ipc\\:///tmp/live/abcd',nullsink; "
+                           "[0:v]split=1[vin0]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]",
 
         /* Map. */
@@ -184,7 +188,8 @@ TEST(FfmpegArguments, Fractional)
         "-i", "rtsp://192.0.2.3",
 
         /* Filtering. */
-        "-filter_complex", "[0:v]split=1[vin0]; "
+        "-filter_complex", "nullsrc,zmq=bind_address='',nullsink; "
+                           "[0:v]split=1[vin0]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]",
 
         /* Map. */
@@ -346,7 +351,8 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-i", "rtsp://192.0.2.3",
 
         /* Filtering. */
-        "-filter_complex", "[0:v]split=2[vin0][vin1]; "
+        "-filter_complex", "nullsrc,zmq=bind_address='',nullsink; "
+                           "[0:v]split=2[vin0][vin1]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]; "
                            "[vin1]fps=25/1,scale=1280x720[v1]",
 

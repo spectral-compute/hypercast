@@ -144,7 +144,7 @@ if [ "${HAS_DECKLINK}" == "1" ] && [ ! -e "/usr/include/DeckLinkAPI.h" ] ; then
          "       decklink-sdk package from the AUR." 1>&2
     exit 1
 fi
-for PKG in fontconfig freetype2 opus ; do
+for PKG in fontconfig freetype2 opus libzmq ; do
     if ! pkg-config "${PKG}" ; then
         echo "Error: The ${PKG} is library not found. On Arch Linux: install the ${PKG} package." 1>&2
         exit 1
@@ -221,12 +221,18 @@ COMMON_CONFIGURE=(
         --disable-autodetect
         --enable-libx264 --enable-libopus
         --enable-fontconfig --enable-libfreetype
+        --enable-libzmq
     )
     FFMPEG_CONFIGURE+=("${FFMPEG_OPTIONAL_LIBS[@]}")
 
     printAndRun "${SRC}/ffmpeg/configure" "${COMMON_CONFIGURE[@]}" "${FFMPEG_CONFIGURE[@]}"
     printAndRun make DESTDIR="/" V=1 install -j$(nproc)
 )
+
+# Build zmqsend.
+printAndRun "${CC}" -O3 -march=${MARCH} -mtune=${MTUNE} \
+                    $(pkg-config --cflags --libs libavutil libzmq) -I"${BUILD}/ffmpeg" \
+                    -o "${INSTALL}/bin/zmqsend" "${SRC}/ffmpeg/tools/zmqsend.c"
 
 # Remove things that aren't needed by the server.
 rm -rf install/include install/lib/pkgconfig install/share/ffmpeg/examples

@@ -22,6 +22,7 @@ bool Config::AudioQuality::operator==(const AudioQuality &) const = default;
 bool Config::ClientBufferControl::operator==(const ClientBufferControl &) const = default;
 bool Config::Quality::operator==(const Quality &) const = default;
 bool Config::Dash::operator==(const Dash &) const = default;
+bool Config::ChannelFfmpeg::operator==(const ChannelFfmpeg &) const = default;
 bool Config::History::operator==(const History &) const = default;
 bool Config::Channel::operator==(const Channel &) const = default;
 bool Config::Directory::operator==(const Directory &) const = default;
@@ -41,6 +42,8 @@ bool Config::Channel::differsByUidOnly(const Channel &other) const
     /* Move the UID-based values out of the operands. */
     std::string thisUidTmp = std::move(This.uid);
     std::string otherUidTmp = std::move(Other.uid);
+    std::string thisFfmpegZmqTmp = std::move(This.ffmpeg.filterZmq);
+    std::string otherFfmpegZmqTmp = std::move(Other.ffmpeg.filterZmq);
 
     /* Compare with the UID-based values empty (and thus the same). */
     bool result = *this == other;
@@ -48,6 +51,8 @@ bool Config::Channel::differsByUidOnly(const Channel &other) const
     /* Restore the UID-based values. */
     This.uid = std::move(thisUidTmp);
     Other.uid = std::move(otherUidTmp);
+    This.ffmpeg.filterZmq = std::move(thisFfmpegZmqTmp);
+    Other.ffmpeg.filterZmq = std::move(otherFfmpegZmqTmp);
 
     /* Done :) */
     return result;
