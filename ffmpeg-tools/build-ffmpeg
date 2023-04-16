@@ -1,0 +1,237 @@
+#!/bin/bash
+
+set -e
+
+# Utility functions.
+function printAndRun
+{
+    echo "$@"
+    "$@"
+}
+
+# Default arguments.
+BUILD="$(pwd)/build"
+CPU=native # Using the new instruction sets is actually a bit faster.
+INSTALL="$(pwd)/install"
+SRC="$(pwd)"
+FEATURES=(decklink)
+
+# Parse arguments.
+ALL_FEATURES=(decklink)
+DEFAULT_FEATURES=("${FEATURES[@]}")
+
+function checkValidFeature
+{
+    if [ "$1" == "all" ] ; then
+        return
+    fi
+    for FEATURE in "${ALL_FEATURES[@]}" ; do
+        if [ "${FEATURE}" == "$1" ] ; then
+            return
+        fi
+    done
+
+    echo "Error: Unknown feature: $1. Valid features: ${ALL_FEATURES[@]}." 1>&2
+    exit 1
+}
+
+while [ "$#" != "0" ] ; do
+    case "$1" in
+        -h|--help)
+            echo -e "Usage: build-ffmpeg.sh [-b build_dir] [-c cpu] [-f feature] [-F feature] [-i install_dir]\n" \
+                    "                       [-s sources_dir]\n" \
+                    " -b: The directory to use for the build tree. This directory must not exist before the build\n" \
+                    "     starts. The default is ./install.\n" \
+                    " -c: The CPU to use. x86-64, x86-64-vX, native, or any other value accepted by clang's -march\n" \
+                    "     and -mtune flags. The default is native.\n" \
+                    " -f: Add the specified feature.\n" \
+                    "     One of: all ${ALL_FEATURES[@]}.\n" \
+                    "     Default enabled features: ${DEFAULT_FEATURES[@]}.\n" \
+                    " -F: Remove the specified feature. This accepts the same options as -f.\n" \
+                    " -i: The directory to install the build to. This directory can be moved after the build. The\n" \
+                    "     default is ./install.\n" \
+                    " -s: A directory containing the ffmpeg and x264 source code, with those names. If the source \n" \
+                    "     does not exist, it's downloaded. The default is ./install.\n" \
+                    "\n" \
+                    "Builds an ffmpeg that's suitable for using the video streaming server with H.264. The\n" \
+                    "resulting binaries might not be redistributable under their standard licenses."
+            exit 0
+        ;;
+        -c)
+            CPU="$2"
+            shift
+        ;;
+        -f)
+            checkValidFeature "$2"
+            if [ "$2" == "all" ] ; then
+                FEATURES=("${ALL_FEATURES[@]}")
+            else
+                FEATURES+=("$2")
+            fi
+            shift
+        ;;
+        -F)
+            checkValidFeature "$2"
+            if [ "$2" == "all" ] ; then
+                FEATURES=()
+            else
+                FEATURES=("${FEATURES[@]/$2}")
+            fi
+            shift
+        ;;
+        -i)
+            INSTALL="$(realpath "$2")"
+            shift
+        ;;
+        -s)
+            SRC="$(realpath "$2")"
+            shift
+        ;;
+        *)
+            echo "Error: Unknown argument: $1. Try $0 --help." 1>&2
+            exit 1
+        ;;
+    esac
+    shift
+done
+
+# Figure out -march and -mtune.
+case "${CPU}" in
+    x86-64|x86-64-v*)
+        MARCH="${CPU}"
+        MTUNE=generic
+    ;;
+    *)
+        MARCH="${CPU}"
+        MTUNE="${CPU}"
+    ;;
+esac
+
+# Parse and check the enabled features.
+NONFREE=()
+FFMPEG_OPTIONAL_LIBS=()
+HAS_DECKLINK=0
+for FEATURE in "${FEATURES[@]}" ; do
+    case "${FEATURE}" in
+        decklink)
+            if [ "${HAS_DECKLINK}" == "1" ] ; then
+                continue
+            fi
+            NONFREE=(--enable-nonfree)
+            FFMPEG_OPTIONAL_LIBS+=(--enable-decklink)
+            HAS_DECKLINK=1
+        ;;
+        "")
+            continue
+        ;;
+        *)
+            exit 2
+        ;;
+    esac
+done
+
+# Check the dependencies.
+if ! which gcc > /dev/null ; then
+    echo "Error: GCC is not found. On Arch Linux, install the base-devel package." 1>&2
+    exit 1
+fi
+if ! which clang > /dev/null ; then
+    echo "Error: Clang is not found. On Arch Linux: install the clang package." 1>&2
+    exit 1
+fi
+if [ "${HAS_DECKLINK}" == "1" ] && [ ! -e "/usr/include/DeckLinkAPI.h" ] ; then
+    echo "Error: The Decklink SDK is not found. Pass -F decklink to disable it, or on Arch Linux: install the\n" \
+         "       decklink-sdk package from the AUR." 1>&2
+    exit 1
+fi
+for PKG in fontconfig freetype2 opus ; do
+    if ! pkg-config "${PKG}" ; then
+        echo "Error: The ${PKG} is library not found. On Arch Linux: install the ${PKG} package." 1>&2
+        exit 1
+    fi
+done
+
+# Check that the build directory does not already exist.
+if [ -e "${BUILD}" ] ; then
+    echo "Error: The build directory, ${BUILD}, already exists." 1>&2
+    exit 1
+fi
+
+# Clone sources.
+if [ ! -e "${SRC}/ffmpeg" ] ; then
+    git -C "${SRC}" clone https://git.ffmpeg.org/ffmpeg.git
+    git -C "${SRC}/ffmpeg" checkout n6.0
+fi
+if [ ! -e "${SRC}/x264" ] ; then
+    git -C "${SRC}" clone https://code.videolan.org/videolan/x264.git
+    git -C "${SRC}/x264" checkout baee400
+fi
+
+# Common arguments
+export CC=clang # Slightly faster binaries.
+export CXX=clang++
+
+COMMON_CONFIGURE=(
+    --prefix="${INSTALL}"
+    --enable-shared
+    --extra-cflags="-march=${MARCH} -mtune=${MTUNE}"
+    --extra-ldflags="-march=${MARCH} -mtune=${MTUNE}"
+)
+
+# Build x264.
+(
+    set -e
+
+    mkdir -p "${BUILD}/x264"
+    cd "${BUILD}/x264"
+
+    X264_CONFIGURE=(
+        --enable-strip
+        --disable-avs
+        --disable-swscale
+        --disable-lavf
+        --disable-ffms
+        --disable-gpac
+        --disable-lsmash
+    )
+
+    printAndRun "${SRC}/x264/configure" "${COMMON_CONFIGURE[@]}" "${X264_CONFIGURE[@]}"
+    printAndRun make DESTDIR="/" install -j$(nproc)
+)
+
+# Build ffmpeg.
+(
+    set -e
+
+    mkdir -p "${BUILD}/ffmpeg"
+    cd "${BUILD}/ffmpeg"
+
+    export PKG_CONFIG_PATH="$(pwd)/../install/lib/pkgconfig"
+
+    FFMPEG_CONFIGURE=(
+        --cc=clang --cxx=clang++
+        --enable-gpl
+    )
+    FFMPEG_CONFIGURE+=("${NONFREE[@]}")
+    FFMPEG_CONFIGURE+=(
+        --extra-cxxflags="-march=${MARCH} -mtune=${MTUNE}"
+        --enable-stripping --disable-debug
+        --disable-static
+        --disable-doc
+        --disable-autodetect
+        --enable-libx264 --enable-libopus
+        --enable-fontconfig --enable-libfreetype
+    )
+    FFMPEG_CONFIGURE+=("${FFMPEG_OPTIONAL_LIBS[@]}")
+
+    printAndRun "${SRC}/ffmpeg/configure" "${COMMON_CONFIGURE[@]}" "${FFMPEG_CONFIGURE[@]}"
+    printAndRun make DESTDIR="/" V=1 install -j$(nproc)
+)
+
+# Remove things that aren't needed by the server.
+rm -rf install/include install/lib/pkgconfig install/share/ffmpeg/examples
+
+# Make the binaries find the right libraries.
+for F in $(find install/bin install/lib -maxdepth 1 -type f) ; do
+    printAndRun patchelf --add-rpath '$ORIGIN/../lib' "${F}"
+done

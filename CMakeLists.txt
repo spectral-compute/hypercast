@@ -28,6 +28,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 
 # Sub-projects.
+add_subdirectory(ffmpeg-tools)
 add_subdirectory(server)
 
 # Documentation.

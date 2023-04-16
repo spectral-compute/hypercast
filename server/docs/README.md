@@ -19,6 +19,7 @@ git submodule update --init --recursive
 Ensure you have local installations of:
 - Boost (extra/boost pacman package)
 - nlohmann_json (pacman: community/nlohmann-json)
+- FFmpeg (run `build-ffmpeg --help` from the install tree for information about how to get a suitable build)
 
 To compile the documentation, ensure you have installed:
 - pandoc (pacman: community/pandoc)
