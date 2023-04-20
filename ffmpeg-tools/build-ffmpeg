@@ -14,10 +14,10 @@ BUILD="$(pwd)/build"
 CPU=native # Using the new instruction sets is actually a bit faster.
 INSTALL="$(pwd)/install"
 SRC="$(pwd)"
-FEATURES=(decklink)
+FEATURES=(decklink x265)
 
 # Parse arguments.
-ALL_FEATURES=(decklink)
+ALL_FEATURES=(decklink x265)
 DEFAULT_FEATURES=("${FEATURES[@]}")
 
 function checkValidFeature
@@ -111,6 +111,7 @@ esac
 NONFREE=()
 FFMPEG_OPTIONAL_LIBS=()
 HAS_DECKLINK=0
+HAS_X265=0
 for FEATURE in "${FEATURES[@]}" ; do
     case "${FEATURE}" in
         decklink)
@@ -120,6 +121,13 @@ for FEATURE in "${FEATURES[@]}" ; do
             NONFREE=(--enable-nonfree)
             FFMPEG_OPTIONAL_LIBS+=(--enable-decklink)
             HAS_DECKLINK=1
+        ;;
+        x265)
+            if [ "${HAS_X265}" == "1" ] ; then
+                continue
+            fi
+            FFMPEG_OPTIONAL_LIBS+=(--enable-libx265)
+            HAS_X265=1
         ;;
         "")
             continue
@@ -166,6 +174,10 @@ if [ ! -e "${SRC}/x264" ] ; then
     git -C "${SRC}" clone https://code.videolan.org/videolan/x264.git
     git -C "${SRC}/x264" checkout baee400
 fi
+if [ "${HAS_X265}" == "1" ] && [ ! -e "${SRC}/x265" ] ; then
+    git -C "${SRC}" clone https://bitbucket.org/multicoreware/x265_git x265
+    git -C "${SRC}/x265" checkout 3.5
+fi
 
 # Common arguments
 export CC=clang # Slightly faster binaries.
@@ -198,6 +210,24 @@ COMMON_CONFIGURE=(
     printAndRun "${SRC}/x264/configure" "${COMMON_CONFIGURE[@]}" "${X264_CONFIGURE[@]}"
     printAndRun make DESTDIR="/" install -j$(nproc)
 )
+
+# Build x265.
+if [ "${HAS_X265}" == "1" ] ; then (
+    set -e
+
+    mkdir -p "${BUILD}/x265"
+    cd "${BUILD}/x265"
+
+    X265_CONFIGURE=(
+        -DCMAKE_C_COMPILER="${CC}"
+        -DCMAKE_CXX_COMPILER="${CXX}"
+        -DCMAKE_C_FLAGS="-march=${MARCH} -mtune=${MTUNE}"
+        -DCMAKE_CXX_FLAGS="-march=${MARCH} -mtune=${MTUNE}"
+    )
+
+    printAndRun cmake "${X265_CONFIGURE[@]}" -DCMAKE_INSTALL_PREFIX="${INSTALL}" "${SRC}/x265/source"
+    printAndRun make install -j$(nproc) VERBOSE=1
+) ; fi
 
 # Build ffmpeg.
 (
@@ -235,7 +265,7 @@ printAndRun "${CC}" -O3 -march=${MARCH} -mtune=${MTUNE} \
                     -o "${INSTALL}/bin/zmqsend" "${SRC}/ffmpeg/tools/zmqsend.c"
 
 # Remove things that aren't needed by the server.
-rm -rf install/include install/lib/pkgconfig install/share/ffmpeg/examples
+rm -rf install/include install/lib/libx265.a install/lib/pkgconfig install/share/ffmpeg/examples
 
 # Make the binaries find the right libraries.
 for F in $(find install/bin install/lib -maxdepth 1 -type f) ; do
