@@ -176,7 +176,7 @@ default.
 | `codec`      | `aac`   | String  | The audio codec to use. |
 
 
-##### `channels.qualities.video.width`
+##### `channels.qualities.audio.sampleRate`
 
 By default, the sample rate is calculated by applying each of the following conditions in turn. Conditions that cannot
 be satisfied along with their preceding conditions are ignored.
