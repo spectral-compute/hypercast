@@ -91,6 +91,7 @@ TEST(FfmpegArguments, Simple)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
+        "-forced-idr:v:0", "1",
         "-force_key_frames:v:0", "expr:gte(t, n_forced * 15000 / 1000)",
 
         // Codec-specific arguments.
@@ -199,6 +200,7 @@ TEST(FfmpegArguments, Fractional)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
+        "-forced-idr:v:0", "1",
         "-force_key_frames:v:0", "expr:gte(t, n_forced * 15050 / 1000)",
 
         // Codec-specific arguments.
@@ -361,6 +363,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-crf:v:0", "25",
         "-minrate:v:0", "512",
         "-bufsize:v:0", "681k",
+        "-forced-idr:v:0", "1",
         "-force_key_frames:v:0", "expr:gte(t, n_forced * 15500 / 1000)",
 
         // Codec-specific arguments.
@@ -374,6 +377,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-crf:v:1", "25",
         "-minrate:v:1", "256",
         "-bufsize:v:1", "340k",
+        "-forced-idr:v:1", "1",
         "-force_key_frames:v:1", "expr:gte(t, n_forced * 15500 / 1000)",
 
         // First codec-specific arguments.

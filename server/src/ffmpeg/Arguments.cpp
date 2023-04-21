@@ -321,7 +321,8 @@ std::vector<std::vector<std::string>> getVideoStreamArgs(const Config::VideoQual
         // Rate control buffer size. Used to impose the maximum bitrate.
         { "-bufsize", std::to_string(*q.bitrate * *q.rateControlBufferLength / 1000) + "k" },
 
-        // Force keyframes at segment boundaries.
+        // Force IDR I-frames at segment boundaries.
+        { "-forced-idr", "1" },
         { "-force_key_frames", "expr:gte(t, n_forced * " + std::to_string(dash.segmentDuration) + " / " +
                                                            std::to_string(q.gopsPerSegment * 1000) + ")" }
     };
