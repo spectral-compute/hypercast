@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+
+import argparse
+import itertools
+import json
+import math
+import os
+import subprocess
+import sys
+
+def ffprobe(mediaFilePath):
+    '''Get information about a media file using ffprobe.'''
+
+    # Run ffprobe.
+    j = json.loads(subprocess.run(['ffprobe', '-of', 'json', '-show_format', '-show_streams', mediaFilePath],
+                                  check=True, stdout=subprocess.PIPE).stdout)
+
+    # Extract the default/otherwise best stream for each type.
+    bestStreams = dict()
+    foundDefault = set()
+    for stream in j['streams']:
+        type = stream['codec_type']
+        isDefault = stream['disposition']['default'] > 0
+
+        if type in foundDefault or (type in bestStreams and not isDefault):
+            continue
+        if isDefault:
+            foundDefault.add(type)
+        bestStreams[type] = stream
+
+    # The objects we've got.
+    container = j['format']
+    videoStream = bestStreams['video']
+    audioStream = bestStreams['audio']
+
+    # Build the result.
+    return {
+        'duration': float(container['duration']),
+        'video': {
+            'index': videoStream['index'],
+            'width': videoStream['width'],
+            'height': videoStream['height'],
+            'frameRate': [int(n) for n in videoStream['r_frame_rate'].split('/')]
+        },
+        'audio': {
+            'index': audioStream['index'],
+        }
+    }
+
+def convertFrameRate(frameRate, inputFrameRate):
+    '''Convert a frame rate from the format that appears in the configuration to a standardized numerical form.
+
+    :param frameRate: The frame rate that appears in the configuration.
+    :param inputFrameRate: The actual frame rate of the input media file.
+    :return: The converted frame rate in [numerator, denominator] form.'''
+
+    if frameRate is None:
+        return convertFrameRate(inputFrameRate, inputFrameRate)
+    elif frameRate == 'half+' and inputFrameRate[0] < 23 * 2 * inputFrameRate[1]:
+        return convertFrameRate(inputFrameRate, inputFrameRate)
+    elif frameRate == 'half' or frameRate == 'half+':
+        return convertFrameRate([inputFrameRate[0], inputFrameRate[1] * 2], inputFrameRate)
+    else:
+        frameRateGcd = math.gcd(frameRate[0], frameRate[1])
+        return [frameRate[0] // frameRateGcd, frameRate[1] // frameRateGcd]
+
+def fillInConfigDefaults(config, probeResult):
+    '''Fill in the configuration defaults.
+
+    :param config: The configuration parsed from JSON.
+    :param probeResult: The result of running the ffprobe function on the input media file.'''
+
+    # Extract some properties of the input.
+    inputWidth = probeResult['video']['width']
+    inputHeight = probeResult['video']['height']
+    inputFrameRate = probeResult['video']['frameRate']
+
+    # Fill in the simple defaults for the outer configuration.
+    for key,value in {
+        'segmentDuration': 15000
+    }.items():
+        if not key in config:
+            config[key] = value
+
+    # Add default streams if none exist.
+    if not 'video' in config:
+        config['video'] = [
+            {
+                'width': width,
+                'frameRate': frameRate,
+                'crf': crf,
+                'codec': codec
+            } for (width,frameRate,crf),codec in itertools.product(
+                [
+                    (3840, None, 22),
+                    (3840, 'half+', 22),
+                    (1920, None, 22),
+                    (1920, 'half+', 22),
+                    (1280, 'half+', 25),
+                    (640, 'half+', 28),
+                ], ['h265', 'h264']
+            )
+
+            # Exclude configurations that are either upscales or would be duplicates (we always have half+).
+            if width <= inputWidth and not (frameRate is None and convertFrameRate(None, inputFrameRate) ==
+                                                                  convertFrameRate('half+', inputFrameRate))
+        ]
+
+    if not 'audio' in config:
+        config['audio'] = [{
+            'bitrate': bitrate,
+            'codec': 'aac'
+        } for bitrate in [192, 96, 48]]
+
+    # Fill in defaults.
+    for video in config['video']:
+        # Simple defaults.
+        for key,value in {
+            'frameRate': None,
+            'crf': 25,
+            'codec': 'h264'
+        }.items():
+            if not key in video:
+                video[key] = value
+
+        # Fill in width and height according to the rules. When calculating the width/height from the other, make it a
+        # multiple of 2 for compatibility with the codec.
+        if (not 'width' in video) and (not 'height' in video):
+            video['width'] = inputWidth
+            video['height'] = inputHeight
+        elif not 'width' in video:
+            video['width'] = round(inputWidth * video['height'] / (2 * inputHeight)) * 2
+        elif not 'height' in video:
+            video['height'] = round(inputHeight * video['width'] / (2 * inputWidth)) * 2
+
+    for audio in config['audio']:
+        # Simple defaults.
+        for key,value in {
+            'bitrate': 64,
+            'codec': 'aac'
+        }.items():
+            if not key in audio:
+                audio[key] = value
+
+def canonicalizeConfig(config, probeResult):
+    '''Canonocalize a coniguration.
+
+    Some fields in the configuration, such as the frame rate, can be specified in a non-canonical form. This function
+    adjusts the configuration to be in a canonical form expected by everything following configuration parsing. This
+    does not fill in defaults.
+
+    :param config: The configuration to canonicalize.
+    :param probeResult: The result of running the ffprobe function.'''
+
+    def canonicalizeVideoCodec(codec):
+        match codec:
+            case 'h265': return 'hevc'
+            case _: return codec
+
+    inputFrameRate = probeResult['video']['frameRate']
+
+    for video in config['video']:
+        video['frameRate'] = convertFrameRate(video['frameRate'], inputFrameRate)
+        video['codec'] = canonicalizeVideoCodec(video['codec'])
+
+def getFfmpegArgs(outputDirectory, mediaFilePath, config, draft):
+    '''Get the arguments to give to ffmpeg to convert a media file to the format needed for it to be used as an
+       interjection.
+
+    :param str outputDirectory: A path to the directory to store the interjection's files.
+    :param str mediaFilePath: A path to the input media file.
+    :param config: The parsed, default-filled-in, and canonicalized configuration.
+    :param boolean draft: Whether to encode quickly for testing purposes.
+    :return: A list of arguments to give to ffmpeg.'''
+
+    draftText = 'drawtext=text=DRAFT:x=w/40:y=w/40:fontsize=64:borderw=4:fontcolor=#ffffff:bordercolor=#000000,'
+
+    return (
+        [
+            '-loglevel', 'repeat+level+info',
+            '-nostdin',
+            '-i', mediaFilePath,
+            '-filter_complex', (
+                f'[0:v]{draftText if draft else ""}'
+                f'split={len(config["video"])}' + (''.join(f'[vin{i}]' for i in range(len(config['video'])))) +
+                ''.join(
+                    f'; '
+                    f'[vin{i}]'
+
+                    # Frame rate conversion. Shift by half a frame so rounded input timestamps don't alternate between
+                    # just before and just after the threshold in fps.
+                    f'setpts=PTS+{video["frameRate"][1]}/({2 * video["frameRate"][0]} * TB),'
+                    f'fps={video["frameRate"][0]}/{video["frameRate"][1]},'
+                    f'setpts=PTS-{video["frameRate"][1]}/({2 * video["frameRate"][0]} * TB),'
+
+                    # :)
+                    f'scale={video["width"]}x{video["height"]}'
+                    f'[v{i}]'
+                    for i,video in enumerate(config["video"])
+                )
+            )
+        ] +
+        sum((['-map', f'[v{i}]'] for i in range(len(config['video']))), start=[]) +
+        sum((['-map', f'0:a'] for _ in range(len(config['audio']))), start=[]) +
+        [
+            '-pix_fmt:v', 'yuv420p',
+            '-ac:a', '1'
+        ] +
+        sum(([
+            f'-c:v:{i}', video['codec'],
+            f'-crf:v:{i}', video['crf'],
+            f'-preset:v:{i}', 'ultrafast' if draft else 'veryslow',
+            f'-forced-idr:v:{i}', '1',
+            f'-force_key_frames:v:{i}', f'expr:gte(t, n_forced * {config["segmentDuration"]}/1000)'
+        ] for i,video in enumerate(config['video'])), start=[]) +
+        sum(([
+            f'-c:a:{i}', audio['codec'],
+            f'-b:a:{i}', f'{audio["bitrate"]}k'
+        ] for i,audio in enumerate(config['audio'])), start=[]) +
+        [
+            '-f', 'dash',
+            '-adaptation_sets', 'id=0,streams=v id=1,streams=a',
+            '-dash_segment_type', 'mp4',
+            '-single_file', '0',
+            '-media_seg_name', 'chunk-stream$RepresentationID$-$Number%09d$.$ext$',
+            '-seg_duration', f'{str(config["segmentDuration"])[:-3]}.{str(config["segmentDuration"])[-3:]}',
+            os.path.join(outputDirectory, 'manifest.mpd')
+        ]
+    )
+
+def parseArgs():
+    parser = argparse.ArgumentParser(description='Encode a video file as an interjection.')
+    parser.add_argument('outputDirectory', metavar='INTERJECTION_DIRECTORY', type=str,
+                        help='The directory to write the output to. It must not already exist.')
+    parser.add_argument('mediaFile', metavar='INPUT_VIDEO', type=str, help='The video file to convert.')
+    parser.add_argument('-c', '--config', dest='config', metavar='CONFIG_JSON', type=str,
+                        help='A path to the JSON configuration.')
+    parser.add_argument('--draft', dest='draft', action='store_true',
+                        help='Encode quickly for testing purposes. Videos are watermarked as draft.')
+    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
+                        help='Print extra information.')
+    return parser.parse_args()
+
+def main():
+    args = parseArgs()
+    config = dict() if args.config is None else json.load(sys.stdin if args.config == '-' else open(args.config))
+    probeResult = ffprobe(args.mediaFile)
+
+    # Get a complete configuration.
+    fillInConfigDefaults(config, probeResult)
+    canonicalizeConfig(config, probeResult)
+    if args.verbose:
+        print(f'Configuration: {json.dumps(config, indent=4)}')
+
+    # Figure out the FFmpeg command.
+    ffmpegCmd = ['ffmpeg'] + [str(arg) for arg in getFfmpegArgs(args.outputDirectory, args.mediaFile, config,
+                                                                args.draft)]
+    if args.verbose:
+        print(f'FFmpeg command: ' + ' '.join(f'"{arg}"' for arg in ffmpegCmd))
+
+    # Create the output directory. This raises an exception if the path exists.
+    os.makedirs(args.outputDirectory)
+
+    # Encode!
+    subprocess.run(ffmpegCmd, check=True)
+
+    # Generate the base metadata (no tag or user data).
+    subprocess.run([sys.executable,
+                    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'set-interjection-metadata'),
+                    args.outputDirectory], check=True)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import os
+import sys
+
+def scanForInterjectionSubDirectories(interjectionSetDirectory):
+    '''Find directories containing an interjection in the given interjection-set directory.'''
+
+    return [d for d in os.listdir(interjectionSetDirectory)
+            if os.path.exists(os.path.join(interjectionSetDirectory, d, 'interjection.json'))]
+
+def getInterjectionMetadata(interjectionDirectory):
+    '''Get the metadata to include for a given interjection.
+
+    :param str interjectionDirectory: A path to the interjection's directory.'''
+
+    interjectionMetadata = json.loads(open(os.path.join(interjectionDirectory, 'interjection.json')).read())
+    return (
+        {
+            'duration': interjectionMetadata['contentDuration']
+        } |
+        ({'tag': interjectionMetadata['tag']} if 'tag' in interjectionMetadata else {})
+    )
+
+def generateMetadata(interjectionSetDirectory, interjectionSubDirectories, userMetadata):
+    '''Generate the metadata for an interjection set.
+
+    :param str interjectionSetDirectory: A path to the interjection-set's directory.
+    :param interjectionSubDirectories: A list of interjection directories in the interjection-set's directory to
+                                       include.
+    :param userMetadata: The 'other' field of the interjection-set's metadata.'''
+
+    return (
+        {
+            'interjections': {
+                interjection: getInterjectionMetadata(os.path.join(interjectionSetDirectory, interjection))
+                for interjection in interjectionSubDirectories
+            }
+        } |
+        ({} if userMetadata is None else {'other': userMetadata})
+    )
+
+def parseArgs():
+    parser = argparse.ArgumentParser(description='Generate the interjection-set metadata for a set of interjections.')
+    parser.add_argument('interjectionSetDirectory', metavar='INTERJECTION_SET_DIRECTORY', type=str,
+                        help='The directory containing the interjection directories.')
+    parser.add_argument('interjectionSubDirectories', metavar='INTERJECTIONS', nargs='*', type=str,
+                        help='The directories within the interjection set directory to use. If not given, then all '
+                             'directories containing an interjection.json file will be used.')
+    parser.add_argument('-n', '--name', dest='name', metavar='NAME', type=str, default='interjection-set',
+                        help='Set the name of the generated file. Default: interjection-set. This option is useful to '
+                             'create multiple interjection sets in a single directory.')
+    parser.add_argument('-u', '--user-metadata', dest='userMetadata', metavar='USER_JSON', type=str,
+                        help='The custom JSON metadata to add to the interjection set metadata.')
+    return parser.parse_args()
+
+def main():
+    args = parseArgs()
+    interjectionSubDirectories = scanForInterjectionSubDirectories(args.interjectionSetDirectory) \
+                                 if len(args.interjectionSubDirectories) == 0 else args.interjectionSubDirectories
+    metadata = generateMetadata(args.interjectionSetDirectory, interjectionSubDirectories,
+                                None if args.userMetadata is None else \
+                                json.load(sys.stdin if args.userMetadata == '-' else open(args.userMetadata)))
+    with open(os.path.join(args.interjectionSetDirectory, f'{args.name}.json'), 'w') as f:
+        f.write(json.dumps(metadata, separators=(',', ':')))
+
+if __name__ == '__main__':
+    main()

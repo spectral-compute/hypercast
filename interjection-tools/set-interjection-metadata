@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import os
+import re
+import sys
+import xml.etree.ElementTree
+
+def getMetadata(manifestString, tagMetadata, userMetadata):
+    '''Get the metadata for a manifest XML.
+
+    :param str manifestString: The manifest file, as a string.
+    :param tagMetadata: The object to use as the 'tag' field of the metadata.
+    :param userMetadata: The object to use as the 'other' field of the metadata.
+    :return: The object to encode as JSON for the interjection metadata..'''
+
+    # Parse the XML.
+    manifest = xml.etree.ElementTree.fromstring(manifestString)
+
+    # Functions for parsing the contents of the manifest.
+    def getAdaptationSet(id):
+        return manifest.find('./{*}Period/{*}AdaptationSet[@id="%i"]' % id)
+
+    def parseFrameRate(frameRate):
+        return [int(n) for n in frameRate.split('/')]
+
+    durationRe = re.compile(r'^PT(?:(?P<hours>([0-9]+)H))?(?:(?P<minutes>([0-9]+)M))?(?P<seconds>[0-9]+\.?[0-9]*)S?$')
+    def parseDuration(t):
+        m = durationRe.match(t)
+        return (
+            round(float(m['seconds']) * 1000) +
+            60 * (0 if m['minutes'] is None else int(m['minutes'])) +
+            3600 * (0 if m['hours'] is None else int(m['hours']))
+        )
+
+    # Extract objects from the manifest.
+    video = getAdaptationSet(0)
+    audio = getAdaptationSet(1)
+
+    # If all the video streams have the same frame rate, then it's specified by the adaptation set. Otherwise, it's
+    # specified by the representation.
+    globalFrameRate = video.get('frameRate')
+
+    # Build the metadata object.
+    return (
+        {
+            'contentDuration': parseDuration(manifest.get('mediaPresentationDuration')),
+            'segmentDuration': parseDuration(manifest.get('maxSegmentDuration')),
+            'video': [
+                {
+                    'width': int(stream.get('width')),
+                    'height': int(stream.get('height')),
+                    'frameRate': parseFrameRate(globalFrameRate if stream.get('frameRate') is None else \
+                                                stream.get('frameRate')),
+                    'mimeType': stream.get('mimeType'),
+                    'codecs': stream.get('codecs')
+                } for stream in video.findall('./{*}Representation')
+            ],
+            'audio': [
+                {
+                    'mimeType': stream.get('mimeType'),
+                    'codecs': stream.get('codecs'),
+                } for stream in audio.findall('./{*}Representation')
+            ]
+        } |
+        ({} if tagMetadata is None else {'tag': tagMetadata}) |
+        ({} if userMetadata is None else {'other': userMetadata})
+    )
+
+def writeMetadata(interjectionDirectory, tagMetadata, userMetadata):
+    '''Read an interjection directory's DASH manifest and write the corresponding interjection metadata.
+
+    :param str interjectionDirectory: A path to the directory containing the interjection.
+    :param tagMetadata: The object to use as the 'tag' field of the metadata.
+    :param userMetadata: The object to use as the 'other' field of the metadata.'''
+
+    metadata = getMetadata(open(os.path.join(interjectionDirectory, 'manifest.mpd')).read(), tagMetadata, userMetadata)
+    with open(os.path.join(interjectionDirectory, 'interjection.json'), 'w') as f:
+        f.write(json.dumps(metadata, separators=(',', ':')))
+
+def parseArgs():
+    parser = argparse.ArgumentParser(description='Set an interjection\'s metadata.')
+    parser.add_argument('interjectionDirectory', metavar='INTERJECTION_DIRECTORY', type=str,
+                        help='The directory to write the output to. It must not already exist.')
+    parser.add_argument('-t', '--tag-metadata', dest='tagMetadata', metavar='TAG_JSON', type=str,
+                        help='The JSON metadata to use as the interjection\'s tag. Unlike user metadata, tag metadata '
+                             'is included in interjection set metadata.')
+    parser.add_argument('-u', '--user-metadata', dest='userMetadata', metavar='USER_JSON', type=str,
+                        help='The custom JSON metadata to add to the interjection metadata.')
+    return parser.parse_args()
+
+def main():
+    args = parseArgs()
+    writeMetadata(args.interjectionDirectory,
+                  None if args.tagMetadata is None else \
+                  json.load(sys.stdin if args.tagMetadata == '-' else open(args.tagMetadata)),
+                  None if args.userMetadata is None else \
+                  json.load(sys.stdin if args.userMetadata == '-' else open(args.userMetadata)))
+
+if __name__ == '__main__':
+    main()
