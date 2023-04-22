@@ -1,10 +1,10 @@
 import * as BufferCtrl from "./BufferCtrl";
 import {TimestampInfo} from "./Deinterleave";
 import {ReceivedInfo} from "./Stream";
-import * as Stream from "./Stream";
 import {DebugHandler} from "./Debug";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
+import {MseWrapper} from "./MseWrapper";
 
 export class Player {
     /**
@@ -63,19 +63,18 @@ export class Player {
             this.video.pause();
 
             /* Create the streamer. */
-            this.stream = new Stream.MseWrapper(this.video, this.serverInfo.segmentDuration,
-                                                this.serverInfo.segmentPreavailability,
-            (timestampInfo: TimestampInfo): void => {
-                this.bctrl!.onTimestamp(timestampInfo);
-            },
-            (recievedInfo: ReceivedInfo): void => {
-                this.bctrl!.onRecieved(recievedInfo);
-            },
-            (description: string): void => {
-                if (this.onError) {
-                    this.onError(description);
-                }
-            });
+            this.stream = new MseWrapper(
+                this.video,
+                this.serverInfo.segmentDuration,
+                this.serverInfo.segmentPreavailability,
+                (timestampInfo: TimestampInfo): void => {
+                    this.bctrl!.onTimestamp(timestampInfo);
+                },
+                (recievedInfo: ReceivedInfo): void => {
+                    this.bctrl!.onRecieved(recievedInfo);
+                },
+                this.onError ?? ((): void => {}),
+            );
 
             /* Set up buffer control for the player. */
             this.bctrl = new BufferCtrl.BufferControl(this.video, (): void => {
@@ -312,7 +311,7 @@ export class Player {
     private readonly infoUrl: string;
 
     // Worker objects.
-    private stream: Stream.MseWrapper | null = null;
+    private stream: MseWrapper | null = null;
     private bctrl: BufferCtrl.BufferControl | null = null;
 
     // Server information.
