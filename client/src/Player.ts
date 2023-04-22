@@ -88,7 +88,7 @@ export class Player {
             /* Set up the "on new source playing" event handler. */
             this.stream.onNewStreamStart = (): void => {
                 this.bctrl!.onNewStreamStart();
-                this.callOnStartPlaying(this.electiveChangeInProgress);
+                this.onStartPlaying?.(this.electiveChangeInProgress);
                 this.electiveChangeInProgress = false;
             };
 
@@ -161,7 +161,7 @@ export class Player {
      */
     setAngle(index: number): void {
         if (index === this.angle) {
-            this.callOnStartPlaying(true);
+            this.onStartPlaying?.(true);
             return;
         }
 
@@ -201,7 +201,7 @@ export class Player {
      */
     setQuality(index: number): void {
         if (index === this.quality) {
-            this.callOnStartPlaying(true);
+            this.onStartPlaying?.(true);
             return;
         }
 
@@ -269,21 +269,12 @@ export class Player {
      *
      * @param elective Whether or not the change was requested by setAngle() or setQuality().
      */
-    onStartPlaying: ((elective: boolean) => void) | null = null;
+    onStartPlaying: OnStartPlayingHandler | null = null;
 
     /**
      * Called when an error occurs.
      */
     onError: ((description: string) => void) | null = null;
-
-    /**
-     * Convenience method for calling onStartPlaying only if it's been registered.
-     */
-    private callOnStartPlaying(elective: boolean): void {
-        if (this.onStartPlaying) {
-            this.onStartPlaying(elective);
-        }
-    }
 
     /**
      * This must be called whenever the current quality or angle changes.
