@@ -7,7 +7,7 @@ import {ReceivedInfo, Stream} from "./Stream";
 export class MseWrapper {
     constructor(
         private readonly video: HTMLVideoElement,
-        private readonly segmentDuration: number,
+        private readonly segmentDurationMS: number,
         private readonly segmentPreavailability: number,
         private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
         private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
@@ -167,7 +167,7 @@ export class MseWrapper {
                 this.videoMediaSource!,
                 videoInit,
                 this.getMimeForStream(manifest, this.videoStreamIndex),
-                this.segmentDuration,
+                this.segmentDurationMS / 1_000,
                 this.onError,
                 (): void => {
                     void this.video.play();
@@ -181,7 +181,7 @@ export class MseWrapper {
                     this.videoMediaSource!,
                     audioInit!,
                     this.getMimeForStream(manifest, this.audioStreamIndex!),
-                    this.segmentDuration,
+                    this.segmentDurationMS / 1_000,
                     this.onError,
                 );
             }
@@ -197,7 +197,7 @@ export class MseWrapper {
                 streams,
                 this.videoStreamIndex,
                 this.baseUrl!,
-                this.segmentDuration,
+                this.segmentDurationMS,
                 this.segmentPreavailability,
                 this.onTimestamp,
                 this.onReceived,

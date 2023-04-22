@@ -14,7 +14,8 @@ export class Stream {
         private readonly mediaSource: MediaSource,
         private readonly init: ArrayBuffer,
         mimeType: string,
-        private readonly segmentDuration: number,
+        /** The duration of each segment in seconds */
+        private readonly segmentDurationS: number,
         private readonly onError: (description: string) => void,
         private readonly onStart: (() => void) | null = null
     ) {
@@ -176,12 +177,12 @@ export class Stream {
         /* Figure out if we have so much buffered that we're going to do a prune operation. */
         const start = buffered.start(0);
         const end = buffered.end(buffered.length - 1);
-        if (end - this.segmentDuration * 3 <= start) {
+        if (end - this.segmentDurationS * 3 <= start) {
             return;
         }
 
         /* Prune :) */
-        this.sourceBuffer.remove(start, end - this.segmentDuration * 2);
+        this.sourceBuffer.remove(start, end - this.segmentDurationS * 2);
     }
 
     /**

@@ -25,7 +25,7 @@ export class SegmentDownloader {
         private readonly streams: Stream[],
         private readonly streamIndex: number,
         private readonly baseUrl: string,
-        private readonly segmentDuration: number,
+        private readonly segmentDurationMS: number,
         private readonly segmentPreavailability: number,
         private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
         private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
@@ -77,19 +77,19 @@ export class SegmentDownloader {
         };
         this.schedulerTimeout = window.setTimeout((): void => {
             void timeoutFn(); // Cancellable via the combination of this.schedulerTimeout and this.aborter.
-        }, this.segmentDuration * DownloadSchedulerUpdatePeriod);
+        }, this.segmentDurationMS * DownloadSchedulerUpdatePeriod);
 
         /* The currently available index. */
         let segmentIndex: number = info.index;
 
         /* When the next index becomes available for download. */
-        let nextSegmentStart: number =
-            this.segmentDuration - info.age - this.segmentPreavailability + PreavailabilityMargin;
+        let nextSegmentStartMS: number =
+            this.segmentDurationMS - info.age - this.segmentPreavailability + PreavailabilityMargin;
 
         /* If the next segment is already preavailable, start with that one. */
-        if (nextSegmentStart < 0) {
+        if (nextSegmentStartMS < 0) {
             segmentIndex++;
-            nextSegmentStart += this.segmentDuration;
+            nextSegmentStartMS += this.segmentDurationMS;
         }
 
         /* Never re-download a segment. This would be the case if we're already downloading the latest (pre)available
@@ -99,7 +99,7 @@ export class SegmentDownloader {
         }
 
         /* The download() method expects the timestamp for the next segment to start, rather than an offset from now. */
-        nextSegmentStart += Date.now();
+        nextSegmentStartMS += Date.now();
 
         /* Cancel any scheduled download. */
         if (this.downloadTimeout) {
@@ -109,7 +109,7 @@ export class SegmentDownloader {
 
         /* Restart the download loop with the new parameters. */
         this.segmentIndex = segmentIndex;
-        this.nextSegmentStart = nextSegmentStart;
+        this.nextSegmentStart = nextSegmentStartMS;
         this.download();
     }
 
@@ -157,7 +157,7 @@ export class SegmentDownloader {
         this.downloadTimeout = window.setTimeout((): void => {
             this.download();
         }, this.nextSegmentStart - Date.now());
-        this.nextSegmentStart += this.segmentDuration;
+        this.nextSegmentStart += this.segmentDurationMS;
     }
 
     private async pump(reader: ReadableStreamDefaultReader, description: string): Promise<void> {
