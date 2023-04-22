@@ -10,14 +10,14 @@ export interface ReceivedInfo {
  * Manages a media source buffer, and a queue of data to go with it.
  */
 export class Stream {
-    constructor(mediaSource: MediaSource, init: ArrayBuffer, mimeType: string, segmentDuration: number,
-                onError: (description: string) => void, onStart: (() => void) | null = null) {
-        this.mediaSource = mediaSource;
-        this.init = init;
-        this.segmentDuration = segmentDuration / 1000;
-        this.onError = onError;
-        this.onStart = onStart;
-
+    constructor(
+        private readonly mediaSource: MediaSource,
+        private readonly init: ArrayBuffer,
+        mimeType: string,
+        private readonly segmentDuration: number,
+        private readonly onError: (description: string) => void,
+        private readonly onStart: (() => void) | null = null
+    ) {
         if (process.env["NODE_ENV"] === "development") {
             this.checksum = new Debug.Addler32();
         }
@@ -207,12 +207,6 @@ export class Stream {
     private isFinished(): boolean {
         return this.mediaSource.readyState !== "open";
     }
-
-    private readonly mediaSource: MediaSource;
-    private readonly init: ArrayBuffer;
-    private readonly segmentDuration: number; // Segment duration in seconds.
-    private readonly onError: (description: string) => void;
-    private readonly onStart: (() => void) | null;
 
     private readonly sourceBuffer: SourceBuffer;
     private readonly queue = new Array<ArrayBuffer | null>();

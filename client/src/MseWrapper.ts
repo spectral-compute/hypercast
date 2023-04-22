@@ -5,20 +5,14 @@ import {SegmentDownloader} from "./SegmentDownloader";
 import {ReceivedInfo, Stream} from "./Stream";
 
 export class MseWrapper {
-    constructor(video: HTMLVideoElement,
-        segmentDuration: number,
-        segmentPreavailability: number,
-        onTimestamp: (timestampInfo: TimestampInfo) => void,
-        onReceived: (receivedInfo: ReceivedInfo) => void,
-        onError: (description: string) => void,
-    ) {
-        this.video = video;
-        this.segmentDuration = segmentDuration;
-        this.segmentPreavailability = segmentPreavailability;
-        this.onTimestamp = onTimestamp;
-        this.onReceived = onReceived;
-        this.onError = onError;
-    }
+    constructor(
+        private readonly video: HTMLVideoElement,
+        private readonly segmentDuration: number,
+        private readonly segmentPreavailability: number,
+        private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
+        private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
+        private readonly onError: (description: string) => void
+    ) {}
 
     setSource(baseUrl: string, videoStream: number, audioStream: number | null, interleaved: boolean): void {
         /* Stop downloading any existing stream. */
@@ -268,13 +262,6 @@ export class MseWrapper {
         const match = manifest.match(re);
         return `${match![1]!}; codecs="${match![2]!}"`; // TODO: Error handling.
     }
-
-    private readonly video: HTMLVideoElement;
-    private readonly segmentDuration: number;
-    private readonly segmentPreavailability: number;
-    private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
-    private readonly onReceived: (receivedInfo: ReceivedInfo) => void;
-    private readonly onError: (description: string) => void;
 
     private videoMediaSource: MediaSource | null = null;
 

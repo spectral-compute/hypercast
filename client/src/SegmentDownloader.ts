@@ -20,28 +20,17 @@ const DownloadSchedulerUpdatePeriod = 16;
  */
 export class SegmentDownloader {
     constructor(
-        info: API.SegmentIndexDescriptor,
-        interleaved: boolean,
-        streams: Stream[],
-        streamIndex: number,
-        baseUrl: string,
-        segmentDuration: number,
-        segmentPreavailability: number,
-        onTimestamp: (timestampInfo: TimestampInfo) => void,
-        onReceived: (receivedInfo: ReceivedInfo) => void,
-        onError: (description: string) => void,
+        private readonly info: API.SegmentIndexDescriptor,
+        private readonly interleaved: boolean,
+        private readonly streams: Stream[],
+        private readonly streamIndex: number,
+        private readonly baseUrl: string,
+        private readonly segmentDuration: number,
+        private readonly segmentPreavailability: number,
+        private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
+        private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
+        private readonly onError: (description: string) => void
     ) {
-        this.info = info;
-        this.interleaved = interleaved;
-        this.streams = streams;
-        this.streamIndex = streamIndex;
-        this.baseUrl = baseUrl;
-        this.segmentDuration = segmentDuration;
-        this.segmentPreavailability = segmentPreavailability;
-        this.onTimestamp = onTimestamp;
-        this.onReceived = onReceived;
-        this.onError = onError;
-
         this.setSegmentDownloadSchedule(info);
     }
 
@@ -244,17 +233,6 @@ export class SegmentDownloader {
             this.onError(`Error downloading or playing segment: ${e.message}`);
         }
     }
-
-    private readonly info: API.SegmentIndexDescriptor;
-    private readonly interleaved: boolean;
-    private readonly streams: Stream[];
-    private readonly streamIndex: number;
-    private readonly baseUrl: string;
-    private readonly segmentDuration: number;
-    private readonly segmentPreavailability: number;
-    private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
-    private readonly onReceived: (receivedInfo: ReceivedInfo) => void;
-    private readonly onError: (description: string) => void;
 
     private logicalSegmentIndex: number = 0;
     private segmentIndex: number = -1;
