@@ -30,19 +30,19 @@ export async function createPlayer(
         }
     }
 
+    // Error handling
+    function onError(e: string): void {
+        console.error("An error happened: " + e);
+    }
+
     // Create the player
-    const player = new Player(sourceURL, containerElement, false);
+    const player = new Player(sourceURL, containerElement, {onError}, false);
     const controlsDiv = insertNode(containerElement, "div", {className: "video-controls"});
 
     /* Performance/debug event handling. */
     if (options.debugHandler) {
         player.setDebugHandler(options.debugHandler);
     }
-
-    // Error handling
-    player.onError = (e: string): void => {
-        console.error("An error happened: " + e);
-    };
 
     try {
         await player.init();

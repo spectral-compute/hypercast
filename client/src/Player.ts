@@ -6,14 +6,24 @@ import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {MseWrapper} from "./MseWrapper";
 
+type OnStartPlayingHandler = ((elective: boolean) => void);
+
+export interface PlayerEventListeners {
+    /** Called when an error occurs */
+    onError?: (description: string) => void;
+    /** Called when the player starts playing video. */
+    onStartPlaying?: OnStartPlayingHandler;
+}
+
 export class Player {
     /**
      * @param infoUrl The URL to the server's info JSON object. If set to null, the URL is obtained from the streaminfo
      *                GET parameter.
      * @param container The div tag to put a video tag into to play video into.
+     * @param listeners Functions which will be called during key streaming events. See {@link PlayerEventListeners}
      * @param nativeControls Whether to use the native <video> controls. Default: `true`.
      */
-    constructor(infoUrl: string | null, container: HTMLDivElement, nativeControls: boolean = true) {
+    constructor(infoUrl: string | null, container: HTMLDivElement, listeners: PlayerEventListeners, nativeControls: boolean = true) {
         // Get the URL from the streaminfo GET parameter if no info URL is given.
         if (infoUrl === null) {
             infoUrl = (new URLSearchParams(window.location.search)).get("streaminfo");
@@ -26,6 +36,12 @@ export class Player {
         this.infoUrl = infoUrl;
         this.video = container.appendChild(document.createElement("video"));
         this.video.controls = nativeControls;
+        if (listeners.onError !== undefined) {
+            this.onError = listeners.onError;
+        }
+        if (listeners.onStartPlaying !== undefined) {
+            this.onStartPlaying = listeners.onStartPlaying;
+        }
     }
 
     /**

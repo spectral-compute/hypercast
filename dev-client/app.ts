@@ -7,19 +7,25 @@ const infoUrl = process.env["INFO_URL"]!;
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLDivElement;
 
+/* Error handling. */
+function onError(e: string): void {
+    document.getElementsByTagName("body")[0]!.innerHTML = "An error happened: " + e;
+}
+
+/* Update the UI whenever the player's settings change. */
+function onStartPlaying(elective: boolean): void {
+    setupUi(elective);
+    document.getElementById("stop")!.hidden = false;
+}
+
 /* Create the player. */
-const player = new Player(infoUrl, video);
+const player = new Player(infoUrl, video, {onError, onStartPlaying});
 (document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getInfoUrl();
 
 /* Performance/debug event handling. */
 if (process.env["NODE_ENV"] === "development") {
     player.setDebugHandler(new AppDebugHandler());
 }
-
-/* Error handling. */
-player.onError = (e: string): void => {
-    document.getElementsByTagName("body")[0]!.innerHTML = "An error happened: " + e;
-};
 
 /* A function to wire up a selector. */
 function setupSelector(id: string, options: string[], index: number, visible: boolean = true): void {
@@ -64,12 +70,6 @@ function setupUi(elective: boolean): void {
     /* Show the UI. */
     document.getElementById("innerui")!.hidden = false;
 }
-
-/* Update the UI whenever the player's settings change. */
-player.onStartPlaying = (elective: boolean): void => {
-    setupUi(elective);
-    document.getElementById("stop")!.hidden = false;
-};
 
 /* Wire up the UI's outputs. */
 const angle = document.getElementById("angle")! as HTMLSelectElement;
