@@ -123,29 +123,31 @@ bool isProtocolUrl(std::string_view url)
 /**
  * Get the arguments for an ffmpeg input.
  *
- * @param source The source to get the ffmpeg input arguments for.
+ * @param url The URL to give to ffmpeg, after `-i`.
+ * @param arguments The arguments to give to ffmpeg before -i.
+ * @param loop Whether to play the (regular file) in a loop.
  */
-std::vector<std::string> getInputArgs(const Config::Source &source)
+std::vector<std::string> getInputArgs(const std::string &url, const std::vector<std::string> &arguments, bool loop)
 {
     std::vector<std::string> result;
 
     /* Arguments that are specific to the source kind. */
-    if (source.url.starts_with("pipe:")) {
+    if (url.starts_with("pipe:")) {
         append(result, getPipeInputArgs());
     }
-    else if (source.url.starts_with("rtsp://")) {
+    else if (url.starts_with("rtsp://")) {
         append(result, getRtspInputArgs());
     }
-    else if (isProtocolUrl(source.url)) {
+    else if (isProtocolUrl(url)) {
         // This is a guess, but the intended use of this system is realtime.
         append(result, getRealtimeInputArgs());
     }
-    else if (std::filesystem::is_fifo(source.url)) {
+    else if (std::filesystem::is_fifo(url)) {
         append(result, getPipeInputArgs()); // This is just a pipe that is named in the filesystem.
     }
-    else if (std::filesystem::is_regular_file(source.url)) {
+    else if (std::filesystem::is_regular_file(url)) {
         append(result, getFileInputArgs());
-        if (source.loop) {
+        if (loop) {
             result.insert(result.end(), { "-stream_loop", "-1" });
         }
     }
@@ -155,10 +157,10 @@ std::vector<std::string> getInputArgs(const Config::Source &source)
     }
 
     /* Arguments that are explicitly provided by the source. */
-    append(result, source.arguments);
+    append(result, arguments);
 
     /* The actual input flag. */
-    result.insert(result.end(), { "-i", source.url });
+    result.insert(result.end(), { "-i", url });
 
     /* Done :) */
     return result;
@@ -200,7 +202,7 @@ std::string getTimestampFilter(unsigned int width)
  *
  * This assumes a single video input stream. The output streams are v0, v1, v2, ...
  */
-std::string getVideoFilter(const Config::Channel &config)
+std::string getLiveVideoFilter(const Config::Channel &config)
 {
     /* Add the ZMQ interface. */
     // The ZMQ interface is a filter that needs to be sandwiched between a source and sink of some kind. Rather than
@@ -252,7 +254,7 @@ std::string getVideoFilter(const Config::Channel &config)
  *
  * This assumes a single audio input stream. The output stream is a0.
  */
-std::string getAudioFilter()
+std::string getLiveAudioFilter()
 {
     std::string result;
 
@@ -266,15 +268,15 @@ std::string getAudioFilter()
 /**
  * Get the filtering arguments.
  */
-std::vector<std::string> getFilterArgs(const Config::Channel &config)
+std::vector<std::string> getLiveFilterArgs(const Config::Channel &config)
 {
-    return { "-filter_complex", getVideoFilter(config) + getAudioFilter() };
+    return { "-filter_complex", getLiveVideoFilter(config) + getLiveAudioFilter() };
 }
 
 /**
  * Get the arguments to build the map from filtered input to streams to encode.
  */
-std::vector<std::string> getMapArgs(std::span<const Config::Quality> qualities)
+std::vector<std::string> getLiveMapArgs(std::span<const Config::Quality> qualities)
 {
     std::vector<std::string> result;
 
@@ -301,7 +303,7 @@ std::vector<std::string> getMapArgs(std::span<const Config::Quality> qualities)
  * @return A vector of stream-type specific arguments. The first element of the inner vector should have a stream type
  *         appended.
  */
-std::vector<std::vector<std::string>> getVideoStreamArgs()
+std::vector<std::vector<std::string>> getLiveVideoStreamArgs()
 {
     return { { "-pix_fmt", "yuv420p" } };
 }
@@ -312,7 +314,7 @@ std::vector<std::vector<std::string>> getVideoStreamArgs()
  * @return A vector of stream-type specific arguments. The first element of the inner vector should have a stream type
  *         appended.
  */
-std::vector<std::vector<std::string>> getAudioStreamArgs()
+std::vector<std::vector<std::string>> getLiveAudioStreamArgs()
 {
     return { { "-ac", "1" } }; // TODO: We want to allow stereo and surround sound.
 }
@@ -351,7 +353,7 @@ std::string getFfmpegCodecName(Codec::AudioCodec codec)
  * @return A vector of stream-type specific arguments. The first element of the inner vector should have a stream specifier
  *         appended.
  */
-std::vector<std::vector<std::string>> getVideoStreamArgs(const Config::VideoQuality &q, const Config::Dash &dash)
+std::vector<std::vector<std::string>> getLiveVideoStreamArgs(const Config::VideoQuality &q, const Config::Dash &dash)
 {
     return {
         { "-c", getFfmpegCodecName(q.codec) }, // Codec.
@@ -374,7 +376,7 @@ std::vector<std::vector<std::string>> getVideoStreamArgs(const Config::VideoQual
  * @return A vector of stream-type specific arguments. The first element of the inner vector should have a stream type
  *         appended.
  */
-std::vector<std::vector<std::string>> getAudioStreamArgs(const Config::AudioQuality &q)
+std::vector<std::vector<std::string>> getLiveAudioStreamArgs(const Config::AudioQuality &q)
 {
     return {
         { "-c", getFfmpegCodecName(q.codec) }, // Codec.
@@ -402,7 +404,7 @@ std::string h26xPresetToString(Config::H26xPreset preset)
 /**
  * Arguments that apply to h264 and h265 video streams.
  */
-std::vector<std::vector<std::string>> getH264StreamArgs(const Config::VideoQuality &q)
+std::vector<std::vector<std::string>> getLiveH264StreamArgs(const Config::VideoQuality &q)
 {
     return {
         { "-maxrate", std::to_string(*q.bitrate) + "k" }, // Maximum bitrate.
@@ -414,7 +416,7 @@ std::vector<std::vector<std::string>> getH264StreamArgs(const Config::VideoQuali
 /**
  * Arguments that apply to VP8, VP9, and AV1 video streams.
  */
-std::vector<std::vector<std::string>> getVP8StreamArgs(const Config::VideoQuality &q)
+std::vector<std::vector<std::string>> getLiveVP8StreamArgs(const Config::VideoQuality &q)
 {
     return {
         { "-b", std::to_string(*q.bitrate) + "k" }, // Bitrate (unfortunately, not maximum).
@@ -427,9 +429,9 @@ std::vector<std::vector<std::string>> getVP8StreamArgs(const Config::VideoQualit
 /**
  * Arguments that apply to VP9, and AV1 video streams.
  */
-std::vector<std::vector<std::string>> getVP9StreamArgs(const Config::VideoQuality &q)
+std::vector<std::vector<std::string>> getLiveVP9StreamArgs(const Config::VideoQuality &q)
 {
-    std::vector<std::vector<std::string>> result = getVP8StreamArgs(q);
+    std::vector<std::vector<std::string>> result = getLiveVP8StreamArgs(q);
     result.insert(result.end(), {
         { "-tile-columns", "2" },
         { "-tile-rows", "2" },
@@ -445,14 +447,14 @@ std::vector<std::vector<std::string>> getVP9StreamArgs(const Config::VideoQualit
  * @return A vector of stream specific arguments. The first element of the inner vector should have a stream specifier
  *         appended.
  */
-std::vector<std::vector<std::string>> getVideoStreamArgsForCodec(const Config::VideoQuality &q)
+std::vector<std::vector<std::string>> getLiveVideoStreamArgsForCodec(const Config::VideoQuality &q)
 {
     switch (q.codec) {
-        case Codec::VideoCodec::h264: return getH264StreamArgs(q);
-        case Codec::VideoCodec::h265: return getH264StreamArgs(q);
-        case Codec::VideoCodec::vp8: return getVP8StreamArgs(q);
-        case Codec::VideoCodec::vp9: return getVP9StreamArgs(q);
-        case Codec::VideoCodec::av1: return getVP9StreamArgs(q);
+        case Codec::VideoCodec::h264: return getLiveH264StreamArgs(q);
+        case Codec::VideoCodec::h265: return getLiveH264StreamArgs(q);
+        case Codec::VideoCodec::vp8: return getLiveVP8StreamArgs(q);
+        case Codec::VideoCodec::vp9: return getLiveVP9StreamArgs(q);
+        case Codec::VideoCodec::av1: return getLiveVP9StreamArgs(q);
     }
     unreachable();
 }
@@ -460,19 +462,19 @@ std::vector<std::vector<std::string>> getVideoStreamArgsForCodec(const Config::V
 /**
  * Generate the arguments for encoding the streams.
  */
-std::vector<std::string> getEncoderArgs(const Config::Channel &channel)
+std::vector<std::string> getLiveEncoderArgs(const Config::Channel &channel)
 {
     std::vector<std::string> result;
 
     /* Per stream-type arguments. */
-    append(result, getVideoStreamArgs(), ":v");
-    append(result, getAudioStreamArgs(), ":a");
+    append(result, getLiveVideoStreamArgs(), ":v");
+    append(result, getLiveAudioStreamArgs(), ":a");
 
     /* Per stream arguments for video. */
     for (size_t i = 0; i < channel.qualities.size(); i++) {
         std::string suffix = ":v:" + std::to_string(i);
-        append(result, getVideoStreamArgs(channel.qualities[i].video, channel.dash), suffix);
-        append(result, getVideoStreamArgsForCodec(channel.qualities[i].video), suffix);
+        append(result, getLiveVideoStreamArgs(channel.qualities[i].video, channel.dash), suffix);
+        append(result, getLiveVideoStreamArgsForCodec(channel.qualities[i].video), suffix);
     }
 
     /* Per stream arguments for video. */
@@ -483,7 +485,7 @@ std::vector<std::string> getEncoderArgs(const Config::Channel &channel)
                 continue;
             }
             std::string suffix = ":a:" + std::to_string(audioStreamIndex++);
-            append(result, getAudioStreamArgs(q.audio), suffix);
+            append(result, getLiveAudioStreamArgs(q.audio), suffix);
         }
     }
 
@@ -607,14 +609,21 @@ std::vector<std::string> getDashOutputArgs(const Config::Channel &channelConfig,
 
 Ffmpeg::Arguments::~Arguments() = default;
 
-Ffmpeg::Arguments::Arguments(const Config::Channel &channelConfig, const Config::Network &networkConfig,
-                             std::string_view uidPath) :
-    sourceUrl(channelConfig.source.url), sourceArguments(channelConfig.source.arguments)
+Ffmpeg::Arguments Ffmpeg::Arguments::liveStream(const Config::Channel &channelConfig,
+                                                const Config::Network &networkConfig, std::string_view uidPath)
 {
-    append(ffmpegArguments, getGlobalArgs());
-    append(ffmpegArguments, getInputArgs(channelConfig.source));
-    append(ffmpegArguments, getFilterArgs(channelConfig));
-    append(ffmpegArguments, getMapArgs(channelConfig.qualities));
-    append(ffmpegArguments, getEncoderArgs(channelConfig));
-    append(ffmpegArguments, getDashOutputArgs(channelConfig, networkConfig, uidPath));
+    Ffmpeg::Arguments result;
+
+    result.sourceUrl = channelConfig.source.url;
+    result.sourceArguments = channelConfig.source.arguments;
+
+    append(result.ffmpegArguments, getGlobalArgs());
+    append(result.ffmpegArguments, getInputArgs(channelConfig.source.url, channelConfig.source.arguments,
+                                                channelConfig.source.loop));
+    append(result.ffmpegArguments, getLiveFilterArgs(channelConfig));
+    append(result.ffmpegArguments, getLiveMapArgs(channelConfig.qualities));
+    append(result.ffmpegArguments, getLiveEncoderArgs(channelConfig));
+    append(result.ffmpegArguments, getDashOutputArgs(channelConfig, networkConfig, uidPath));
+
+    return result;
 }

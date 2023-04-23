@@ -50,7 +50,7 @@ struct Instance::State::Channel final
     explicit Channel(IOContext &ioc, Log::Log &log, const Config::Root &config, const Config::Channel &channelConfig,
                      const std::string &basePath, Server::Server &server) :
         dash(ioc, log, channelConfig, config.http, basePath, server),
-        ffmpeg(ioc, log, Ffmpeg::Arguments(channelConfig, config.network, (std::string)dash.getUidPath()))
+        ffmpeg(ioc, log, Ffmpeg::Arguments::liveStream(channelConfig, config.network, (std::string)dash.getUidPath()))
     {
     }
 

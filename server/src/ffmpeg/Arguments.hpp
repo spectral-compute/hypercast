@@ -23,17 +23,17 @@ namespace Ffmpeg
 class Arguments final
 {
 public:
-    ~Arguments();
-
     /**
-     * Generate the arguments for ffmpeg.
+     * Generate the arguments for starting a live stream with ffmpeg.
      *
      * @param channelConfig The configuration object for the specific channel.
      * @param networkConfig The channel configuration object for the network.
      * @param uidPath The base path for the DASH streams.
      */
-    explicit Arguments(const Config::Channel &channelConfig, const Config::Network &networkConfig,
-                       std::string_view uidPath);
+    static Arguments liveStream(const Config::Channel &channelConfig, const Config::Network &networkConfig,
+                                std::string_view uidPath);
+
+    ~Arguments();
 
     // It's not that we can't copy. Just that we shouldn't.
     Arguments(const Arguments &) = delete;
@@ -66,6 +66,8 @@ public:
     }
 
 private:
+    Arguments() = default;
+
     std::vector<std::string> ffmpegArguments;
     std::string sourceUrl;
     std::vector<std::string> sourceArguments;

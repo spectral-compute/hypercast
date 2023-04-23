@@ -138,7 +138,7 @@ TEST(FfmpegArguments, Simple)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::Arguments(config, {}, "live/uid"));
+    }, Ffmpeg::Arguments::liveStream(config, {}, "live/uid"));
 }
 
 TEST(FfmpegArguments, Fractional)
@@ -250,7 +250,7 @@ TEST(FfmpegArguments, Fractional)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::Arguments(config, {}, "live/uid"));
+    }, Ffmpeg::Arguments::liveStream(config, {}, "live/uid"));
 }
 
 TEST(FfmpegArguments, Source)
@@ -283,7 +283,7 @@ TEST(FfmpegArguments, Source)
             .segmentDuration = 15050
         }
     };
-    Ffmpeg::Arguments test = Ffmpeg::Arguments(config, {}, "live/uid");
+    Ffmpeg::Arguments test = Ffmpeg::Arguments::liveStream(config, {}, "live/uid");
 
     EXPECT_EQ("rtsp://192.0.2.3", test.getSourceUrl());
     EXPECT_EQ(std::vector<std::string>({ "-ss", "10" }), test.getSourceArguments());
@@ -435,5 +435,5 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-method", "PUT",
         "-remove_at_exit", "1",
         "http://localhost:8080/live/uid/manifest.mpd",
-    }, Ffmpeg::Arguments(config, {}, "live/uid"));
+    }, Ffmpeg::Arguments::liveStream(config, {}, "live/uid"));
 }
