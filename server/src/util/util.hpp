@@ -28,6 +28,17 @@ std::vector<std::byte> readFile(const std::filesystem::path &path);
  */
 std::string replaceAll(std::string_view string, std::string_view token, std::string_view replacement);
 
+/**
+ * Split a string into a fixed number of parts.
+ *
+ * @param string The string to split.
+ * @param parts The string views to fill in with the components. Must not be empty.
+ * @param separator The separator to use. Space by default.
+ * @throws std::invalid_argument If the separator does not appear exactly `parts.size() - 1` times.
+ */
+void split(std::string_view string, std::initializer_list<std::reference_wrapper<std::string_view>> parts,
+           char separator = ' ');
+
 } // namespace Util
 
 /// @}

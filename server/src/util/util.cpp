@@ -1,6 +1,8 @@
 #include "util.hpp"
 
+#include <cassert>
 #include <fstream>
+#include <stdexcept>
 
 std::vector<std::byte> Util::concatenate(std::vector<std::vector<std::byte>> dataParts)
 {
@@ -63,5 +65,30 @@ std::string Util::replaceAll(std::string_view string, std::string_view token, st
         result += string.substr(0, pos);
         result += replacement;
         string = string.substr(pos + token.size());
+    }
+}
+
+void Util::split(std::string_view string, std::initializer_list<std::reference_wrapper<std::string_view>> parts,
+                 char separator)
+{
+    assert(parts.size() > 0);
+
+    /* Extract each part. */
+    for (size_t i = 0; std::string_view &part: parts) {
+        // Find the separator and extract the substring.
+        size_t nextSeparator = string.find(separator);
+        part = string.substr(0, nextSeparator);
+
+        // Check that the separator was or was not found as expected, and move past the separator if we're not at the
+        // end.
+        if (++i < parts.size()) {
+            if (nextSeparator == std::string_view::npos) {
+                throw std::invalid_argument("Too few separators.");
+            }
+            string = string.substr(nextSeparator + 1);
+        }
+        else if (nextSeparator != std::string_view::npos) {
+            throw std::invalid_argument("Too many separators.");
+        }
     }
 }
