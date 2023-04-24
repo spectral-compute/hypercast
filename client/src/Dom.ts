@@ -1,33 +1,27 @@
 import {Player} from "./Player";
 import {DebugHandler} from "./Debug";
 
-type ControlsType = "native" | "js";
-
 export interface CreatePlayerOptions {
     secondarySource?: string;
-    controls?: ControlsType;
     debugHandler?: DebugHandler;
     onInitialisation?: (player: Player) => void;
     // TODO event listeners
 }
 
 /**
- * Construct an instance of the LLVS player
+ * Construct an instance of the RISE player with a control panel
  * @param sourceURL the URL of the video stream
  * @param containerElement The DOM element into which the video player will be inserted. Pass either a DOM element that was created in JS, or else pass the ID of an html element.
  * @param options
  */
 export async function createPlayer(
     sourceURL: string,
-    containerElement: HTMLElement | string,
+    containerElement: HTMLDivElement | string,
     options: CreatePlayerOptions
 ): Promise<Player> {
-    // Defaults
-    const controlsType = options?.controls ?? "js";
-
     // Try to find the container if necessary
     if (typeof containerElement === "string") {
-        const maybeContainer = document.getElementById(containerElement);
+        const maybeContainer = document.querySelector(`div#${containerElement}`) as HTMLDivElement | null;
         if (maybeContainer) {
             containerElement = maybeContainer;
         } else {
@@ -36,27 +30,9 @@ export async function createPlayer(
         }
     }
 
-    // TODO: getting rid of the figure makes the controls get generated 2 times in the debug build...
-    // Investigate and remove figure if it's actually not necessary.
-
-    const figure = insertNode(containerElement, "figure", {className: "video-figure"});
-    const video = insertNode(figure, "video", {className: "video"});
-    video.controls = controlsType === "native";
-
-    if (options?.secondarySource) {
-        const secondaryVideo = insertNode(figure, "video", {className: "secondary-video"});
-        video.addEventListener("loadedmetadata", (): void => {
-            secondaryVideo.muted = true;
-            /* eslint "@typescript-eslint/no-unsafe-assignment": "off",
-                      "@typescript-eslint/no-unsafe-member-access": "off",
-                      "@typescript-eslint/no-unsafe-call": "off" */
-            secondaryVideo.srcObject = (video as any).captureStream(); // Capture stream isn't in TypeScript's types.
-            void secondaryVideo.play();
-        });
-    }
-
     // Create the player
-    const player = new Player(sourceURL, video);
+    const player = new Player(sourceURL, containerElement, false);
+    const controlsDiv = insertNode(containerElement, "div", {className: "video-controls"});
 
     /* Performance/debug event handling. */
     if (options.debugHandler) {
@@ -75,10 +51,7 @@ export async function createPlayer(
         console.error(e instanceof Error ? "Failed to initialise player: " + e.message : "Failed to initialise player");
     }
 
-    // Hook up the controls if necessary
-    if (controlsType === "js") {
-        createControlPanel(figure, player, video);
-    }
+    createControlPanel(controlsDiv, player);
 
     options?.onInitialisation?.(player);
     player.start();
@@ -87,9 +60,7 @@ export async function createPlayer(
 }
 
 // Set up the control panel using JS (in place of the browsers' native controls)
-function createControlPanel(where: HTMLElement, player: Player, video: HTMLVideoElement): void {
-    const controlsDiv = insertNode(where, "div", {className: "video-controls"});
-
+function createControlPanel(controlsDiv: HTMLDivElement, player: Player): void {
     // Create and wire up the angle and quality selectors
     const angle = insertSelector(controlsDiv, "angle", player.getAngleOptions(), player.getAngle());
     angle.onchange = (): void => {
@@ -127,7 +98,7 @@ function createControlPanel(where: HTMLElement, player: Player, video: HTMLVideo
         innerText: "Fullscreen"
     });
     fullscreen.onclick = (): void => {
-        void video.requestFullscreen();
+        void player.requestFullscreen();
     };
 
     // Start/stop button
@@ -164,7 +135,7 @@ interface NodeOptions {
     innerText?: string;
 }
 
-function insertNode(parent: HTMLElement, node: "video", options?: NodeOptions): HTMLVideoElement;
+function insertNode(parent: HTMLElement, node: "div", options?: NodeOptions): HTMLDivElement;
 function insertNode(parent: HTMLElement, node: "label", options?: NodeOptions): HTMLLabelElement;
 function insertNode(parent: HTMLElement, node: "select", options?: NodeOptions): HTMLSelectElement;
 function insertNode(parent: HTMLElement, node: "button", options?: NodeOptions): HTMLButtonElement;

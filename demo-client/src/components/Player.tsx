@@ -21,6 +21,7 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
             playerRef.current = createPlayer(sourceURL, containerRef.current!, {
                 ...options
             });
+            console.debug("RISE player initialized");
         } else {
             // TODO respond to prop changes here, e.g. changing the stream on sourceURL change...
         }
@@ -30,7 +31,12 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
     React.useEffect(() => {
         const player = playerRef.current;
         const container = containerRef.current;
+        console.debug("RISE player container mounted"); // KILLME
         return () => {
+            if (container) {
+                container.replaceChildren();
+                console.debug("RISE player container unmounted"); // KILLME
+            }
             if (player) {
                 player.then((p) => {
                     p.stop();
@@ -38,13 +44,10 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
                         onDismount(p);
                     }
                 }).catch((e) => {
-                    console.error("RISE player failed to initialize:");
+                    console.error("RISE player failed to initialize:"); // KILLME
                     e instanceof Error && console.error(e.message);
                 });
                 playerRef.current = null;
-            }
-            if (container) {
-                container.innerHTML = "";
             }
         };
     }, []);
