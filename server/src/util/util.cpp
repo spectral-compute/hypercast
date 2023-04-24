@@ -1,6 +1,7 @@
 #include "util.hpp"
 
 #include <cassert>
+#include <charconv>
 #include <fstream>
 #include <stdexcept>
 
@@ -91,4 +92,24 @@ void Util::split(std::string_view string, std::initializer_list<std::reference_w
             throw std::invalid_argument("Too many separators.");
         }
     }
+}
+
+int64_t Util::parseInt64(std::string_view string)
+{
+    int64_t result = 0;
+    auto [last, e] { std::from_chars(string.begin(), string.end(), result) };
+
+    if (e == std::errc::invalid_argument) {
+        throw std::invalid_argument("Invalid integer: \"" + (std::string)string + "\".");
+    }
+    else if (e == std::errc::result_out_of_range) {
+        throw std::range_error("Integer out of range: \"" + (std::string)string + "\".");
+    }
+    else if (e != std::errc()) {
+        throw std::logic_error("Unknown error converting integer: \"" + (std::string)string + "\".");
+    }
+    else if (last != string.end()) {
+        throw std::invalid_argument("Junk following integer: \"" + (std::string)string + "\".");
+    }
+    return result;
 }

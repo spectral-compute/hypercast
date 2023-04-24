@@ -39,6 +39,16 @@ std::string replaceAll(std::string_view string, std::string_view token, std::str
 void split(std::string_view string, std::initializer_list<std::reference_wrapper<std::string_view>> parts,
            char separator = ' ');
 
+/**
+ * Parse an integer represented as a string to a 64-bit signed integer.
+ *
+ * @param string The string representing the integer.
+ * @return The parsed integer.
+ * @throws std::exception An exception indicating failure. Unlike the C++ string to integer conversion functions, this
+ *                        throws an exception if the whole string did not match.
+ */
+int64_t parseInt64(std::string_view string);
+
 } // namespace Util
 
 /// @}
