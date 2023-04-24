@@ -556,6 +556,17 @@ std::string formatDecimalFixedPoint(unsigned int n, unsigned int dp)
 }
 
 /**
+ * Get the arguments to make ffmpeg write information about encoded frames to stdout.
+ */
+std::vector<std::string> getLiveStreamMuxInfoStdoutArgs()
+{
+    return {
+        "-stats_mux_pre:v:0", "pipe:1",
+        "-stats_mux_pre_fmt:v:0", "{pts} {tb}"
+    };
+}
+
+/**
  * Arguments that apply to DASH outputs.
  */
 std::vector<std::string> getDashOutputArgs(const Config::Channel &channelConfig, const Config::Network &networkConfig,
@@ -623,6 +634,7 @@ Ffmpeg::Arguments Ffmpeg::Arguments::liveStream(const Config::Channel &channelCo
     append(result.ffmpegArguments, getLiveFilterArgs(channelConfig));
     append(result.ffmpegArguments, getLiveMapArgs(channelConfig.qualities));
     append(result.ffmpegArguments, getLiveEncoderArgs(channelConfig));
+    append(result.ffmpegArguments, getLiveStreamMuxInfoStdoutArgs());
     append(result.ffmpegArguments, getDashOutputArgs(channelConfig, networkConfig, uidPath));
 
     return result;

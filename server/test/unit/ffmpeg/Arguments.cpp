@@ -111,6 +111,10 @@ TEST(FfmpegArguments, Simple)
         "-b:a:0", "64k",
 
         /* Output arguments. */
+        // PTS updates.
+        "-stats_mux_pre:v:0", "pipe:1",
+        "-stats_mux_pre_fmt:v:0", "{pts} {tb}",
+
         // Realtime output arguments.
         "-flush_packets", "1",
         "-fflags", "flush_packets",
@@ -223,6 +227,10 @@ TEST(FfmpegArguments, Fractional)
         "-b:a:0", "64k",
 
         /* Output arguments. */
+        // PTS updates.
+        "-stats_mux_pre:v:0", "pipe:1",
+        "-stats_mux_pre_fmt:v:0", "{pts} {tb}",
+
         // Realtime output arguments.
         "-flush_packets", "1",
         "-fflags", "flush_packets",
@@ -408,6 +416,10 @@ TEST(FfmpegArguments, TwoVideoStreams)
         "-b:a:1", "64k",
 
         /* Output arguments. */
+        // PTS updates.
+        "-stats_mux_pre:v:0", "pipe:1",
+        "-stats_mux_pre_fmt:v:0", "{pts} {tb}",
+
         // Realtime output arguments.
         "-flush_packets", "1",
         "-fflags", "flush_packets",

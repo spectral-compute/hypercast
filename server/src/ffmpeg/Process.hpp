@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ffprobe.hpp"
+#include "Timestamp.hpp"
 
 #include "log/Log.hpp"
 #include "util/Event.hpp"
@@ -48,12 +49,27 @@ public:
      */
     Awaitable<void> kill();
 
+    /**
+     * Get the presentation timestamp of the output.
+     *
+     * In principle, this could be different for different streams, but they should be synchronized, and thus one is
+     * chosen as the representative.
+     *
+     * This only works if the arguments given to the process include the arguments to output these timestamps in the
+     * format this class expects. Arguments::liveStream does this.
+     *
+     * This method waits until the first timestamp arrives. Otherwise, it returns the latest timestamp.
+     */
+    Awaitable<Timestamp> getPts() const;
+
 private:
     Log::Context log;
     Subprocess::Subprocess subprocess;
     Event event;
     bool capturedProbe = false;
-    bool finishedReading = false;
+    bool finishedReadingStdout = false;
+    bool finishedReadingStderrAndTerminated = false;
+    Timestamp pts;
 };
 
 } // namespace Ffmpeg
