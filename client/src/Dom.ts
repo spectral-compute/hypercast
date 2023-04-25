@@ -36,7 +36,7 @@ export async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(sourceURL, containerElement, {onError}, false);
+    const player = new Player(sourceURL, containerElement, {onError});
     const controlsDiv = insertNode(containerElement, "div", {className: "video-controls"});
 
     /* Performance/debug event handling. */

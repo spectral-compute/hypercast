@@ -19,9 +19,8 @@ export class Player {
      *                GET parameter.
      * @param container The div tag to put a video tag into to play video into.
      * @param listeners Functions which will be called during key streaming events. See {@link PlayerEventListeners}
-     * @param nativeControls Whether to use the native <video> controls. Default: `true`.
      */
-    constructor(infoUrl: string | null, container: HTMLDivElement, listeners: PlayerEventListeners, nativeControls: boolean = true) {
+    constructor(infoUrl: string | null, container: HTMLDivElement, listeners: PlayerEventListeners) {
         // Get the URL from the streaminfo GET parameter if no info URL is given.
         if (infoUrl === null) {
             infoUrl = (new URLSearchParams(window.location.search)).get("streaminfo");
@@ -33,7 +32,7 @@ export class Player {
         // Set properties :)
         this.infoUrl = infoUrl;
         this.video = container.appendChild(document.createElement("video"));
-        this.video.controls = nativeControls;
+        this.video.controls = false;
         if (listeners.onError !== undefined) {
             this.onError = listeners.onError;
         }
