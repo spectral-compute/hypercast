@@ -51,7 +51,14 @@ export async function createPlayer(
         console.error(e instanceof Error ? "Failed to initialise player: " + e.message : "Failed to initialise player");
     }
 
-    createControlPanel(controlsDiv, player);
+    const onUpdate = () => {
+        // Erase the original controls
+        controlsDiv.innerHTML = "";
+        // Recreate the controls
+        createControlPanel(controlsDiv, player);
+    };
+
+    player.onUpdate = onUpdate;
 
     options?.onInitialisation?.(player);
     player.start();
@@ -140,7 +147,8 @@ function insertNamedSelector(
 ): HTMLSelectElement {
     const selector = insertNode(parent, "select", {className});
     Object.entries(options).forEach(([optionValue, optionName]): void => {
-        selector.innerHTML += `<option value="${optionValue}">${optionName ?? optionValue}</option>`;
+        const isSelected = optionValue === selectedValue;
+        selector.innerHTML += `<option value="${optionValue}" ${isSelected ? "selected" : ""}>${optionName ?? optionValue}</option>`;
     });
     selector.value = selectedValue;
     return selector;
