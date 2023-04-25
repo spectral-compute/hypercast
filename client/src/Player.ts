@@ -6,13 +6,11 @@ import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {MseWrapper} from "./MseWrapper";
 
-type OnStartPlayingHandler = ((elective: boolean) => void);
-
 export interface PlayerEventListeners {
     /** Called when an error occurs */
     onError?: (description: string) => void;
     /** Called when the player starts playing video. */
-    onStartPlaying?: OnStartPlayingHandler;
+    onStartPlaying?: (elective: boolean) => void;
 }
 
 export class Player {
@@ -285,7 +283,7 @@ export class Player {
      *
      * @param elective Whether or not the change was requested by setAngle() or setQuality().
      */
-    onStartPlaying: OnStartPlayingHandler | null = null;
+    onStartPlaying: ((elective: boolean) => void) | null = null;
 
     /**
      * Called when an error occurs.
