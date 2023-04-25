@@ -163,7 +163,7 @@ CORO_TEST(InterleaveResource, ControlChunk, ioc)
     resource.addStreamData(getShortData(), 0); // A data chunk.
     EXPECT_FALSE(resource.hasEnded());
 
-    resource.addControlChunk(Dash::InterleaveResource::ControlChunkType::discard, getShortData()); // A control chunk.
+    resource.addControlChunk(Dash::ControlChunkType::discard, getShortData()); // A control chunk.
     EXPECT_FALSE(resource.hasEnded());
 
     resource.addStreamData({}, 0); // End of stream.
@@ -171,7 +171,7 @@ CORO_TEST(InterleaveResource, ControlChunk, ioc)
 
     /* Test the control chunk as if it was any other chunk, but with the control chunk header and index. */
     std::vector<std::byte> controlChunkRef = getShortData();
-    controlChunkRef.insert(controlChunkRef.begin(), (std::byte)Dash::InterleaveResource::ControlChunkType::discard);
+    controlChunkRef.insert(controlChunkRef.begin(), (std::byte)Dash::ControlChunkType::discard);
 
     TestRequest request;
     co_await testResource(resource, request, {{
