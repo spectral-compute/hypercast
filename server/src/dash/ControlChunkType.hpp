@@ -13,6 +13,7 @@ namespace Dash
  */
 enum class ControlChunkType : uint8_t
 {
+    /* Other control chunk types. */
     /**
      * The client should discard this chunk.
      *

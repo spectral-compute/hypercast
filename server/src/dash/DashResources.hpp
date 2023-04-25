@@ -1,10 +1,13 @@
 #pragma once
 
+#include "ControlChunkType.hpp"
+
 #include "log/Log.hpp"
 #include "server/Path.hpp"
 
 #include <filesystem>
 #include <memory>
+#include <span>
 #include <vector>
 
 class IOContext;
@@ -67,6 +70,24 @@ public:
      * @param segmentIndex The index of the segment that's started.
      */
     void notifySegmentStart(unsigned int streamIndex, unsigned int segmentIndex);
+
+    /**
+     * Add a control chunk to all the interleaves' latest segments.
+     *
+     * This might create new interleave segments if the latest ones are all ended (or non-existent).
+     *
+     * @param chunkData The data for the control chunk.
+     * @param type The control chunk type.
+     */
+    void addControlChunk(std::span<const std::byte> chunkData, ControlChunkType type);
+
+    /**
+     * @copydoc addControlChunk
+     */
+    void addControlChunk(std::string_view chunkData, ControlChunkType type)
+    {
+        addControlChunk(std::span((const std::byte *)chunkData.data(), chunkData.size()), type);
+    }
 
     /**
      * Get the base path in the server for the resources managed by this object.

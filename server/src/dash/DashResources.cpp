@@ -250,6 +250,14 @@ public:
     }
 
     /**
+     * Get a reference to the interleave resource.
+     */
+    Dash::InterleaveResource &operator*() const
+    {
+        return *resource;
+    }
+
+    /**
      * Determine if the interleave has expired.
      */
     bool expired(std::chrono::steady_clock::time_point now) const
@@ -336,6 +344,17 @@ public:
         std::erase_if(segments, [now](const auto &v) {
             return v.second.expired(now);
         });
+    }
+
+    /**
+     * Get the index of the last segment, if any.
+     */
+    std::optional<unsigned int> getLastSegmentIndex()
+    {
+        if (segments.empty()) {
+            return std::nullopt;
+        }
+        return segments.rbegin()->first;
     }
 
 private:
@@ -556,6 +575,37 @@ void Dash::DashResources::notifySegmentStart(unsigned int streamIndex, unsigned 
                        << " for stream " << (streamIndex + 1) << ".";
         }
     });
+}
+
+void Dash::DashResources::addControlChunk(std::span<const std::byte> chunkData, ControlChunkType type)
+{
+    /* Add the control chunk to every interleave. */
+    for (unsigned int i = 0; i < interleaves.size(); i++) {
+        // Find the last interleave segment.
+        std::optional<unsigned int> lastSegmentIndex = interleaves[i].getLastSegmentIndex();
+        if (!lastSegmentIndex) {
+            lastSegmentIndex = 1; // This is the index of the first segment, and we haven't had any yet.
+        }
+        Dash::InterleaveResource *segment = &*getInterleaveSegment(i, *lastSegmentIndex);
+
+        // If this interleave hasn't started yet, try the previous one. This accounts for pre-available interleaves. If
+        // we're at the point of having ended segment N but not yet started segment N+1, we'll get bumped back.
+        if (!segment->hasStarted() && (*lastSegmentIndex) > 1) {
+            (*lastSegmentIndex)--;
+            segment = &*getInterleaveSegment(i, *lastSegmentIndex);
+        }
+
+        // Create the next interleave segment if this one's ended. It's possible this'll bump us back to one that's not
+        // started, but that's what we want if the previous one ended and the next one hasn't started.
+        else if (segment->hasEnded()) {
+            (*lastSegmentIndex)++;
+            segment = &*getInterleaveSegment(i, *lastSegmentIndex);
+            assert(!segment->hasEnded());
+        }
+
+        // Add the control chunk.
+        segment->addControlChunk(chunkData, type);
+    }
 }
 
 void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int segmentIndex)
