@@ -9,8 +9,9 @@ import {assertType} from "@ckitching/typescript-is";
 export interface PlayerEventListeners {
     /** Called when an error occurs */
     onError?: (description: string) => void;
-    /** Called when the player starts playing video. */
-    onStartPlaying?: (elective: boolean) => void;
+
+    /** Called when Player's properties change or a video starts playing. */
+    onUpdate?: (elective: boolean) => void;
 
     /**
      * Called with the object given to the send_user_json channel API when it is called.
@@ -48,21 +49,12 @@ export class Player {
         this.channelIndexUrl = channelIndexUrl;
         this.video = container.appendChild(document.createElement("video"));
         this.video.controls = false;
-        if (listeners.onError !== undefined) {
-            this.onError = listeners.onError;
-        }
-        if (listeners.onStartPlaying !== undefined) {
-            this.onStartPlaying = listeners.onStartPlaying;
-        }
-        if (listeners.onBroadcastObject !== undefined) {
-            this.onBroadcastObject = listeners.onBroadcastObject;
-        }
-        if (listeners.onBroadcastBinary !== undefined) {
-            this.onBroadcastBinary = listeners.onBroadcastBinary;
-        }
-        if (listeners.onBroadcastString !== undefined) {
-            this.onBroadcastString = listeners.onBroadcastString;
-        }
+
+        this.onError = listeners.onError ?? null;
+        this.onUpdate = listeners.onUpdate ?? null;
+        this.onBroadcastObject = listeners.onBroadcastObject ?? null;
+        this.onBroadcastBinary = listeners.onBroadcastBinary ?? null;
+        this.onBroadcastString = listeners.onBroadcastString ?? null;
     }
 
     /**
@@ -80,7 +72,7 @@ export class Player {
             // Now let's select the first channel.
             // TODO: Make this configurable.
             // TODO: Make this not crash if there are no channels?
-            this.selectedChannelPath = Object.keys(this.channelIndex)[0]!;
+            this.channelPath = Object.keys(this.channelIndex)[0]!;
 
             await this.initCurrentChannel();
         } catch (ex: any) {
@@ -138,7 +130,7 @@ export class Player {
      * Does not include the base URL of the channel index.
      */
     getChannelPath(): string {
-        return this.selectedChannelPath;
+        return this.channelPath!;
     }
 
     /**
@@ -147,7 +139,7 @@ export class Player {
      * @param channelPath The path relative to the base URL of the channel index.
      */
     setChannelPath(channelPath: string): void {
-        this.selectedChannelPath = channelPath;
+        this.channelPath = channelPath;
         this.initCurrentChannel();
     }
 
@@ -165,8 +157,8 @@ export class Player {
     /**
      * Get the index of the current angle.
      *
-     * This can change whenever the onStartPlaying event fires. This is not valid between calls to setAngle() and the
-     * onStartPlaying firing.
+     * This can change whenever the onUpdate event fires.
+     * This is not valid between calls to setAngle() and the onUpdate firing.
      *
      * @return The index of the new angle to play. This indexes the options returned by getAngleOptions().
      */
@@ -181,7 +173,7 @@ export class Player {
      */
     setAngle(index: number): void {
         if (index === this.angle) {
-            this.onStartPlaying?.(true);
+            this.onUpdate?.(true);
             return;
         }
 
@@ -205,8 +197,8 @@ export class Player {
     /**
      * Get the index of the current quality.
      *
-     * This can change whenever the onStartPlaying event fires. This is not valid between calls to setAngle() and
-     * setQuality(), and the onStartPlaying firing.
+     * This can change whenever the onUpdate event fires.
+     * This is not valid between calls to setChannelPath() and setQuality(), and the onUpdate firing.
      *
      * @return The index of the playing quality. This indexes the options returned by getQualityOptions().
      */
@@ -221,7 +213,7 @@ export class Player {
      */
     setQuality(index: number): void {
         if (index === this.quality) {
-            this.onStartPlaying?.(true);
+            this.onUpdate?.(true);
             return;
         }
 
@@ -233,7 +225,7 @@ export class Player {
     /**
      * Determine whether or not the currently playing video has audio.
      *
-     * This can change whenever the onStartPlaying event fires.
+     * This can change whenever the onUpdate event fires.
      */
     hasAudio(): boolean {
         return this.audioStream !== null;
@@ -282,19 +274,19 @@ export class Player {
     }
 
     /**
-     * Called whenever the media source changes (i.e: change of quality or change of angle).
+     * Called whenever the media source changes (i.e: change of quality, change of channel, or of available channels).
      *
-     * Note that a call to setAngle() or setQuality() will always call this event to fire, even if no actual change
-     * occurred.
+     * Note that a call to setChannelPath() or setQuality() will always call this event to fire,
+     * even if no actual change occurred.
      *
-     * @param elective Whether or not the change was requested by setAngle() or setQuality().
+     * @param elective Whether or not the change was requested by the user.
      */
-    onStartPlaying: ((elective: boolean) => void) | null = null;
+    onUpdate: ((elective: boolean) => void) | null;
 
     /**
      * Called when an error occurs.
      */
-    onError: ((description: string) => void) | null = null;
+    onError: ((description: string) => void) | null;
 
     /**
      * Called with the object given to the send_user_json channel API when it is called.
@@ -378,7 +370,7 @@ export class Player {
         this.stream?.stop();
         this.bctrl?.stop();
 
-        const response: Response = await fetch(this.baseUrl + this.selectedChannelPath);
+        const response: Response = await fetch(this.baseUrl + this.channelPath);
         if (response.status !== 200) {
             throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
         }
@@ -439,7 +431,7 @@ export class Player {
         /* Set up the "on new source playing" event handler. */
         this.stream.onNewStreamStart = (): void => {
             this.bctrl!.onNewStreamStart();
-            this.onStartPlaying?.(this.electiveChangeInProgress);
+            this.onUpdate?.(this.electiveChangeInProgress);
             this.electiveChangeInProgress = false;
         };
 
@@ -490,7 +482,6 @@ export class Player {
     // Server information.
     private channelIndex!: API.ChannelIndex;
     private baseUrl!: string;
-    private selectedChannelPath!: string;
     private serverInfo!: API.ServerInfo;
     private angleUrls: string[] = [];
     private angleOptions: string[] = [];
@@ -499,6 +490,7 @@ export class Player {
     // Current settings.
     private angle: number = 0;
     private quality: number = 0;
+    private channelPath: string | null = null;
 
     // Derived settings.
     private videoStream: number | null = null;

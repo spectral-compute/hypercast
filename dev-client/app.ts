@@ -13,7 +13,7 @@ function onError(e: string): void {
 }
 
 /* Update the UI whenever the player's settings change. */
-function onStartPlaying(elective: boolean): void {
+function onUpdate(elective: boolean): void {
     setupUi(elective);
     document.getElementById("stop")!.hidden = false;
 }
@@ -27,7 +27,7 @@ function onBroadcastObject(o: any) {
 }
 
 /* Create the player. */
-const player = new Player(infoUrl, video, {onError, onStartPlaying, onBroadcastObject: onBroadcastObject});
+const player = new Player(infoUrl, video, {onError, onUpdate, onBroadcastObject: onBroadcastObject});
 (document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getChannelIndexUrl();
 
 /* Performance/debug event handling. */
