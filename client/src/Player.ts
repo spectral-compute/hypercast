@@ -6,6 +6,8 @@ import {ReceivedInfo} from "./live/SegmentDownloader";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 
+const CHANNEL_INDEX_POLL_INTERVAL_MS = 5_000;
+
 export interface PlayerEventListeners {
     /** Called when an error occurs */
     onError?: (description: string) => void;
@@ -75,6 +77,20 @@ export class Player {
             this.channelPath = Object.keys(this.channelIndex)[0]!;
 
             await this.initCurrentChannel();
+
+            // Set up polling for the channel index.
+            // TODO: Make the polling interval configurable.
+            // TODO: Make sure no cleanup is needed when the player is destroyed.
+            window.setInterval(async () => {
+                const oldChannelIndex = this.channelIndex;
+                await this.loadChannelIndex();
+                if (JSON.stringify(oldChannelIndex) !== JSON.stringify(this.channelIndex)) {
+                    // The channel index has changed.
+                    this.onUpdate?.(false);
+                }
+                // TODO: potentially update the channel path and reinitialize if it's no longer valid.
+                // But what if the channel does not get broken?
+            }, CHANNEL_INDEX_POLL_INTERVAL_MS);
         } catch (ex: any) {
             const e = ex as Error;
             if (this.onError) {
