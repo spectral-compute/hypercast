@@ -60,18 +60,10 @@ public:
      * This method should not be called if every stream in the interleave has ended. This condition can be tested for
      * with hasEnded.
      *
-     * @param type The control chunk type.
      * @param chunkData The data for the control chunk.
+     * @param type The control chunk type.
      */
-    void addControlChunk(ControlChunkType type, std::span<const std::byte> chunkData);
-
-    /**
-     * @copydoc addControlChunk
-     */
-    void addControlChunk(ControlChunkType type, std::string_view chunkData)
-    {
-        addControlChunk(type, std::span((const std::byte *)chunkData.data(), chunkData.size()));
-    }
+    void addControlChunk(std::span<const std::byte> chunkData, ControlChunkType type);
 
     /**
      * Determine if data has been received for any stream.
@@ -113,7 +105,7 @@ private:
      * @param now The time of the event that created the chunk. This must be at least as large as for the last chunk.
      *            This exists as a parameter for efficiency reasons.
      */
-    void addControlChunk(ControlChunkType type, std::span<const std::byte> chunkData,
+    void addControlChunk(std::span<const std::byte> chunkData, ControlChunkType type,
                          std::chrono::steady_clock::time_point now);
 
     /**

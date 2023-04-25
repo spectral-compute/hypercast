@@ -163,7 +163,7 @@ CORO_TEST(InterleaveResource, ControlChunk, ioc)
     resource.addStreamData(getShortData(), 0); // A data chunk.
     EXPECT_FALSE(resource.hasEnded());
 
-    resource.addControlChunk(Dash::ControlChunkType::discard, getShortData()); // A control chunk.
+    resource.addControlChunk(getShortData(), Dash::ControlChunkType::discard); // A control chunk.
     EXPECT_FALSE(resource.hasEnded());
 
     resource.addStreamData({}, 0); // End of stream.

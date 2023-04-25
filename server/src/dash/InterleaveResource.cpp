@@ -124,12 +124,12 @@ void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart
     // We use random data to make sure there's no compression anywhere that reduces the effective rate. The length
     // doesn't account for the size of the chunk header for the random data, so this can be a few bytes over, but that's
     // OK.
-    addControlChunk(ControlChunkType::discard, getRandomData(extraData), now);
+    addControlChunk(getRandomData(extraData), ControlChunkType::discard, now);
 }
 
-void Dash::InterleaveResource::addControlChunk(ControlChunkType type, std::span<const std::byte> chunkData)
+void Dash::InterleaveResource::addControlChunk(std::span<const std::byte> chunkData, ControlChunkType type)
 {
-    addControlChunk(type, chunkData, std::chrono::steady_clock::now());
+    addControlChunk(chunkData, type, std::chrono::steady_clock::now());
 }
 
 void Dash::InterleaveResource::addChunk(std::span<const std::byte> dataPart, unsigned int streamIndex,
@@ -203,7 +203,7 @@ void Dash::InterleaveResource::addChunk(std::span<const std::byte> dataPart, uns
     event.notifyAll();
 }
 
-void Dash::InterleaveResource::addControlChunk(ControlChunkType type, std::span<const std::byte> chunkData,
+void Dash::InterleaveResource::addControlChunk(std::span<const std::byte> chunkData, ControlChunkType type,
                                                std::chrono::steady_clock::time_point now)
 {
     assert(!hasEnded());
