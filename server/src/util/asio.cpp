@@ -26,3 +26,15 @@ void spawnDetached(IOContext &ioc, Log::Context &log, std::move_only_function<Aw
         }
     });
 }
+
+Awaitable<void> awaitTree(std::span<Awaitable<void>> awaitables)
+{
+    if (awaitables.empty()) {}
+    else if (awaitables.size() == 1) {
+        co_await std::move(awaitables[0]);
+    }
+    else {
+        co_await (awaitTree(awaitables.subspan(0, awaitables.size() / 2)) &&
+                  awaitTree(awaitables.subspan(awaitables.size() / 2)));
+    }
+}

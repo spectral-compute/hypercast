@@ -7,6 +7,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <functional>
+#include <span>
 
 /* This lets us do things like co_await (a && b), where a and b are Awaitable<void>s. */
 #pragma clang diagnostic push
@@ -96,5 +97,12 @@ void spawnDetached(IOContext &ioc, std::move_only_function<Awaitable<void>()> fn
  */
 void spawnDetached(IOContext &ioc, Log::Context &log, std::move_only_function<Awaitable<void>()> fn,
                    Log::Level level = Log::Level::error);
+
+/**
+ * Wait for all of a set of void awaitables of unknown length in parallel.
+ *
+ * Use && to wait for a fixed number of awaitables.
+ */
+Awaitable<void> awaitTree(std::span<Awaitable<void>> awaitables);
 
 /// @}
