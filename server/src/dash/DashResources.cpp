@@ -200,10 +200,12 @@ private:
     std::chrono::steady_clock::time_point expiry{maxSteadyTime};
 };
 
+} // namespace
+
 /**
  * Creates the resource for a single interleave, and keeps track of when it should expire.
  */
-class InterleaveExpiringResource final : public ExpiringResource
+class Dash::DashResources::InterleaveExpiringResource final : public ExpiringResource
 {
 public:
     /**
@@ -269,6 +271,9 @@ private:
      */
     std::shared_ptr<Dash::InterleaveResource> resource;
 };
+
+namespace
+{
 
 /**
  * Creates the resource for a single DASH segment, and keeps track of when it should expire.
@@ -562,7 +567,6 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
 
     assert(streamIndex < streams.size());
     bool isAudio = streamIndex >= config.qualities.size();
-    unsigned int lifetimeMs = config.history.historyLength * 1000;
 
     /* Garbage collect existing segments. */
     gcSegments();
@@ -571,25 +575,14 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
     // Figure out the interleave index.
     unsigned int interleaveIndex = (streamIndex >= config.qualities.size()) ?
                                    streamIndex - (unsigned int)config.qualities.size() : streamIndex;
-    assert(interleaveIndex < interleaves.size());
 
-    // Figure out if this interleave has audio.
-    assert(interleaves.size() == config.qualities.size());
-    unsigned int interleaveNumStreams = config.qualities[interleaveIndex].audio ? 2 : 1;
-
-    // Create the interleave and the descriptor we keep track of it with.
-    const Config::Quality &q = config.qualities[interleaveIndex];
-    InterleaveExpiringResource &interleave =
-        interleaves[interleaveIndex].get(segmentIndex, server,
-                                         uidPath / getInterleaveName(interleaveIndex, segmentIndex), lifetimeMs,
-                                         interleaveNumStreams, ioc, log, interleaveNumStreams,
-                                         (*q.minInterleaveRate * *q.minInterleaveWindow + 7) / 8,
-                                         *q.minInterleaveWindow, q.interleaveTimestampInterval);
+    // Create the corresponding interleave segment if it doesn't already exist.
+    InterleaveExpiringResource &interleave = getInterleaveSegment(interleaveIndex, segmentIndex);
 
     /* Add the new segment. */
     {
         std::string segmentName = getSegmentName(streamIndex, segmentIndex);
-        streams[streamIndex].get(segmentIndex, server, uidPath / segmentName, lifetimeMs,
+        streams[streamIndex].get(segmentIndex, server, uidPath / segmentName, config.history.historyLength * 1000,
                                  ioc, log, config.dash, *this, streamIndex, segmentIndex, interleave, interleaveIndex,
                                  isAudio ? 1 : 0, getPersistencePath(segmentName));
     }
@@ -598,6 +591,25 @@ void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int s
     /* Set the caching for the following interleave segments (up to however many could be reached with fixed caching) to
        ephemeral. */
     interleaves[interleaveIndex].addEphemeralNotFoundSegments(segmentIndex);
+}
+
+Dash::DashResources::InterleaveExpiringResource &
+Dash::DashResources::getInterleaveSegment(unsigned int interleaveIndex, unsigned int segmentIndex)
+{
+    assert(interleaveIndex < interleaves.size());
+
+    /* Figure out if this interleave has audio. */
+    assert(interleaves.size() == config.qualities.size());
+    unsigned int interleaveNumStreams = config.qualities[interleaveIndex].audio ? 2 : 1;
+
+    /* Create the interleave and the descriptor we keep track of it with. */
+    const Config::Quality &q = config.qualities[interleaveIndex];
+    return interleaves[interleaveIndex].get(segmentIndex, server,
+                                            uidPath / getInterleaveName(interleaveIndex, segmentIndex),
+                                            config.history.historyLength * 1000, interleaveNumStreams, ioc, log,
+                                            interleaveNumStreams,
+                                            (*q.minInterleaveRate * *q.minInterleaveWindow + 7) / 8,
+                                            *q.minInterleaveWindow, q.interleaveTimestampInterval);
 }
 
 void Dash::DashResources::gcSegments()

@@ -89,6 +89,7 @@ public:
 private:
     class Interleave;
     class Stream;
+    class InterleaveExpiringResource;
 
     /**
      * Create the resources for the given segment.
@@ -97,6 +98,11 @@ private:
      * @param segmentIndex The index of the segment within the stream.
      */
     void createSegment(unsigned int streamIndex, unsigned int segmentIndex);
+
+    /**
+     * Get (and possibly create) the given segment of the given interleave.
+     */
+    InterleaveExpiringResource &getInterleaveSegment(unsigned int interleaveIndex, unsigned int segmentIndex);
 
     /**
      * Remove segments that should have expired and should no longer be accessible.
