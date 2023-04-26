@@ -67,6 +67,7 @@ export namespace API {
      * The type of data in a control chunk.
      */
     export enum ControlChunkType {
+        userJsonObject = 48,
         discard = 255
     }
 }

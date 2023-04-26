@@ -18,8 +18,16 @@ function onStartPlaying(elective: boolean): void {
     document.getElementById("stop")!.hidden = false;
 }
 
+/* Called when a user object is received. */
+function onBroadcastObject(o: any) {
+    console.log("Received user broadcast object.");
+    console.log(o);
+    document.getElementById("user_object")!.innerText =
+        `User object: ${(typeof o === "object") ? JSON.stringify(o) : o}`;
+}
+
 /* Create the player. */
-const player = new Player(infoUrl, video, {onError, onStartPlaying});
+const player = new Player(infoUrl, video, {onError, onStartPlaying, onBroadcastObject: onBroadcastObject});
 (document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getInfoUrl();
 
 /* Performance/debug event handling. */

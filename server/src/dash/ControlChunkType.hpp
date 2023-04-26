@@ -13,6 +13,12 @@ namespace Dash
  */
 enum class ControlChunkType : uint8_t
 {
+    /* User message control chunk types. */
+    /**
+     * Send a JSON object to the client library for use by the user of the library.
+     */
+    userJsonObject = 48,
+
     /* Other control chunk types. */
     /**
      * The client should discard this chunk.

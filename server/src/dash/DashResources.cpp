@@ -1,5 +1,6 @@
 #include "DashResources.hpp"
 
+#include "api/channel/SendDataResource.hpp"
 #include "configuration/configuration.hpp"
 #include "dash/SegmentResource.hpp"
 #include "dash/InterleaveResource.hpp"
@@ -437,6 +438,12 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
 {
     logContext << "base path" << Log::Level::info << (std::string)getBasePath();
     logContext << "uid path" << Log::Level::info << (std::string)getUidPath();
+
+    /* Create the API resources. */
+    {
+        Server::Path apiBasePath = Server::Path("api/channels") / this->basePath;
+        server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_json", *this);
+    }
 
     /* Create the persistence directory. */
     if (!persistenceDirectory.empty()) {

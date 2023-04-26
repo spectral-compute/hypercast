@@ -11,6 +11,11 @@ export interface PlayerEventListeners {
     onError?: (description: string) => void;
     /** Called when the player starts playing video. */
     onStartPlaying?: (elective: boolean) => void;
+
+    /**
+     * Called with the object given to the send_user_json channel API when it is called.
+     */
+    onBroadcastObject?: (o: any) => void;
 }
 
 export class Player {
@@ -38,6 +43,9 @@ export class Player {
         }
         if (listeners.onStartPlaying !== undefined) {
             this.onStartPlaying = listeners.onStartPlaying;
+        }
+        if (listeners.onBroadcastObject !== undefined) {
+            this.onBroadcastObject = listeners.onBroadcastObject;
         }
     }
 
@@ -306,6 +314,12 @@ export class Player {
     private onControlChunk(data: ArrayBuffer, controlChunkType: number): void {
         try {
             switch (controlChunkType) {
+                case API.ControlChunkType.userJsonObject:
+                    if (this.onBroadcastObject === null) {
+                        throw Error("Received broadcast object, but its handler is not registered.");
+                    }
+                    this.onBroadcastObject(JSON.parse(new TextDecoder().decode(data)));
+                    break;
                 default:
                     throw Error(`Unknown control chunk type: ${controlChunkType}.`);
             }
