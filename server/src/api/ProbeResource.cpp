@@ -121,9 +121,12 @@ Awaitable<void> Api::ProbeResource::postAsync(Server::Response &response, Server
         response.setMimeType("application/json");
         response << Json::dump(result);
     }
-    catch (const nlohmann::json::exception &) {
+    catch (const nlohmann::json::exception &e) {
         /* Bad request because the body is not a valid JSON object. */
-        throw Server::Error(Server::ErrorKind::BadRequest);
+        throw Server::Error(Server::ErrorKind::BadRequest, e.what());
+    }
+    catch (const Json::ObjectDeserializer::Exception &e) {
+        throw Server::Error(Server::ErrorKind::BadRequest, e.what());
     }
 }
 
