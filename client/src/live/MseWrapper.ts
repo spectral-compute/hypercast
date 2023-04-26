@@ -2,7 +2,7 @@ import {TimestampInfo} from "./Deinterleave";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {SegmentDownloader, ReceivedInfo} from "./SegmentDownloader";
-import {Stream} from "./Stream";
+import {Stream} from "../Stream";
 
 export class MseWrapper {
     constructor(

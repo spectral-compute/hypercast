@@ -1,4 +1,4 @@
-import * as Debug from "./Debug";
+import * as Debug from "../Debug";
 import {API} from "live-video-streamer-common";
 
 /**

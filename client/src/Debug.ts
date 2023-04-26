@@ -1,6 +1,6 @@
-import {BufferControl} from "./BufferCtrl";
-import {TimestampInfo} from "./Deinterleave";
-import {ReceivedInfo} from "./SegmentDownloader";
+import {BufferControl} from "./live/BufferCtrl";
+import {TimestampInfo} from "./live/Deinterleave";
+import {ReceivedInfo} from "./live/SegmentDownloader";
 
 /**
  * Addler32 checksum for debugging.

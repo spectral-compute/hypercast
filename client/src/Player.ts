@@ -1,10 +1,10 @@
-import * as BufferCtrl from "./BufferCtrl";
-import {TimestampInfo} from "./Deinterleave";
-import {ReceivedInfo} from "./SegmentDownloader";
 import {DebugHandler} from "./Debug";
+import {BufferControl} from "./live/BufferCtrl";
+import {TimestampInfo} from "./live/Deinterleave";
+import {MseWrapper} from "./live/MseWrapper";
+import {ReceivedInfo} from "./live/SegmentDownloader";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
-import {MseWrapper} from "./MseWrapper";
 
 export interface PlayerEventListeners {
     /** Called when an error occurs */
@@ -118,7 +118,7 @@ export class Player {
             );
 
             /* Set up buffer control for the player. */
-            this.bctrl = new BufferCtrl.BufferControl(this.video, (): void => {
+            this.bctrl = new BufferControl(this.video, (): void => {
                 if (this.quality < this.qualityOptions.length - 1) {
                     this.quality++; // Quality is actually reversed.
                 }
@@ -406,7 +406,7 @@ export class Player {
 
     // Worker objects.
     private stream: MseWrapper | null = null;
-    private bctrl: BufferCtrl.BufferControl | null = null;
+    private bctrl: BufferControl | null = null;
 
     // Server information.
     private serverInfo!: API.ServerInfo;

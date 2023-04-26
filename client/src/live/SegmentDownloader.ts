@@ -1,7 +1,7 @@
 import {API, assertNonNull} from "live-video-streamer-common";
 import {Deinterleaver, TimestampInfo} from "./Deinterleave";
+import {Stream} from "../Stream";
 import {assertType} from "@ckitching/typescript-is";
-import {Stream} from "./Stream";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
