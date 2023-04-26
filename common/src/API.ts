@@ -62,4 +62,11 @@ export namespace API {
         audioConfigs: AudioConfig[],
         avMap: [number, number | null][]
     }
+
+    /**
+     * The type of data in a control chunk.
+     */
+    export enum ControlChunkType {
+        discard = 255
+    }
 }

@@ -87,6 +87,9 @@ export class Player {
                 (recievedInfo: ReceivedInfo): void => {
                     this.bctrl!.onRecieved(recievedInfo);
                 },
+                (data: ArrayBuffer, controlChunkType: number): void => {
+                    this.onControlChunk(data, controlChunkType)
+                },
                 this.onError ?? ((): void => {}),
             );
 
@@ -288,6 +291,33 @@ export class Player {
      * Called when an error occurs.
      */
     onError: ((description: string) => void) | null = null;
+
+    /**
+     * Called with the object given to the send_user_json channel API when it is called.
+     */
+    onBroadcastObject: ((o: any) => void) | null = null;
+
+    /**
+     * Handle control chunks received via interleaves.
+     *
+     * @param data The data of the control chunk.
+     * @param controlChunkType The control chunk type.
+     */
+    private onControlChunk(data: ArrayBuffer, controlChunkType: number): void {
+        try {
+            switch (controlChunkType) {
+                default:
+                    throw Error(`Unknown control chunk type: ${controlChunkType}.`);
+            }
+        } catch(ex: any) {
+            const e = ex as Error;
+            if (this.onError) {
+                this.onError(`Bad control chunk: ${e.message}`);
+            } else {
+                throw e;
+            }
+        }
+    }
 
     /**
      * This must be called whenever the current quality or angle changes.

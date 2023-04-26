@@ -29,6 +29,7 @@ export class SegmentDownloader {
         private readonly segmentPreavailability: number,
         private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
         private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
+        private readonly onControlChunk: (data: ArrayBuffer, controlChunkType: number) => void,
         private readonly onError: (description: string) => void
     ) {
         this.setSegmentDownloadSchedule(info);
@@ -207,16 +208,19 @@ export class SegmentDownloader {
                 if (this.interleaved) {
                     if (!deinterleaver) {
                         const logicalSegmentIndexCopy = logicalSegmentIndex;
-                        deinterleaver = new Deinterleaver((data: ArrayBuffer, index: number): void => {
-                            if (this.streams.length <= index) {
-                                return;
-                            }
-                            if (data.byteLength === 0) { // End of file.
-                                this.streams[index]!.endSegment(logicalSegmentIndexCopy);
-                                return;
-                            }
-                            this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
-                        }, (logicalSegmentIndex === 0) ? (): void => {} : this.onTimestamp, description);
+                        deinterleaver = new Deinterleaver(
+                            (data: ArrayBuffer, index: number): void => {
+                                if (this.streams.length <= index) {
+                                    return;
+                                }
+                                if (data.byteLength === 0) { // End of file.
+                                    this.streams[index]!.endSegment(logicalSegmentIndexCopy);
+                                    return;
+                                }
+                                this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
+                            }, this.onControlChunk, (logicalSegmentIndex === 0) ? (): void => {} : this.onTimestamp,
+                            description
+                        );
                         // Note that the first segment is likely to be started in the middle, and therefore not good for
                         // network timing data.
                     }

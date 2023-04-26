@@ -11,6 +11,7 @@ export class MseWrapper {
         private readonly segmentPreavailability: number,
         private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
         private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
+        private readonly onControlChunk: (data: ArrayBuffer, controlChunkType: number) => void,
         private readonly onError: (description: string) => void
     ) {}
 
@@ -201,6 +202,7 @@ export class MseWrapper {
                 this.segmentPreavailability,
                 this.onTimestamp,
                 this.onReceived,
+                this.onControlChunk,
                 this.onError,
             );
         }, audioInfo !== null);
