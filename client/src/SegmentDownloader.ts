@@ -1,7 +1,7 @@
 import {API, assertNonNull} from "live-video-streamer-common";
 import {Deinterleaver, TimestampInfo} from "./Deinterleave";
 import {assertType} from "@ckitching/typescript-is";
-import {Stream, ReceivedInfo} from "./Stream";
+import {Stream} from "./Stream";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -14,6 +14,12 @@ const PreavailabilityMargin = 1500;
  * The period between download scheduler updates, measured in segments.
  */
 const DownloadSchedulerUpdatePeriod = 16;
+
+export interface ReceivedInfo {
+    streamIndex: number,
+    timestamp: number,
+    length: number
+}
 
 /**
  * Schedules download of segments.

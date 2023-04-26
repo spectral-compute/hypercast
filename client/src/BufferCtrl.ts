@@ -1,6 +1,6 @@
 import {TimestampInfo} from "./Deinterleave";
-import {ReceivedInfo} from "./Stream";
 import {BufferControlTickInfo, DebugHandler} from "./Debug";
+import {ReceivedInfo} from "./SegmentDownloader";
 import {API} from "live-video-streamer-common";
 
 export interface NetworkTimingStats {

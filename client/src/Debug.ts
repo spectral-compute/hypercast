@@ -1,6 +1,6 @@
 import {BufferControl} from "./BufferCtrl";
 import {TimestampInfo} from "./Deinterleave";
-import {ReceivedInfo} from "./Stream";
+import {ReceivedInfo} from "./SegmentDownloader";
 
 /**
  * Addler32 checksum for debugging.

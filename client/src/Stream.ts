@@ -1,11 +1,5 @@
 import * as Debug from "./Debug";
 
-export interface ReceivedInfo {
-    streamIndex: number,
-    timestamp: number,
-    length: number
-}
-
 /**
  * Manages a media source buffer, and a queue of data to go with it.
  */
