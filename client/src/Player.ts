@@ -16,6 +16,16 @@ export interface PlayerEventListeners {
      * Called with the object given to the send_user_json channel API when it is called.
      */
     onBroadcastObject?: (o: any) => void;
+
+    /**
+     * Called with the object given to the send_user_binary channel API when it is called.
+     */
+    onBroadcastBinary?: (data: ArrayBuffer) => void;
+
+    /**
+     * Called with the object given to the send_user_string channel API when it is called.
+     */
+    onBroadcastString?: (s: string) => void;
 }
 
 export class Player {
@@ -46,6 +56,12 @@ export class Player {
         }
         if (listeners.onBroadcastObject !== undefined) {
             this.onBroadcastObject = listeners.onBroadcastObject;
+        }
+        if (listeners.onBroadcastBinary !== undefined) {
+            this.onBroadcastBinary = listeners.onBroadcastBinary;
+        }
+        if (listeners.onBroadcastString !== undefined) {
+            this.onBroadcastString = listeners.onBroadcastString;
         }
     }
 
@@ -306,6 +322,16 @@ export class Player {
     onBroadcastObject: ((o: any) => void) | null = null;
 
     /**
+     * Called with the object given to the send_user_binary channel API when it is called.
+     */
+    onBroadcastBinary: ((data: ArrayBuffer) => void) | null = null;
+
+    /**
+     * Called with the object given to the send_user_string channel API when it is called.
+     */
+    onBroadcastString: ((s: string) => void) | null = null;
+
+    /**
      * Handle control chunks received via interleaves.
      *
      * @param data The data of the control chunk.
@@ -319,6 +345,18 @@ export class Player {
                         throw Error("Received broadcast object, but its handler is not registered.");
                     }
                     this.onBroadcastObject(JSON.parse(new TextDecoder().decode(data)));
+                    break;
+                case API.ControlChunkType.userBinaryData:
+                    if (this.onBroadcastBinary === null) {
+                        throw Error("Received broadcast binary data, but its handler is not registered.");
+                    }
+                    this.onBroadcastBinary(data);
+                    break;
+                case API.ControlChunkType.userString:
+                    if (this.onBroadcastString === null) {
+                        throw Error("Received broadcast string, but its handler is not registered.");
+                    }
+                    this.onBroadcastString(new TextDecoder().decode(data));
                     break;
                 default:
                     throw Error(`Unknown control chunk type: ${controlChunkType}.`);

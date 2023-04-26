@@ -19,6 +19,16 @@ enum class ControlChunkType : uint8_t
      */
     userJsonObject = 48,
 
+    /**
+     * Send binary data to the client library for use by the user of the library.
+     */
+    userBinaryData = 49,
+
+    /**
+     * Send a string to the client library for use by the user of the library.
+     */
+    userString = 50,
+
     /* Other control chunk types. */
     /**
      * The client should discard this chunk.

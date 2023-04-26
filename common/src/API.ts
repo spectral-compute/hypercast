@@ -68,6 +68,8 @@ export namespace API {
      */
     export enum ControlChunkType {
         userJsonObject = 48,
+        userBinaryData = 49,
+        userString = 50,
         discard = 255
     }
 }

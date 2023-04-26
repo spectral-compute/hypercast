@@ -442,7 +442,12 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     /* Create the API resources. */
     {
         Server::Path apiBasePath = Server::Path("api/channels") / this->basePath;
-        server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_json", *this);
+        server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_json", *this,
+                                                           Api::Channel::SendDataResource::Kind::userJson);
+        server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_binary", *this,
+                                                           Api::Channel::SendDataResource::Kind::userBinary);
+        server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_string", *this,
+                                                           Api::Channel::SendDataResource::Kind::userString);
     }
 
     /* Create the persistence directory. */
