@@ -82,6 +82,8 @@ void Dash::InterleaveResource::addStreamData(std::span<const std::byte> dataPart
     assert(streamIndex < maxStreams);
     assert(numRemainingStreams > 0);
 
+    started = true;
+
     /* We need to know when the chunk was received for some of the realtime stuff below. */
     std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 

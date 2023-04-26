@@ -89,6 +89,14 @@ public:
     }
 
     /**
+     * Determine if data has been received for any stream.
+     */
+    bool hasStarted() const
+    {
+        return started;
+    }
+
+    /**
      * Determine if every stream in the interleave has ended.
      */
     bool hasEnded() const
@@ -131,6 +139,11 @@ private:
     unsigned int getPaddingDataLengthForWindow(std::chrono::steady_clock::time_point now) const;
 
     Log::Context log;
+
+    /**
+     * Whether any data has been
+     */
+    bool started = false;
 
     /**
      * The number of streams in the interleave that haven't yet finished.
