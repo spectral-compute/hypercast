@@ -1,4 +1,5 @@
 import {DebugHandler} from "./Debug";
+import {InterjectionPlayer} from "./interjection/Player";
 import {BufferControl} from "./live/BufferCtrl";
 import {TimestampInfo} from "./live/Deinterleave";
 import {MseWrapper} from "./live/MseWrapper";
@@ -514,9 +515,24 @@ export class Player {
      */
     private onJsonObject(o: API.JsonObjectControlChunk): void {
         switch (o.type) {
+            case "interject":
+                const interjectionRequest = o.content;
+                assertType<API.InterjectionRequest>(interjectionRequest);
+                this.onInterjectionRequest(interjectionRequest);
+                break;
             default:
                 throw Error(`Unknown JSON object control chunk type: ${o.type}.`);
         }
+    }
+
+    /**
+     * Handle interjection requests.
+     */
+    private onInterjectionRequest(request: API.InterjectionRequest): void {
+        const interjectionVideo: HTMLVideoElement = this.makeVideoTag();
+        const interjectionPlayer = new InterjectionPlayer(request, this.video, interjectionVideo, this.start, this.stop,
+                                                          null, null, this.onError ?? ((): void => {}));
+        void interjectionPlayer;
     }
 
     /**

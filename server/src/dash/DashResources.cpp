@@ -1,6 +1,7 @@
 #include "DashResources.hpp"
 
 #include "api/channel/BlankResource.hpp"
+#include "api/channel/InterjectionResource.hpp"
 #include "api/channel/SendDataResource.hpp"
 #include "configuration/configuration.hpp"
 #include "dash/SegmentResource.hpp"
@@ -431,7 +432,8 @@ Dash::DashResources::~DashResources()
 }
 
 Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &channelConfig,
-                                   const Config::Http &httpConfig, Server::Path basePath, Server::Server &server) :
+                                   const Config::Http &httpConfig, Server::Path basePath, Server::Server &server,
+                                   const Ffmpeg::Process &ffmpegProcess) :
     ioc(ioc), log(log), logContext(log("dash")), config(channelConfig), server(server),
     basePath(std::move(basePath)), uidPath(this->basePath / channelConfig.uid),
     persistenceDirectory(config.history.persistentStorage.empty() ? std::filesystem::path{} :
@@ -444,7 +446,12 @@ Dash::DashResources::DashResources(IOContext &ioc, Log::Log &log, const Config::
     /* Create the API resources. */
     {
         Server::Path apiBasePath = Server::Path("api/channels") / this->basePath;
-        server.addResource<Api::Channel::BlankResource>(apiBasePath / "blank", ioc, channelConfig.ffmpeg.filterZmq);
+
+        auto blankResource = server.addResource<Api::Channel::BlankResource>(apiBasePath / "blank", ioc,
+                                                                             channelConfig.ffmpeg.filterZmq);
+        server.addResource<Api::Channel::InterjectionResource>(apiBasePath / "interject", ioc, *this, ffmpegProcess,
+                                                               *blankResource);
+
         server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_json", *this,
                                                            Api::Channel::SendDataResource::Kind::userJson);
         server.addResource<Api::Channel::SendDataResource>(apiBasePath / "send_user_binary", *this,
@@ -627,7 +634,7 @@ void Dash::DashResources::addJsonObjectControlChunk(Json::Object j, std::string_
 {
     addControlChunk(Json::dump(nlohmann::json{
         { "type", type },
-        { "content", std::move(j) }
+        { "content", (nlohmann::json &&)std::move(j) }
     }), ControlChunkType::jsonObject);
 }
 

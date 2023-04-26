@@ -21,6 +21,13 @@ struct Http;
 
 } // namespace Config
 
+namespace Ffmpeg
+{
+
+class Process;
+
+} // namespace Ffmpeg
+
 namespace Json
 {
 
@@ -63,7 +70,7 @@ public:
      * ongoing.
      */
     explicit DashResources(IOContext &ioc, Log::Log &log, const Config::Channel &config, const Config::Http &httpConfig,
-                           Server::Path basePath, Server::Server &server);
+                           Server::Path basePath, Server::Server &server, const Ffmpeg::Process &ffmpegProcess);
 
     DashResources(const DashResources &) = delete;
     DashResources & operator=(const DashResources &) = delete;
