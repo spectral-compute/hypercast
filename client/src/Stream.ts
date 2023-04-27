@@ -28,7 +28,8 @@ export class Stream {
         private readonly mediaSource: MediaSource,
         private readonly onError: (description: string) => void,
         private readonly onStart: (() => void) | null = null,
-        private readonly sequential: boolean = false
+        private readonly sequential: boolean = false,
+        private readonly mediaElement: HTMLMediaElement | null = null ///< Don't prune after this video's current time.
     ) {
         if (process.env["NODE_ENV"] === "development") {
             this.checksum = new Debug.Adler32();
@@ -263,7 +264,7 @@ export class Stream {
 
         /* Figure out if we have so much buffered that we're going to do a prune operation. */
         const start = buffered.start(0);
-        const end = buffered.end(buffered.length - 1);
+        const end = Math.min(buffered.end(buffered.length - 1), this.mediaElement?.currentTime ?? -Infinity);
         if (end - this.segmentDurationS * 3 <= start) {
             return;
         }
