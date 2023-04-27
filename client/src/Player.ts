@@ -6,13 +6,68 @@ import {ReceivedInfo} from "./live/SegmentDownloader";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 
-const CHANNEL_INDEX_POLL_INTERVAL_MS = 5_000;
 
+/**
+ * Options for the Player class that configure available sources.
+ */
+export interface PlayerSourceOptions {
+    /**
+     * The URL to the server hosting the streams.
+     *
+     * If not provided, the player will try to use the current origin.
+     * For example, if the player is hosted at `https://example.com:1234/player`,
+     * this will default to `https://example.com:1234/`.
+     *
+     * The server can provide a channel index (at `/channelIndex.json`), which lists available channels.
+     * If the channel index is not present, a channel must be specified with the `channel` option.
+     *
+     * When channel index is not present, channel-selecting capabilities of the player are disabled.
+     *
+     * The URL is also a base URL for various streams.
+     * Paths from the channel index and/or the default channel path will be appended to this URL
+     * to access individual streams.
+     */
+    server?: string;
+
+    /**
+     * The path to the default channel, relative to the server URL.
+     *
+     * If channel index is present on the server, this channel must be present in it.
+     * If channel index is not present on the server, this channel must be present on the server.
+     */
+    channel?: string;
+
+    /**
+     * Polling interval for channel index in milliseconds.
+     *
+     * The player periodically polls the channel index to check if the list of available channels has changed.
+     * In case of a change, onUpdate handler would be called (if set), which would allow UI to be updated.
+     *
+     * If not set, a default value is used.
+     * If channel index is not present, this setting is ignored.
+     */
+    indexPollMs?: number;
+}
+
+
+/**
+ * Options for the Player class that configure actions to be taken on events.
+ */
 export interface PlayerEventListeners {
-    /** Called when an error occurs */
+    /**
+     * Called when an error occurs.
+     */
     onError?: (description: string) => void;
 
-    /** Called when Player's properties change or a video starts playing. */
+    /**
+     * Called when Player's properties change.
+     *
+     * This includes (but not limited to):
+     * - A video starts playing:
+     *   - Just when it starts;
+     *   - When different quality is selected for latency reasons;
+     * - List of available channels changes;
+     */
     onUpdate?: (elective: boolean) => void;
 
     /**
@@ -31,32 +86,34 @@ export interface PlayerEventListeners {
     onBroadcastString?: (s: string) => void;
 }
 
+
 export class Player {
     /**
-     * @param channelIndexUrl The URL to the server's JSON channel index.
-     *                        If set to null, the URL is obtained from the "channelindex" GET parameter.
      * @param container The div tag to put a video tag into to play video into.
+     * @param source Options for configuring available sources. See {@link PlayerSourceOptions}
      * @param listeners Functions which will be called during key streaming events. See {@link PlayerEventListeners}
      */
-    constructor(channelIndexUrl: string | null, container: HTMLDivElement, listeners: PlayerEventListeners) {
-        // Get the URL from the streaminfo GET parameter if no info URL is given.
-        if (channelIndexUrl === null) {
-            channelIndexUrl = (new URLSearchParams(window.location.search)).get("channelindex");
-            if (channelIndexUrl === null) {
-                throw Error(`Could not get "channelindex" parameter from window location "${window.location.href}".`);
-            }
-        }
+    constructor(
+        container: HTMLDivElement,
+        source?: PlayerSourceOptions,
+        listeners?: PlayerEventListeners,
+    ) {
+        const {server = window.location.origin, channel, indexPollMs} = source ?? {};
+        const {onError, onUpdate, onBroadcastObject, onBroadcastBinary, onBroadcastString} = listeners ?? {};
 
-        // Set properties :)
-        this.channelIndexUrl = channelIndexUrl;
         this.video = container.appendChild(document.createElement("video"));
         this.video.controls = false;
 
-        this.onError = listeners.onError ?? null;
-        this.onUpdate = listeners.onUpdate ?? null;
-        this.onBroadcastObject = listeners.onBroadcastObject ?? null;
-        this.onBroadcastBinary = listeners.onBroadcastBinary ?? null;
-        this.onBroadcastString = listeners.onBroadcastString ?? null;
+        this.server = server;
+        // We assign `string | undefined` here because the user must run `init()` first which will deal with it.
+        this.channel = channel!;
+        this.indexPollMs = indexPollMs ?? 5_000;
+
+        this.onError = onError;
+        this.onUpdate = onUpdate;
+        this.onBroadcastObject = onBroadcastObject;
+        this.onBroadcastBinary = onBroadcastBinary;
+        this.onBroadcastString = onBroadcastString;
     }
 
     /**
@@ -65,32 +122,40 @@ export class Player {
      * None of the other methods of this object are valid until the promise has completed unless otherwise noted.
      */
     async init(): Promise<void> {
-        try {
-            // Extract base Url from the channel index url because it might be on a different domain/port.
-            this.baseUrl = this.channelIndexUrl.replace(/^((?:([^:]+:[/]{2})[^/]+)?)[/].*$/, "$1");
+        // This function must set up all the fields that might otherwise be undefined.
+        // Pay additional attention to fields marked with "!".
 
+        try {
             await this.loadChannelIndex();
 
-            // Now let's select the first channel.
-            // TODO: Make this configurable.
-            // TODO: Make this not crash if there are no channels?
-            this.channelPath = Object.keys(this.channelIndex)[0]!;
+            // Select the channel to be played.
 
-            await this.initCurrentChannel();
+            const defaultChannelSet = !!this.channel;
+            const channelIndexAvailable = !!this.channelIndex;
+            const channelIndexNotEmpty = channelIndexAvailable && Object.keys(this.channelIndex!).length > 0;
 
-            // Set up polling for the channel index.
-            // TODO: Make the polling interval configurable.
-            // TODO: Make sure no cleanup is needed when the player is destroyed.
-            window.setInterval(async () => {
-                const oldChannelIndex = this.channelIndex;
-                await this.loadChannelIndex();
-                if (JSON.stringify(oldChannelIndex) !== JSON.stringify(this.channelIndex)) {
-                    // The channel index has changed.
-                    this.onUpdate?.(false);
-                }
-                // TODO: potentially update the channel path and reinitialize if it's no longer valid.
-                // But what if the channel does not get broken?
-            }, CHANNEL_INDEX_POLL_INTERVAL_MS);
+            if (defaultChannelSet) {
+                await this.setChannel(this.channel);
+            } else if (channelIndexAvailable && channelIndexNotEmpty) {
+                // Choose the first channel in the channel index.
+                await this.setChannel(Object.keys(this.channelIndex!)[0]!);
+            } else {
+                throw Error(`No channels available from the channel index and no default channel is set.`);
+            }
+
+            if (channelIndexAvailable) {
+                // Set up polling for the channel index.
+                // TODO: Make sure no cleanup is needed when the player is destroyed.
+                window.setInterval(async () => {
+                    const oldChannelIndex = this.channelIndex;
+                    await this.loadChannelIndex();
+                    if (JSON.stringify(oldChannelIndex) !== JSON.stringify(this.channelIndex)) {
+                        // The channel index has changed.
+                        this.onUpdate?.(false);
+                    }
+                }, this.indexPollMs);
+            }
+
         } catch (ex: any) {
             const e = ex as Error;
             if (this.onError) {
@@ -120,12 +185,10 @@ export class Player {
     };
 
     /**
-     * Get the URL from which the channel index JSON was loaded (or is to be loaded).
-     *
-     * This method can be called before init().
+     * Get the URL of the server used.
      */
-    getChannelIndexUrl(): string {
-        return this.channelIndexUrl;
+    getServer(): string {
+        return this.server;
     }
 
     /**
@@ -133,30 +196,36 @@ export class Player {
      *
      * This can be changed whenever the channel list is reloaded.
      *
-     * The channel paths don't include the base URL of the channel index.
+     * The channel paths don't include the server URL.
      *
      * @return A map of channel paths (as keys) to channel names (as values, or null if the name is not defined).
      */
-    getChannelIndex(): Record<string, string | null> {
+    getChannelIndex(): Record<string, string | null> | undefined {
         return this.channelIndex;
     }
 
     /**
      * Get the path from which the info JSON of the current channel was loaded.
-     * Does not include the base URL of the channel index.
+     * Does not include the server URL.
      */
-    getChannelPath(): string {
-        return this.channelPath!;
+    getChannel(): string {
+        return this.channel;
     }
 
     /**
      * Set channel to play from the channel index.
      *
-     * @param channelPath The path relative to the base URL of the channel index.
+     * @param channel The path relative to the server URL.
+     *
+     * @throws When the channel is not in the channel index when the channel index is available.
      */
-    setChannelPath(channelPath: string): void {
-        this.channelPath = channelPath;
-        this.initCurrentChannel();
+    async setChannel(channel: string): Promise<void> {
+        if (this.channelIndex && !Object.keys(this.channelIndex).includes(channel)) {
+            throw Error(`Channel "${channel}" is not in the channel index.`);
+        }
+
+        this.channel = channel;
+        await this.initCurrentChannel();
     }
 
     /**
@@ -285,39 +354,9 @@ export class Player {
      * Set the handler to receive the performance and debugging information the player can generate.
      */
     setDebugHandler(debugHandler: DebugHandler | null): void {
-        this.debugHandler = debugHandler;
+        this.debugHandler = debugHandler ?? undefined;
         this.bctrl?.setDebugHandler(debugHandler);
     }
-
-    /**
-     * Called whenever the media source changes (i.e: change of quality, change of channel, or of available channels).
-     *
-     * Note that a call to setChannelPath() or setQuality() will always call this event to fire,
-     * even if no actual change occurred.
-     *
-     * @param elective Whether or not the change was requested by the user.
-     */
-    onUpdate: ((elective: boolean) => void) | null;
-
-    /**
-     * Called when an error occurs.
-     */
-    onError: ((description: string) => void) | null;
-
-    /**
-     * Called with the object given to the send_user_json channel API when it is called.
-     */
-    onBroadcastObject: ((o: any) => void) | null = null;
-
-    /**
-     * Called with the object given to the send_user_binary channel API when it is called.
-     */
-    onBroadcastBinary: ((data: ArrayBuffer) => void) | null = null;
-
-    /**
-     * Called with the object given to the send_user_string channel API when it is called.
-     */
-    onBroadcastString: ((s: string) => void) | null = null;
 
     /**
      * Handle control chunks received via interleaves.
@@ -329,19 +368,19 @@ export class Player {
         try {
             switch (controlChunkType) {
                 case API.ControlChunkType.userJsonObject:
-                    if (this.onBroadcastObject === null) {
+                    if (!this.onBroadcastObject) {
                         throw Error("Received broadcast object, but its handler is not registered.");
                     }
-                    this.onBroadcastObject(JSON.parse(new TextDecoder().decode(data)));
+                    this.onBroadcastObject?.(JSON.parse(new TextDecoder().decode(data)));
                     break;
                 case API.ControlChunkType.userBinaryData:
-                    if (this.onBroadcastBinary === null) {
+                    if (!this.onBroadcastBinary) {
                         throw Error("Received broadcast binary data, but its handler is not registered.");
                     }
-                    this.onBroadcastBinary(data);
+                    this.onBroadcastBinary?.(data);
                     break;
                 case API.ControlChunkType.userString:
-                    if (this.onBroadcastString === null) {
+                    if (!this.onBroadcastString) {
                         throw Error("Received broadcast string, but its handler is not registered.");
                     }
                     this.onBroadcastString(new TextDecoder().decode(data));
@@ -363,16 +402,17 @@ export class Player {
      * (Re)load the channel index.
      */
     private async loadChannelIndex(): Promise<void> {
-        // Fetch the channel index
-        const channelIndexResponse: Response = await fetch(this.channelIndexUrl);
-        if (channelIndexResponse.status !== 200) {
-            throw Error(`Fetching channel index JSON gave HTTP status code ${channelIndexResponse.status}`);
-        }
-        const channelIndex: unknown = await channelIndexResponse.json();
+        const channelIndexPath = "/channelIndex.json";
 
-        // Parse the channel index
-        assertType<API.ChannelIndex>(channelIndex);
-        this.channelIndex = channelIndex;
+        // Fetch the channel index
+        const channelIndexResponse: Response = await fetch(this.server + channelIndexPath);
+        if (channelIndexResponse.status === 200) {
+            const channelIndex: unknown = await channelIndexResponse.json();
+            assertType<API.ChannelIndex>(channelIndex);
+            this.channelIndex = channelIndex;
+        }
+
+        // If the channel index is not available, it's fine as far as this function is concerned.
     }
 
     /**
@@ -386,27 +426,27 @@ export class Player {
         this.stream?.stop();
         this.bctrl?.stop();
 
-        const response: Response = await fetch(this.baseUrl + this.channelPath);
+        const response: Response = await fetch(this.server + this.channel);
         if (response.status !== 200) {
-            throw Error(`Fetching INFO JSON gave HTTP status code ${response.status}`);
+            throw Error(`Fetching INFO JSON for channel ${this.channel} gave HTTP status code ${response.status}`);
         }
-        const serverInfo: unknown = await response.json();
+        const channelInfo: unknown = await response.json();
 
         /* Extract and parse the server info. */
-        assertType<API.ServerInfo>(serverInfo);
-        this.serverInfo = serverInfo;
+        assertType<API.ServerInfo>(channelInfo);
+        this.channelInfo = channelInfo;
 
         // Extract angle information.
         this.angleOptions = [];
         this.angleUrls = [];
-        for (const angle of this.serverInfo.angles) {
+        for (const angle of this.channelInfo.angles) {
             this.angleOptions.push(angle.name);
-            this.angleUrls.push(this.baseUrl + angle.path);
+            this.angleUrls.push(this.server + angle.path);
         }
 
         // Extract quality information.
         this.qualityOptions = [];
-        this.serverInfo.videoConfigs.forEach((value: API.VideoConfig) => {
+        this.channelInfo.videoConfigs.forEach((value: API.VideoConfig) => {
             this.qualityOptions.push([value.width, value.height]);
         });
 
@@ -419,8 +459,8 @@ export class Player {
         /* Create the streamer. */
         this.stream = new MseWrapper(
             this.video,
-            this.serverInfo.segmentDuration,
-            this.serverInfo.segmentPreavailability,
+            this.channelInfo.segmentDuration,
+            this.channelInfo.segmentPreavailability,
             (timestampInfo: TimestampInfo): void => {
                 this.bctrl!.onTimestamp(timestampInfo);
             },
@@ -466,55 +506,119 @@ export class Player {
      */
     private updateQualityAndAngle(): void {
         /* Figure out which streams the quality corresponds to. */
-        if (this.serverInfo.avMap.length > 0) {
-            if (this.quality < this.serverInfo.avMap.length) {
-                this.videoStream = this.serverInfo.avMap[this.quality]![0];
-                this.audioStream = this.serverInfo.avMap[this.quality]![1];
+        if (this.channelInfo.avMap.length > 0) {
+            if (this.quality < this.channelInfo.avMap.length) {
+                this.videoStream = this.channelInfo.avMap[this.quality]![0];
+                this.audioStream = this.channelInfo.avMap[this.quality]![1];
             } else {
                 this.videoStream = this.quality;
                 this.audioStream = null;
             }
         } else {
             this.videoStream = this.quality;
-            this.audioStream = (this.quality < this.serverInfo.audioConfigs.length) ? this.quality : null;
+            this.audioStream = (this.quality < this.channelInfo.audioConfigs.length) ? this.quality : null;
         }
 
         /* Tell the streamer. */
         this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
-                               this.quality < this.serverInfo.avMap.length);
+                               this.quality < this.channelInfo.avMap.length);
 
         /* Update the buffer control parameters. */
-        this.bctrl!.setBufferControlParameters(this.serverInfo.videoConfigs[this.videoStream]!.bufferCtrl);
+        this.bctrl!.setBufferControlParameters(this.channelInfo.videoConfigs[this.videoStream]!.bufferCtrl);
     }
 
-    // Stuff from the constructor.
+
+    /* ============= *
+     * Configuration *
+     * ============= */
+
+    // The video element we are playing to (owned by this class).
     private readonly video: HTMLVideoElement;
-    private readonly channelIndexUrl: string;
 
-    // Worker objects.
-    private stream: MseWrapper | null = null;
-    private bctrl: BufferControl | null = null;
+    // The server that all the data is coming from.
+    private readonly server: string;
+    // Currently selected channel, path relative to the `server`.
+    private channel!: string;
+    // How often to poll the channel index for changes.
+    private readonly indexPollMs: number;
 
-    // Server information.
-    private channelIndex!: API.ChannelIndex;
-    private baseUrl!: string;
-    private serverInfo!: API.ServerInfo;
+    /**
+     * Called whenever the media source changes (i.e: change of quality, change of channel, or of available channels).
+     *
+     * Note that a call to setChannelPath() or setQuality() will always call this event to fire,
+     * even if no actual change occurred.
+     *
+     * @param elective Whether or not the change was requested by the user.
+     */
+    onUpdate?: ((elective: boolean) => void);
+
+    /**
+     * Called when an error occurs.
+     */
+    onError?: ((description: string) => void);
+
+    /**
+     * Called with the object given to the send_user_json channel API when it is called.
+     */
+    onBroadcastObject?: ((o: any) => void);
+
+    /**
+     * Called with the object given to the send_user_binary channel API when it is called.
+     */
+    onBroadcastBinary?: ((data: ArrayBuffer) => void);
+
+    /**
+     * Called with the object given to the send_user_string channel API when it is called.
+    */
+    onBroadcastString?: ((s: string) => void);
+
+    /* ============== *
+     * Worker objects *
+     * ============== */
+
+    private stream!: MseWrapper;
+    private bctrl!: BufferControl;
+
+    /* ================== *
+     * Server information *
+     * ================== */
+
+    // Cached channel index.
+    private channelIndex?: API.ChannelIndex;
+
+    /* ===================================== *
+     * Information about the current channel *
+     * ===================================== */
+
+    private channelInfo!: API.ServerInfo;
     private angleUrls: string[] = [];
     private angleOptions: string[] = [];
     private qualityOptions: [number, number][] = []; // Map: quality -> (width,height).
 
-    // Current settings.
+    /* =============================== *
+     * Current configuration, relative *
+     * to the current channel          *
+     * =============================== */
+
     private angle: number = 0;
     private quality: number = 0;
-    private channelPath: string | null = null;
 
-    // Derived settings.
+    /* ===================== *
+     * Derived configuration *
+     * ===================== */
+
     private videoStream: number | null = null;
     private audioStream: number | null = null;
 
-    // State machine.
+    /* ============= *
+     * State machine *
+     * ============= */
+
     private electiveChangeInProgress: boolean = false;
 
-    // Debug/performance tracking related stuff.
-    private debugHandler: DebugHandler | null = null;
+    /* =================== *
+     * Debug & performance *
+     * =================== */
+
+    private debugHandler?: DebugHandler;
 }

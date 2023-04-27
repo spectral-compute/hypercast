@@ -71,10 +71,14 @@ Maybe the player would support both options, taking a channel index URL for mult
 
 If using dev-client, the full link could be:
 
-    http://localhost:8000/?channelindex=http://localhost:8001/channelsIndex.json
+    http://localhost:8000/?server=http://localhost:8001
 
-Note the "s".
-Names are subject to change.
+## demo-client
+
+demo-client takes REACT_APP_STREAM_SERVER environment variable to specify the server address.
+demo-server could be started with:
+
+    REACT_APP_STREAM_SERVER=http://localhost:8001 yarn start
 
 ## Play-pause logic and what to display on channel change
 

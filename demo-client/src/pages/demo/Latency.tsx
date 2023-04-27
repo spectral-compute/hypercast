@@ -30,7 +30,7 @@ export default function LatencyDemo() {
     return <>
         <h2>Ultra Low Latency</h2>
         <Player
-            sourceURL={process.env["REACT_APP_INFO_URL"]!}
+            server={process.env["REACT_APP_STREAM_SERVER"]!}
             onInitialisation={plugInGraphMaker}
             onDismount={unplugGraphMaker}
         />

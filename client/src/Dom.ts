@@ -1,4 +1,4 @@
-import {Player} from "./Player";
+import {Player, PlayerSourceOptions} from "./Player";
 import {DebugHandler} from "./Debug";
 
 export interface CreatePlayerOptions {
@@ -15,9 +15,9 @@ export interface CreatePlayerOptions {
  * @param options
  */
 export async function createPlayer(
-    channelsUrl: string,
     containerElement: HTMLDivElement | string,
-    options: CreatePlayerOptions
+    source?: PlayerSourceOptions,
+    options?: CreatePlayerOptions,
 ): Promise<Player> {
     // Try to find the container if necessary
     if (typeof containerElement === "string") {
@@ -36,11 +36,11 @@ export async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(channelsUrl, containerElement, {onError});
+    const player = new Player(containerElement, source, {onError});
     const controlsDiv = insertNode(containerElement, "div", {className: "video-controls"});
 
     /* Performance/debug event handling. */
-    if (options.debugHandler) {
+    if (options?.debugHandler) {
         player.setDebugHandler(options.debugHandler);
     }
 
@@ -69,10 +69,13 @@ export async function createPlayer(
 // Set up the control panel using JS (in place of the browsers' native controls)
 function createControlPanel(controlsDiv: HTMLDivElement, player: Player): void {
     // Create and wire up the channel selector
-    const channel = insertNamedSelector(controlsDiv, "channel", player.getChannelIndex(), player.getChannelPath());
-    channel.onchange = (): void => {
-        player.setChannelPath(channel.value);
-    };
+    const channelIndex = player.getChannelIndex();
+    if (channelIndex) {
+        const channel = insertNamedSelector(controlsDiv, "channel", channelIndex, player.getChannel());
+        channel.onchange = async () => {
+            await player.setChannel(channel.value);
+        };
+    }
 
     // Create and wire up the quality selector
     const qualityOptionNames = getQualityOptionNames(player.getQualityOptions());

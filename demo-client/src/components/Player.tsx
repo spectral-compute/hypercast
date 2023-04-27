@@ -4,7 +4,7 @@ import {createPlayer, Player as PlayerMain, CreatePlayerOptions} from "live-vide
 import "./Player.scss";
 
 export interface PlayerProps extends CreatePlayerOptions {
-    sourceURL: string;
+    server: string;
     onDismount?: (player: PlayerMain) => void;
 }
 
@@ -12,20 +12,20 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
     const containerRef = useRef<HTMLDivElement | null>(null);
     const playerRef = useRef<Promise<PlayerMain> | null>(null);
 
-    const {sourceURL, onDismount, ...options} = props;
+    const {server, onDismount, ...options} = props;
 
     // This fires on any prop change. That's why we do dismount cleanup in a separate effect.
     useEffect(() => {
         // Make sure Video.js player is only initialized once
         if (!playerRef.current) {
-            playerRef.current = createPlayer(sourceURL, containerRef.current!, {
+            playerRef.current = createPlayer(containerRef.current!, {server}, {
                 ...options
             });
             console.debug("RISE player initialized");
         } else {
             // TODO respond to prop changes here, e.g. changing the stream on sourceURL change...
         }
-    }, [sourceURL, options]);
+    }, [server, options]);
 
     // Stop the player when the component unmounts
     React.useEffect(() => {

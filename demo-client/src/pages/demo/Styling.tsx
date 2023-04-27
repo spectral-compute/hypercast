@@ -49,7 +49,7 @@ export default function StylingDemo() {
             {style}
         </style>
         <Player
-            sourceURL={process.env["REACT_APP_INFO_URL"]!}
+            server={process.env["REACT_APP_STREAM_SERVER"]!}
         />
     </>;
 }

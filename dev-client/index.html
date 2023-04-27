@@ -58,12 +58,18 @@
             </span>
             <button id="stop" hidden>Stop</button>
             <button id="start" hidden>Start</button>
-            <span>Info URL:&nbsp;<span id="info_url"></span></span>
+            <span>Server origin:&nbsp;<span id="server_origin"></span></span>
             <span id="user_object"></span>
         </div>
         <div class="timeline">
             <canvas id="latency_timeline"></canvas>
             <canvas id="dlrate_timeline"></canvas>
+        </div>
+        <div class="dev_info">
+            Use the following query parameters to control the player:
+            <ul>
+                <li><code><b>server</b></code>: Address of the server to connect to (unless using the current one).</li>
+            </ul>
         </div>
         <script src="app.js"></script>
     </body>

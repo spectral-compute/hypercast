@@ -1,9 +1,6 @@
 import {Player} from "live-video-streamer-client";
 import {AppDebugHandler} from "./debug";
 
-/* Configuration :) */
-const infoUrl = process.env["INFO_URL"]!;
-
 /* Set an error handler for the video element. */
 const video = document.getElementById("video")! as HTMLDivElement;
 
@@ -26,9 +23,13 @@ function onBroadcastObject(o: any) {
         `User object: ${(typeof o === "object") ? JSON.stringify(o) : o}`;
 }
 
+// Get the custom server origin from query parameters.
+const urlParams = new URLSearchParams(window.location.search);
+const server = urlParams.get("server") ?? undefined;
+
 /* Create the player. */
-const player = new Player(infoUrl, video, {onError, onUpdate, onBroadcastObject: onBroadcastObject});
-(document.getElementById("info_url")! as HTMLSpanElement).innerText = player.getChannelIndexUrl();
+const player = new Player(video, {server}, {onError, onUpdate, onBroadcastObject});
+(document.getElementById("server_origin")! as HTMLSpanElement).innerText = player.getServer();
 
 /* Performance/debug event handling. */
 if (process.env["NODE_ENV"] === "development") {
@@ -78,8 +79,12 @@ function getQualityOptionNames(qualityOptions: [number, number][]): string[] {
 /* A function to set up the UI. */
 function setupUi(elective: boolean): void {
     /* Update the selectors. */
-    setupNamedSelector("channel", player.getChannelIndex(), player.getChannelPath());
-    //setupSelector("angle", player.getAngleOptions(), player.getAngle());
+
+    const channelIndex = player.getChannelIndex();
+    if (channelIndex) {
+        setupNamedSelector("channel", channelIndex, player.getChannel());
+    }
+
     setupSelector("quality", getQualityOptionNames(player.getQualityOptions()), player.getQuality());
 
     /* Update the mute button. */
@@ -105,8 +110,8 @@ angle.onchange = (): void => {
 };
 */
 const channel = document.getElementById("channel")! as HTMLSelectElement;
-channel.onchange = (): void => {
-    player.setChannelPath(channel.value);
+channel.onchange = async () => {
+    await player.setChannel(channel.value);
 };
 const quality = document.getElementById("quality")! as HTMLSelectElement;
 quality.onchange = (): void => {
