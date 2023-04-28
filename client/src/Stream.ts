@@ -51,10 +51,11 @@ export class Stream {
      *
      * @param segment The index of the segment. Must be successive integers, with the first being 0.
      * @param description A description of the segment.
+     * @return A promise that resolves when the segment is enqueued with the PTS of the start of the segment.
      */
-    startSegment(segment: number, description: string): void {
+    startSegment(segment: number, description: string): Promise<number> {
         if (this.isFinished()) {
-            return;
+            return new Promise((_, reject) => reject());
         }
 
         if (segment === 0 && this.onStart) {
@@ -63,6 +64,18 @@ export class Stream {
         if (process.env["NODE_ENV"] === "development") {
             this.checksumDescriptions.set(segment, description);
         }
+
+        return new Promise((resolve, reject) => {
+            if (segment === 0) {
+                resolve(0);
+            } else if (this.segmentTimestampResults.has(segment!)) {
+                const result: number = this.segmentTimestampResults.get(segment!)!;
+                this.segmentTimestampResults.delete(segment!);
+                resolve(result);
+            } else {
+                this.segmentTimestampPromiseResolvers.set(segment!, [resolve, reject]);
+            }
+        })
     }
 
     /**
@@ -137,6 +150,11 @@ export class Stream {
             return;
         }
         this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+
+        /* Reject any promises we have. */
+        for (const [_segment, [_resolve, reject]] of this.segmentTimestampPromiseResolvers) {
+            reject();
+        }
     }
 
     /**
@@ -180,17 +198,42 @@ export class Stream {
         /* Now shovel as much data into the queue as we can. */
         while (this.queue.length > 0 && !this.sourceBuffer!.updating) {
             const data = this.queue.shift();
+
+            // Not the end of the segment.
             if (data !== null) {
+                // Actually append the data.
                 this.sourceBuffer!.appendBuffer(data!);
                 if (process.env["NODE_ENV"] === "development") {
                     this.checksum!.update(data!);
                 }
-            } else if (process.env["NODE_ENV"] === "development") {
-                console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)!} ` +
-                            `checksum: ${this.checksum!.getChecksum()}, length: ${this.checksum!.getLength()}`);
+                return;
+            }
+
+            // End of segment.
+
+            // Print debug information about the segment.
+            if (process.env["NODE_ENV"] === "development") {
+                console.log("[Media Source Buffer Checksum] " +
+                            this.checksumDescriptions.get(this.completelyBufferedSegments)! +
+                            ` checksum: ${this.checksum!.getChecksum()}, length: ${this.checksum!.getLength()}`);
                 this.checksum = new Debug.Adler32();
-                this.checksumDescriptions.delete(this.checksumIndex);
-                this.checksumIndex++;
+                this.checksumDescriptions.delete(this.completelyBufferedSegments);
+            }
+
+            // We've finished this segment.
+            this.completelyBufferedSegments++;
+
+            // Resolve the segment timestamp, or save the timestamp for immediate resolution when that segment is
+            // created.
+            const buffered = this.sourceBuffer!.buffered;
+            const timestamp: number = buffered.end(buffered.length - 1);
+
+            if (this.segmentTimestampPromiseResolvers.has(this.completelyBufferedSegments)) {
+                const [resolve, _] = this.segmentTimestampPromiseResolvers.get(this.completelyBufferedSegments)!;
+                this.segmentTimestampPromiseResolvers.delete(this.completelyBufferedSegments);
+                resolve(timestamp);
+            } else {
+                this.segmentTimestampResults.set(this.completelyBufferedSegments, timestamp);
             }
         }
     }
@@ -268,10 +311,12 @@ export class Stream {
 
     private readonly segmentInitializations = new Map<number, SegmentInitialization>();
     private readonly otherSegmentsQueue = new Map<number, ArrayBuffer[]>();
+    private readonly segmentTimestampPromiseResolvers = new Map<number, [any, any]>();
+    private readonly segmentTimestampResults = new Map<number, number>();
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
+    private completelyBufferedSegments: number = 0;
 
     private checksum: Debug.Adler32 | undefined;
-    private checksumIndex: number = 0;
     private readonly checksumDescriptions = new Map<number, string>();
 }
