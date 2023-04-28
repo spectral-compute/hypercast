@@ -122,6 +122,9 @@ export class Player {
                 if (this.quality < this.qualityOptions.length - 1) {
                     this.quality++; // Quality is actually reversed.
                 }
+
+                // The stream has severely stalled, so stop playing it and try the new one (if there is a new one). This
+                // does not wait for a new segment, or reuse the MSE wrapper/stream/etc.
                 this.updateQualityAndAngle();
             }, this.debugHandler);
 
