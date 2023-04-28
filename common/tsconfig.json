@@ -2,7 +2,11 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./build",
-    "lib": ["ESNext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "types": ["node"],
     "composite": true,
     "declarationMap": true,
