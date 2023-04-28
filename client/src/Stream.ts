@@ -27,7 +27,8 @@ export class Stream {
     constructor(
         private readonly mediaSource: MediaSource,
         private readonly onError: (description: string) => void,
-        private readonly onStart: (() => void) | null = null
+        private readonly onStart: (() => void) | null = null,
+        private readonly sequential: boolean = false
     ) {
         if (process.env["NODE_ENV"] === "development") {
             this.checksum = new Debug.Adler32();
@@ -303,6 +304,9 @@ export class Stream {
      */
     private createSourceBuffer(mimeType: string): void {
         this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
+        if (this.sequential) {
+            this.sourceBuffer.mode = "sequence";
+        }
         this.sourceBuffer.addEventListener("onabort", (): void => {
             this.onError("SourceBuffer aborted");
         });
