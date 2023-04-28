@@ -6,7 +6,7 @@ import * as Debug from "./Debug";
 export class Stream {
     constructor(
         private readonly mediaSource: MediaSource,
-        private readonly init: ArrayBuffer,
+        init: ArrayBuffer,
         mimeType: string,
         /** The duration of each segment in seconds */
         private readonly segmentDurationS: number,
@@ -27,6 +27,7 @@ export class Stream {
         this.sourceBuffer.addEventListener("update", (): void => {
             this.advanceQueue(); // We might have more data that we can add immediately.
         });
+        this.acceptSegmentData(init, 0);
     }
 
     /**
@@ -46,7 +47,6 @@ export class Stream {
         if (process.env["NODE_ENV"] === "development") {
             this.checksumDescriptions.set(segment, description);
         }
-        this.acceptSegmentData(this.init, segment);
     }
 
     /**
