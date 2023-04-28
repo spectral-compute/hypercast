@@ -4,7 +4,7 @@ toc: true
 ---
 
 The server is able to stream multiple channels.
-The server provides the mapping of channels at `/channelsIndex.json`.
+The server provides the mapping of channels at `/channelIndex.json`.
 The keys in the root JSON object are paths to the channels, and the values are channel names.
 
 This is an example of configuration that can be used to make the server stream multiple channels.

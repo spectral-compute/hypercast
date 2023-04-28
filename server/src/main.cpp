@@ -53,7 +53,7 @@ Awaitable<void> asyncMain(int argc, const char * const *argv, IOContext &ioc)
 
     /* Create other instance global resources. */
     if (config.features.channelIndex) {
-        st.getServer().addResource<Instance::ChannelsIndexResource>("channelsIndex.json",
+        st.getServer().addResource<Instance::ChannelsIndexResource>("channelIndex.json",
                                                                     st.getConfiguration().channels);
     }
 
