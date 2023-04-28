@@ -166,8 +166,6 @@ export class MseWrapper {
             // New streams.
             this.videoStream = new Stream(
                 this.videoMediaSource!,
-                videoInit,
-                this.getMimeForStream(manifest, this.videoStreamIndex),
                 this.segmentDurationMS / 1_000,
                 this.onError,
                 (): void => {
@@ -177,14 +175,18 @@ export class MseWrapper {
                     }
                 },
             );
+            this.videoStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.videoStreamIndex),
+                                                   init: videoInit}, 0);
+
             if (audioInfo && this.interleaved) {
                 this.audioStream = new Stream(
                     this.videoMediaSource!,
-                    audioInit!,
-                    this.getMimeForStream(manifest, this.audioStreamIndex!),
                     this.segmentDurationMS / 1_000,
                     this.onError,
                 );
+                this.audioStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest,
+                                                                                       this.audioStreamIndex!),
+                                                       init: audioInit!}, 0);
             }
 
             // Segment downloader.

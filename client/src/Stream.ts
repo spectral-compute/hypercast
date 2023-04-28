@@ -1,13 +1,26 @@
 import * as Debug from "./Debug";
 
 /**
+ * Describe how to switch to a new sequence of segments.
+ */
+interface SegmentInitialization {
+    /**
+     * The MIME type of the sequence of segments, including the codecs parameter.
+     */
+    mimeType: string;
+
+    /**
+     * The initializer segment.
+     */
+    init: ArrayBuffer;
+}
+
+/**
  * Manages a media source buffer, and a queue of data to go with it.
  */
 export class Stream {
     constructor(
         private readonly mediaSource: MediaSource,
-        init: ArrayBuffer,
-        mimeType: string,
         /** The duration of each segment in seconds */
         private readonly segmentDurationS: number,
         private readonly onError: (description: string) => void,
@@ -16,18 +29,21 @@ export class Stream {
         if (process.env["NODE_ENV"] === "development") {
             this.checksum = new Debug.Addler32();
         }
+    }
 
-        this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
-        this.sourceBuffer.addEventListener("onabort", (): void => {
-            this.onError("SourceBuffer aborted");
-        });
-        this.sourceBuffer.addEventListener("onerror", (): void => {
-            this.onError("Error with SourceBuffer");
-        });
-        this.sourceBuffer.addEventListener("update", (): void => {
-            this.advanceQueue(); // We might have more data that we can add immediately.
-        });
-        this.acceptSegmentData(init, 0);
+    /**
+     * Notify that a new sequence of segments is going to start.
+     *
+     * This must be called before the call to startSegment for the same segment index.
+     *
+     * @param segment The index of the segment.
+     */
+    startSegmentSequence(init: SegmentInitialization, segment: number): void {
+        if (this.isFinished()) {
+            return;
+        }
+
+        this.segmentInitializations.set(segment, init);
     }
 
     /**
@@ -117,6 +133,9 @@ export class Stream {
      * No more data is to be passed into the media source from this stream.
      */
     end(): void {
+        if (!this.sourceBuffer) {
+            return;
+        }
         this.mediaSource.removeSourceBuffer(this.sourceBuffer);
     }
 
@@ -129,18 +148,40 @@ export class Stream {
         }
 
         /* We can only advance the queue at all if we're not still updating. */
-        if (this.sourceBuffer.updating) {
+        if (this.sourceBuffer?.updating) {
             return;
         }
 
         /* Start by pruning. */
         this.prune();
+        if (this.sourceBuffer?.updating) {
+            return;
+        }
+
+        /* Initialize for a new segment type if necessary. */
+        // The body of this if statement assumes this isn't happening mid-segment.
+        if (this.segmentInitializations.has(this.currentSegment)) {
+            // Get and remove the initialization information from the map.
+            const init: SegmentInitialization = this.segmentInitializations.get(this.currentSegment)!;
+            this.segmentInitializations.delete(this.currentSegment);
+
+            // Set the source buffer mimetype. This might create the source buffer, since we need the first mimetype to
+            // do that.
+            if (this.sourceBuffer) {
+                this.sourceBuffer.changeType(init.mimeType);
+            } else {
+                this.createSourceBuffer(init.mimeType);
+            }
+
+            // Append the initializer segment.
+            this.sourceBuffer!.appendBuffer(init.init);
+        }
 
         /* Now shovel as much data into the queue as we can. */
-        while (this.queue.length > 0 && !this.sourceBuffer.updating) {
+        while (this.queue.length > 0 && !this.sourceBuffer!.updating) {
             const data = this.queue.shift();
             if (data !== null) {
-                this.sourceBuffer.appendBuffer(data!);
+                this.sourceBuffer!.appendBuffer(data!);
                 if (process.env["NODE_ENV"] === "development") {
                     this.checksum!.update(data!);
                 }
@@ -158,7 +199,7 @@ export class Stream {
      * Remove stale data from the MSE buffer.
      */
     private prune(): void {
-        if (this.isFinished()) {
+        if (this.isFinished() || !this.sourceBuffer) {
             return;
         }
 
@@ -203,9 +244,29 @@ export class Stream {
         return this.mediaSource.readyState !== "open";
     }
 
-    private readonly sourceBuffer: SourceBuffer;
+    /**
+     * Create the sourceBuffer object.
+     *
+     * This would be in the constructor, but even though source buffers allow their mime type to be changed, they still
+     * require one from the start. So this can't happen until startSegment happens.
+     */
+    private createSourceBuffer(mimeType: string): void {
+        this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
+        this.sourceBuffer.addEventListener("onabort", (): void => {
+            this.onError("SourceBuffer aborted");
+        });
+        this.sourceBuffer.addEventListener("onerror", (): void => {
+            this.onError("Error with SourceBuffer");
+        });
+        this.sourceBuffer.addEventListener("update", (): void => {
+            this.advanceQueue(); // We might have more data that we can add immediately.
+        });
+    }
+
+    private sourceBuffer: SourceBuffer | null = null;
     private readonly queue = new Array<ArrayBuffer | null>();
 
+    private readonly segmentInitializations = new Map<number, SegmentInitialization>();
     private readonly otherSegmentsQueue = new Map<number, ArrayBuffer[]>();
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
