@@ -1,5 +1,5 @@
 import {TimestampInfo} from "./Deinterleave";
-import {API} from "live-video-streamer-common";
+import {API, waitForEvent} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {SegmentDownloader, ReceivedInfo} from "./SegmentDownloader";
 import {Stream} from "../Stream";
@@ -38,7 +38,7 @@ export class MseWrapper {
 
         /* Start streaming (because we're supposed to be playing). */
         if (this.playing) {
-            this.startSetStreams();
+            void this.startSetStreams();
         }
     }
 
@@ -53,7 +53,7 @@ export class MseWrapper {
 
         /* Start streaming (because we're not already.). */
         if (this.baseUrl) {
-            this.startSetStreams();
+            void this.startSetStreams();
         }
     }
 
@@ -109,49 +109,38 @@ export class MseWrapper {
     /**
      * Start streaming with the source previously given by setSource().
      */
-    private startSetStreams(): void {
+    private async startSetStreams(): Promise<void> {
         this.aborter = new AbortController();
 
         /* Fetch the manifest, stream info and initial data. Once we have it, set up streaming. */
-        const manifestPromise: Promise<string> =
-            fetch(`${this.baseUrl!}/manifest.mpd`, { signal: this.aborter!.signal })
-                .then((response: Response): Promise<string> => {
-                    if (response.status !== 200) {
-                        throw Error(`Manifest HTTP status code is not OK: ${response.status}`);
-                    }
-                    return response.text();
-                });
-        if (this.audioStreamIndex === null) {
-            Promise.all([manifestPromise, this.getStreamInfoAndInit(this.videoStreamIndex)])
-                .then((fetched: [string, [API.SegmentIndexDescriptor, ArrayBuffer]]) => {
-                    this.setupStreams(fetched[0], fetched[1][0], fetched[1][1]);
-                }).catch((ex: any): void => {
-                    const e = ex as Error;
-                    if (e.name === 'AbortError') {
-                        return;
-                    }
-                    this.onError(`Error initializing streams: ${e.message}`);
-                });
-        } else {
-            Promise.all([
-                manifestPromise,
-                this.getStreamInfoAndInit(this.videoStreamIndex),
-                this.getStreamInfoAndInit(this.audioStreamIndex),
-            ]).then((fetched: [string, [API.SegmentIndexDescriptor, ArrayBuffer],
-                [API.SegmentIndexDescriptor, ArrayBuffer]]) => {
-                this.setupStreams(fetched[0], fetched[1][0], fetched[1][1], fetched[2][0], fetched[2][1]);
-            }).catch((ex: any): void => {
-                const e = ex as Error;
-                if (e.name === 'AbortError') {
-                    return;
-                }
-                this.onError(`Error initializing streams: ${e.message}`);
-            });
+        try {
+            const manifestResponse = await fetch(`${this.baseUrl!}/manifest.mpd`, { signal: this.aborter!.signal });
+            if (manifestResponse.status !== 200) {
+                throw Error(`Manifest HTTP status code is not OK: ${manifestResponse.status}`);
+            }
+
+            if (this.audioStreamIndex === null) {
+                const [manifest, [videoInfo, viedoInit]]: [string, [API.SegmentIndexDescriptor, ArrayBuffer]] =
+                    await Promise.all([manifestResponse.text(), this.getStreamInfoAndInit(this.videoStreamIndex)]);
+                await this.setupStreams(manifest, videoInfo, viedoInit);
+            } else {
+                const [manifest, [videoInfo, viedoInit], [audioInfo, audioInit]]:
+                    [string, [API.SegmentIndexDescriptor, ArrayBuffer], [API.SegmentIndexDescriptor, ArrayBuffer]] =
+                    await Promise.all([manifestResponse.text(), this.getStreamInfoAndInit(this.videoStreamIndex),
+                                       this.getStreamInfoAndInit(this.audioStreamIndex)]);
+                await this.setupStreams(manifest, videoInfo, viedoInit, audioInfo, audioInit);
+            }
+        } catch(ex: any) {
+            const e = ex as Error;
+            if (e.name === 'AbortError') {
+                return;
+            }
+            this.onError(`Error initializing streams: ${e.message}`);
         }
     }
 
-    private setupStreams(manifest: string, videoInfo: any, videoInit: ArrayBuffer, audioInfo: any = null,
-                         audioInit: ArrayBuffer | null = null): void {
+    private async setupStreams(manifest: string, videoInfo: any, videoInit: ArrayBuffer, audioInfo: any = null,
+                               audioInit: ArrayBuffer | null = null): Promise<void> {
         /* Clean up whatever already existed. */
         this.cleaup();
 
@@ -162,74 +151,55 @@ export class MseWrapper {
         }
 
         /* Create afresh. */
-        this.setMediaSources((): void => {
-            // New streams.
-            this.videoStream = new Stream(
+        this.videoMediaSource = new MediaSource();
+        this.video.src = URL.createObjectURL(this.videoMediaSource);
+        if (this.videoMediaSource.readyState !== "open") {
+            await waitForEvent("sourceopen", this.videoMediaSource);
+        }
+
+        // New streams.
+        this.videoStream = new Stream(
+            this.videoMediaSource!,
+            this.segmentDurationMS / 1_000,
+            this.onError,
+            (): void => {
+                void this.video.play();
+                if (this.onNewStreamStart) {
+                    this.onNewStreamStart();
+                }
+            },
+        );
+        this.videoStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.videoStreamIndex),
+                                               init: videoInit}, 0);
+
+        if (audioInfo && this.interleaved) {
+            this.audioStream = new Stream(
                 this.videoMediaSource!,
                 this.segmentDurationMS / 1_000,
                 this.onError,
-                (): void => {
-                    void this.video.play();
-                    if (this.onNewStreamStart) {
-                        this.onNewStreamStart();
-                    }
-                },
             );
-            this.videoStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.videoStreamIndex),
-                                                   init: videoInit}, 0);
-
-            if (audioInfo && this.interleaved) {
-                this.audioStream = new Stream(
-                    this.videoMediaSource!,
-                    this.segmentDurationMS / 1_000,
-                    this.onError,
-                );
-                this.audioStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest,
-                                                                                       this.audioStreamIndex!),
-                                                       init: audioInit!}, 0);
-            }
-
-            // Segment downloader.
-            const streams = [this.videoStream];
-            if (this.audioStream && this.interleaved) {
-                streams.push(this.audioStream);
-            }
-            this.segmentDownloader = new SegmentDownloader(
-                videoInfo,
-                this.interleaved,
-                streams,
-                this.videoStreamIndex,
-                this.baseUrl!,
-                this.segmentDurationMS,
-                this.segmentPreavailability,
-                this.onTimestamp,
-                this.onReceived,
-                this.onControlChunk,
-                this.onError,
-            );
-        }, audioInfo !== null);
-    }
-
-    private setMediaSources(onMediaSourceReady: () => void, withAudio: boolean, recall: boolean = false): void {
-        /* Create new media sources and bind them to the media elements. */
-        if (!recall) {
-            this.videoMediaSource = new MediaSource();
-            this.video.src = URL.createObjectURL(this.videoMediaSource);
+            this.audioStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.audioStreamIndex!),
+                                                   init: audioInit!}, 0);
         }
 
-        /* Wait for the media sourecs to be ready. */
-        if (this.videoMediaSource!.readyState !== "open") {
-            const callback = (): void => {
-                this.videoMediaSource!.removeEventListener("opensource", callback);
-                this.setMediaSources(onMediaSourceReady, withAudio, true);
-            };
-            this.videoMediaSource!.addEventListener("sourceopen", callback);
-            return;
+        // Segment downloader.
+        const streams = [this.videoStream];
+        if (this.audioStream && this.interleaved) {
+            streams.push(this.audioStream);
         }
-
-        /* Do whatever it is we were wanting to do after. */
-        // TODO: I suspect this could/should be a promise.
-        onMediaSourceReady();
+        this.segmentDownloader = new SegmentDownloader(
+            videoInfo,
+            this.interleaved,
+            streams,
+            this.videoStreamIndex,
+            this.baseUrl!,
+            this.segmentDurationMS,
+            this.segmentPreavailability,
+            this.onTimestamp,
+            this.onReceived,
+            this.onControlChunk,
+            this.onError,
+        );
     }
 
     /**
@@ -237,18 +207,19 @@ export class MseWrapper {
      *
      * @param index Stream index.
      */
-    private getStreamInfoAndInit(index: number): Promise<[any, ArrayBuffer]> {
-        return Promise.all([
-            fetch(`${this.baseUrl!}/chunk-stream${index}-index.json`, { signal: this.aborter!.signal }),
-            fetch(`${this.baseUrl!}/init-stream${index}.m4s`, { signal: this.aborter!.signal }),
-        ]).then((responses: Response[]): Promise<[any, ArrayBuffer]> => {
-            for (const response of responses) {
-                if (response.status !== 200) {
-                    throw Error(`Fetching stream info or init gave HTTP status code ${response.status}`);
-                }
-            }
-            return Promise.all([responses[0]!.json(), responses[1]!.arrayBuffer()]);
-        });
+    private async getStreamInfoAndInit(index: number): Promise<[any, ArrayBuffer]> {
+        const [indexResponse, initResponse]: [Response, Response] =
+            await Promise.all([
+                fetch(`${this.baseUrl!}/chunk-stream${index}-index.json`, { signal: this.aborter!.signal }),
+                fetch(`${this.baseUrl!}/init-stream${index}.m4s`, { signal: this.aborter!.signal }),
+            ]);
+        if (indexResponse.status !== 200) {
+            throw Error(`Fetching stream index gave HTTP status code ${indexResponse.status}`);
+        }
+        if (initResponse.status !== 200) {
+            throw Error(`Fetching stream initialization segment gave HTTP status code ${initResponse.status}`);
+        }
+        return await Promise.all([indexResponse.json(), initResponse.arrayBuffer()]);
     }
 
     /**
