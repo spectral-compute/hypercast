@@ -1,4 +1,40 @@
 /**
+ * Create a promise that rejects (with an AbortError) when a signal aborts, but otherwise is equivalent to new Promise.
+ *
+ * @param resolve The resolution function that would normally be passed to Promise's constructor.
+ * @param signal Reject if this signal aborts.
+ */
+export function abortablePromise<T>(resolve: (fulfill: (value: T) => void, reject: (e: Error) => void) => void,
+                                    signal: AbortSignal): Promise<T> {
+    return new Promise<T>((fulfill: (value: T) => void, reject: (e: Error) => void) => {
+        /* Make abort signal call reject if it aborts. */
+        const onAbort = ((reject) => (): void => {
+            const e = new Error();
+            e.name = "AbortError";
+            reject(e);
+        })(reject);
+        signal.addEventListener("abort", onAbort);
+
+        /* Give the caller a fulfillment function that removes the event listener and calls the promise's fulfillment
+           function. */
+        const onFulfill = ((fulfill, signal, onAbort) => (value: T): void => {
+            signal.removeEventListener("abort", onAbort);
+            fulfill(value);
+        })(fulfill, signal, onAbort);
+
+        /* Give the caller a rejection function that removes the event listener and calls the promise's rejection
+           function. */
+        const onReject = ((reject, signal, onAbort) => (e: Error): void => {
+            signal.removeEventListener("abort", onAbort);
+            reject(e);
+        })(reject, signal, onAbort);
+
+        /* Pass the above promise resolution functions to the caller. */
+        resolve(onFulfill, onReject);
+    });
+}
+
+/**
  * Wait (and suspend the coroutine) for a given length of time.
  *
  * @param ms The amount of time to wait for.
