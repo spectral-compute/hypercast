@@ -13,6 +13,11 @@ interface SegmentInitialization {
      * The initializer segment.
      */
     init: ArrayBuffer;
+
+    /**
+     * The duration of the segments in ms.
+     */
+    segmentDuration: number;
 }
 
 /**
@@ -21,8 +26,6 @@ interface SegmentInitialization {
 export class Stream {
     constructor(
         private readonly mediaSource: MediaSource,
-        /** The duration of each segment in seconds */
-        private readonly segmentDurationS: number,
         private readonly onError: (description: string) => void,
         private readonly onStart: (() => void) | null = null
     ) {
@@ -193,6 +196,11 @@ export class Stream {
 
             // Append the initializer segment.
             this.sourceBuffer!.appendBuffer(init.init);
+
+            // Handle the change in segment duration. This is the simplest, though not most efficient, way to guarantee
+            // we never prune a segment that's still in use.
+            // TODO: Proper handover to shorter durations.
+            this.segmentDurationS = Math.max(init.segmentDuration / 1000, this.segmentDurationS);
         }
 
         /* Now shovel as much data into the queue as we can. */
@@ -316,6 +324,11 @@ export class Stream {
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
     private completelyBufferedSegments: number = 0;
+
+    /**
+     * The duration of each new segment in seconds.
+     */
+    private segmentDurationS: number = 0;
 
     private checksum: Debug.Adler32 | undefined;
     private readonly checksumDescriptions = new Map<number, string>();
