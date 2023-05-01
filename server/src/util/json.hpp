@@ -133,6 +133,16 @@ public:
     }
 
     /**
+     * Record that a particular key exists, but will be handled outside this class.
+     *
+     * @return An iterator to the object for the key if it exists, and `j.end()` (`j` from the constructor) otherwise.
+     */
+    nlohmann::json::const_iterator operator()(const char *key, bool required = false)
+    {
+        return getIteratorForKey(key, required);
+    }
+
+    /**
      * Check the elements of the JSON object to make sure every element is in the set of valid keys.
      */
     void operator()() const;
