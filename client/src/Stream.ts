@@ -338,3 +338,10 @@ export class Stream {
     private checksum: Debug.Adler32 | undefined;
     private readonly checksumDescriptions = new Map<number, string>();
 }
+
+/**
+ * Get a full MIME type (that can be given to the other APIs) from the generic MIME type and codecs string.
+ */
+export function getFullMimeType(mimeType: string, codecs: string) {
+    return `${mimeType}; codecs="${codecs}"`
+}

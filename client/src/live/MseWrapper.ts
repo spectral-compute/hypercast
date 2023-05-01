@@ -2,7 +2,7 @@ import {TimestampInfo} from "./Deinterleave";
 import {API, waitForEvent} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {SegmentDownloader, ReceivedInfo} from "./SegmentDownloader";
-import {Stream} from "../Stream";
+import {getFullMimeType, Stream} from "../Stream";
 
 export class MseWrapper {
     constructor(
@@ -232,8 +232,8 @@ export class MseWrapper {
      */
     private getMimeForStream(manifest: string, stream: number): string {
         const re = new RegExp(`<Representation id="${stream}" mimeType="([^"]*)" codecs="([^"]*)"`);
-        const match = manifest.match(re);
-        return `${match![1]!}; codecs="${match![2]!}"`; // TODO: Error handling.
+        const match = manifest.match(re); // TODO: Error handling.
+        return getFullMimeType(match![1]!, match![2]!);
     }
 
     private videoMediaSource: MediaSource | null = null;
