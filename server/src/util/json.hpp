@@ -205,6 +205,17 @@ nlohmann::json parse(std::string_view jsonString, bool allowComments = false);
  */
 std::string dump(const nlohmann::json &json, int indent = -1);
 
+/**
+ * A class that makes it possible to pass references to JSON objects around.
+ */
+class Object final : public nlohmann::json
+{
+public:
+    using nlohmann::json::json;
+    Object(const nlohmann::json &other) : nlohmann::json(other) {}
+    Object(nlohmann::json &&other) : nlohmann::json(other) {}
+};
+
 } // namespace Json
 
 /// @}
