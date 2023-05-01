@@ -12,7 +12,7 @@ nav.path-container {
     gap: $margin;
 
     & .path a {
-        padding: $margin / 2 $margin;
+        padding: calc($margin / 2) $margin;
 
         transition: text-decoration 0.2s;
 

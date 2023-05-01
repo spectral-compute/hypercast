@@ -34,7 +34,7 @@
         display: grid;
 
         grid-template-columns: auto auto 1fr auto auto auto;
-        grid-template-areas: "start-stop mute . angle quality fullscreen";
+        grid-template-areas: "start-stop mute . channel quality fullscreen";
 
         gap: 1em;
         padding: 0.25em;
@@ -55,7 +55,7 @@
             grid-area: start-stop;
         }
 
-        & button.mute {
+        & button.mute, & button.unmute {
             grid-area: mute;
         }
 
@@ -63,8 +63,8 @@
             min-width: 4em;
         }
 
-        & select.angle {
-            grid-area: angle;
+        & select.channel {
+            grid-area: channel;
         }
 
         & select.quality {
