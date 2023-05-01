@@ -13,6 +13,15 @@ namespace Dash
  */
 enum class ControlChunkType : uint8_t
 {
+    /* Generic client library message control chunk types. */
+    /**
+     * A JSON object for the client library that is not intended to be sent directly via Api::Channel::SendDataResource.
+     *
+     * By not providing any server API to send this kind of message directly, users are prevented from interfering with
+     * the systems that use these messages or sending invalid messages.
+     */
+    jsonObject = 32,
+
     /* User message control chunk types. */
     /**
      * Send a JSON object to the client library for use by the user of the library.

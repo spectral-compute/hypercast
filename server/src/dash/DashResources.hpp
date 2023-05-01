@@ -21,6 +21,13 @@ struct Http;
 
 } // namespace Config
 
+namespace Json
+{
+
+class Object;
+
+} // namespace Json
+
 namespace Server
 {
 
@@ -88,6 +95,14 @@ public:
     {
         addControlChunk(std::span((const std::byte *)chunkData.data(), chunkData.size()), type);
     }
+
+    /**
+     * Add a JSON object control chunk to all the interleaves' latest segments.
+     *
+     * @param j The value to give to the conent field.
+     * @param type The value to give to the type field.
+     */
+    void addJsonObjectControlChunk(Json::Object j, std::string_view type);
 
     /**
      * Get the base path in the server for the resources managed by this object.

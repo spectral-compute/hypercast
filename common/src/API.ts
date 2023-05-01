@@ -67,6 +67,7 @@ export namespace API {
      * The type of data in a control chunk.
      */
     export enum ControlChunkType {
+        jsonObject = 32,
         userJsonObject = 48,
         userBinaryData = 49,
         userString = 50,
@@ -80,5 +81,20 @@ export namespace API {
      */
     export interface ChannelIndex {
         [infoUrl: string]: string | null,
+    }
+
+    /**
+     * Content for the jsonObject control chunk type.
+     */
+    export interface JsonObjectControlChunk {
+        /**
+         * The object type.
+         */
+        type: string;
+
+        /**
+         * The object itself.
+         */
+        content: any;
     }
 }

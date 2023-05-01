@@ -367,6 +367,11 @@ export class Player {
     private onControlChunk(data: ArrayBuffer, controlChunkType: number): void {
         try {
             switch (controlChunkType) {
+                case API.ControlChunkType.jsonObject:
+                    const j = JSON.parse(new TextDecoder().decode(data));
+                    assertType<API.JsonObjectControlChunk>(j);
+                    this.onJsonObject(j);
+                    break;
                 case API.ControlChunkType.userJsonObject:
                     if (!this.onBroadcastObject) {
                         throw Error("Received broadcast object, but its handler is not registered.");
@@ -399,6 +404,7 @@ export class Player {
     }
 
     /**
+<<<<<<< HEAD
      * (Re)load the channel index.
      */
     private async loadChannelIndex(): Promise<void> {
@@ -498,6 +504,18 @@ export class Player {
 
         if (wasPlaying) {
             this.start();
+        }
+    }
+
+    /**
+     * Handle control chunks of type jsonObject.
+     *
+     * @param o The chunk data, converted from a JSON object.
+     */
+    private onJsonObject(o: API.JsonObjectControlChunk): void {
+        switch (o.type) {
+            default:
+                throw Error(`Unknown JSON object control chunk type: ${o.type}.`);
         }
     }
 

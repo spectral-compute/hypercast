@@ -623,6 +623,14 @@ void Dash::DashResources::addControlChunk(std::span<const std::byte> chunkData, 
     }
 }
 
+void Dash::DashResources::addJsonObjectControlChunk(Json::Object j, std::string_view type)
+{
+    addControlChunk(Json::dump(nlohmann::json{
+        { "type", type },
+        { "content", std::move(j) }
+    }), ControlChunkType::jsonObject);
+}
+
 void Dash::DashResources::createSegment(unsigned int streamIndex, unsigned int segmentIndex)
 {
     logContext << "segmentPreavailable" << Log::Level::info << Json::dump({
