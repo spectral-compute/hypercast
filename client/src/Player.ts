@@ -194,8 +194,8 @@ export class Player {
     /**
      * Get available channels.
      *
-     * This can be changed whenever the channel list is reloaded.
-     *
+     * This returns the channel list most recently retrieved from the server.
+     * The value could change between calls if the server updates and the Player polls it.
      * The channel paths don't include the server URL.
      *
      * @return A map of channel paths (as keys) to channel names (as values, or null if the name is not defined).
@@ -217,7 +217,7 @@ export class Player {
      *
      * @param channel The path relative to the server URL.
      *
-     * @throws When the channel is not in the channel index when the channel index is available.
+     * @throws When the channel index is available but the channel is not listed in the index.
      */
     async setChannel(channel: string): Promise<void> {
         if (this.channelIndex && !Object.keys(this.channelIndex).includes(channel)) {
