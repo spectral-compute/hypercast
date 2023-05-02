@@ -31,11 +31,9 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
     React.useEffect(() => {
         const player = playerRef.current;
         const container = containerRef.current;
-        console.debug("RISE player container mounted"); // KILLME
         return () => {
             if (container) {
                 container.replaceChildren();
-                console.debug("RISE player container unmounted"); // KILLME
             }
             if (player) {
                 player.then((p) => {
@@ -44,7 +42,6 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
                         onDismount(p);
                     }
                 }).catch((e) => {
-                    console.error("RISE player failed to initialize:"); // KILLME
                     e instanceof Error && console.error(e.message);
                 });
                 playerRef.current = null;
