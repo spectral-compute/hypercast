@@ -48,6 +48,9 @@ export class Stream {
             return;
         }
 
+        if (!this.sourceBuffer) {
+            this.createSourceBuffer(init.mimeType);
+        }
         this.segmentInitializations.set(segment, init);
     }
 
@@ -190,11 +193,7 @@ export class Stream {
 
             // Set the source buffer mimetype. This might create the source buffer, since we need the first mimetype to
             // do that.
-            if (this.sourceBuffer) {
-                this.sourceBuffer.changeType(init.mimeType);
-            } else {
-                this.createSourceBuffer(init.mimeType);
-            }
+            this.sourceBuffer!.changeType(init.mimeType);
 
             // Append the initializer segment.
             this.sourceBuffer!.appendBuffer(init.init);
@@ -309,7 +308,7 @@ export class Stream {
      * Create the sourceBuffer object.
      *
      * This would be in the constructor, but even though source buffers allow their mime type to be changed, they still
-     * require one from the start. So this can't happen until startSegment happens.
+     * require one from the start. So this can't happen until startSegmentSequence happens.
      */
     private createSourceBuffer(mimeType: string): void {
         this.sourceBuffer = this.mediaSource.addSourceBuffer(mimeType);
