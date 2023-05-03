@@ -199,6 +199,14 @@ export class Stream {
             // Append the initializer segment.
             this.sourceBuffer!.appendBuffer(init.init);
 
+            // Print debug information about the initializer segment.
+            if (process.env["NODE_ENV"] === "development") {
+                const checksum = new Debug.Adler32();
+                checksum.update(init.init);
+                console.log("[Media Source Buffer Checksum] " + this.checksumDescriptions.get(this.currentSegment)! +
+                            ` initializer checksum: ${checksum.getChecksum()}, length: ${checksum.getLength()}`);
+            }
+
             // Handle the change in segment duration. This is the simplest, though not most efficient, way to guarantee
             // we never prune a segment that's still in use.
             // TODO: Proper handover to shorter durations.
