@@ -27,7 +27,7 @@ export class Stream {
         private readonly onStart: (() => void) | null = null
     ) {
         if (process.env["NODE_ENV"] === "development") {
-            this.checksum = new Debug.Addler32();
+            this.checksum = new Debug.Adler32();
         }
     }
 
@@ -188,7 +188,7 @@ export class Stream {
             } else if (process.env["NODE_ENV"] === "development") {
                 console.log(`[Media Source Buffer Checksum] ${this.checksumDescriptions.get(this.checksumIndex)!} ` +
                             `checksum: ${this.checksum!.getChecksum()}, length: ${this.checksum!.getLength()}`);
-                this.checksum = new Debug.Addler32();
+                this.checksum = new Debug.Adler32();
                 this.checksumDescriptions.delete(this.checksumIndex);
                 this.checksumIndex++;
             }
@@ -271,7 +271,7 @@ export class Stream {
     private readonly finishedSegments = new Set<number>();
     private currentSegment: number = 0;
 
-    private checksum: Debug.Addler32 | undefined;
+    private checksum: Debug.Adler32 | undefined;
     private checksumIndex: number = 0;
     private readonly checksumDescriptions = new Map<number, string>();
 }

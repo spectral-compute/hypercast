@@ -35,7 +35,7 @@ export class Deinterleaver {
         this.description = description;
 
         if (process.env["NODE_ENV"] === "development") {
-            this.checksums = new Map<number, Debug.Addler32>();
+            this.checksums = new Map<number, Debug.Adler32>();
         }
     }
 
@@ -151,7 +151,7 @@ export class Deinterleaver {
                     continue;
                 }
                 if (!this.checksums!.has(this.currentIndex)) {
-                    this.checksums!.set(this.currentIndex, new Debug.Addler32());
+                    this.checksums!.set(this.currentIndex, new Debug.Adler32());
                 }
                 if (chunkLength === 0) {
                     const checksum = this.checksums!.get(this.currentIndex)!;
@@ -176,5 +176,5 @@ export class Deinterleaver {
     private sentTimestamp: number | null = null; // Sent timestamp in µs.
     private firstTimestamp: boolean = true;
 
-    private readonly checksums: Map<number, Debug.Addler32> | undefined;
+    private readonly checksums: Map<number, Debug.Adler32> | undefined;
 }

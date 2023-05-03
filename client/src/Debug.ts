@@ -3,11 +3,11 @@ import {TimestampInfo} from "./live/Deinterleave";
 import {ReceivedInfo} from "./live/SegmentDownloader";
 
 /**
- * Addler32 checksum for debugging.
+ * Adler32 checksum for debugging.
  *
  * https://datatracker.ietf.org/doc/html/rfc1950
  */
-export class Addler32 {
+export class Adler32 {
     update(data: ArrayBuffer): void {
         const data8 = new Uint8Array(data);
         const prime = 65521;
