@@ -18,6 +18,17 @@ export class MseWrapper {
     }
 
     /**
+     * Set the download rate throttling.
+     *
+     * @param rate The rate, as a proportion of real-time. Null to disable.
+     */
+    setThrottling(rate: number | null): void {
+        this.rate = rate;
+        this.videoDownloader?.setThrottling(rate);
+        this.audioDownloader?.setThrottling(rate);
+    }
+
+    /**
      * Append a video to the download.
      *
      * @param baseUrl The base URL of the streams.
@@ -76,12 +87,16 @@ export class MseWrapper {
         /* Wire up the streams and segment downloaders. */
         this.videoStream = new Stream(this.mediaSource, this.onError, null, true, this.mediaElement);
         this.audioStream = new Stream(this.mediaSource, this.onError, null, true, this.mediaElement);
-        this.videoDownloader = new SegmentDownloader(this.videoStream, this.signal, () => this.waitForSourceBuffers(),
-                                                     this.spawn, this.download,
+        this.videoDownloader = new SegmentDownloader(this.videoStream, this.signal,
+                                                     () => this.waitForSourceBuffers(), this.spawn, this.download,
                                                      (downloader, item) => this.onRecommendDowngrade(downloader, item));
-        this.audioDownloader = new SegmentDownloader(this.audioStream, this.signal, () => this.waitForSourceBuffers(),
-                                                     this.spawn, this.download,
+        this.audioDownloader = new SegmentDownloader(this.audioStream, this.signal,
+                                                     () => this.waitForSourceBuffers(), this.spawn, this.download,
                                                      (downloader, item) => this.onRecommendDowngrade(downloader, item));
+
+        // Pass on some settings to the downloaders.
+        this.videoDownloader.setThrottling(this.rate);
+        this.audioDownloader.setThrottling(this.rate);
     }
 
     /**
@@ -102,4 +117,5 @@ export class MseWrapper {
     private audioStream: Stream | null = null;
     private videoDownloader: SegmentDownloader | null = null;
     private audioDownloader: SegmentDownloader | null = null;
+    private rate: number | null = null;
 }

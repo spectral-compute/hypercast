@@ -1,5 +1,5 @@
 import {getFullMimeType, Stream} from "../Stream";
-import {abortablePromise, assertNonNull} from "live-video-streamer-common";
+import {abortablePromise, assertNonNull, sleep} from "live-video-streamer-common";
 
 /**
  * Information about the next segment.
@@ -153,6 +153,15 @@ export class SegmentDownloader {
         this.queue[0]?.item.clearStreamIndex();
     }
 
+    /**
+     * Set the download rate throttling.
+     *
+     * @param rate The rate, as a proportion of real-time. Null to disable.
+     */
+    setThrottling(rate: number | null): void {
+        this.rate = rate;
+    }
+
     private async worker(): Promise<void> {
         let streamSegmentIndex: number = 0;
 
@@ -209,7 +218,8 @@ export class SegmentDownloader {
                 }
 
                 // Download the segment into the stream.
-                const downloadTime: number = await this.streamSegment(segmentInfo.url, streamSegmentIndex);
+                const downloadTime: number = await this.streamSegment(segmentInfo.url, streamSegmentIndex,
+                                                                      item.item.segmentDuration);
 
                 // Figure out if we should recommend a downgrade.
                 if (downloadTime > item.item.segmentDuration) {
@@ -234,9 +244,7 @@ export class SegmentDownloader {
      * @param segmentIndex The index in this.stream to download to.
      * @return The time, in ms, that the donwload took.
      */
-    private async streamSegment(url: string, segmentIndex: number): Promise<number> {
-        // TODO: Throttle the download to be a bit faster (for safety, and so the ABR downgrade works) than real time so
-        //       we don't overload the connection while streaming live in parallel.
+    private async streamSegment(url: string, segmentIndex: number, segmentDuration: number): Promise<number> {
         try {
             /* Start timing how long the download takes. */
             const start: number = performance.now();
@@ -247,9 +255,26 @@ export class SegmentDownloader {
                 throw new Error(`got HTTP status code ${response.status}`);
             }
 
+            /* Stuff for throttling. */
+            const contentLengthString: string | null = response.headers.get('content-length');
+            const contentLength: number | null = (contentLengthString === null) ? null : parseInt(contentLengthString);
+            let downloadedLength: number = 0;
+
             /* Incrementally download. */
             const reader: ReadableStreamDefaultReader = response.body!.getReader();
             while (true) {
+                // Throttling.
+                if (this.rate !== null && contentLength !== null) {
+                    // Time since the download started.
+                    const downloadTime = performance.now() - start;
+
+                    // Time since the download when we're allowed to download the chunk.
+                    const chunkTime: number = segmentDuration * downloadedLength / contentLength;
+
+                    // Wait until it's time to download.
+                    await sleep(chunkTime + downloadTime, this.signal);
+                }
+
                 // Get the next chunk.
                 const readResult: ReadableStreamDefaultReadResult<Uint8Array> = await reader.read();
                 const value: Uint8Array | undefined = readResult.value;
@@ -263,6 +288,9 @@ export class SegmentDownloader {
 
                 // Give the data to the stream.
                 this.stream.acceptSegmentData(value, segmentIndex);
+
+                // Keep track of how much has been downlaoded for throttling.
+                downloadedLength += value.length;
             }
 
             /* Figure out how long that took. */
@@ -285,4 +313,9 @@ export class SegmentDownloader {
      * Notify when we've got a new queue item.
      */
     private onNewQueueItem: (() => void) | null = null;
+
+    /**
+     * Download rate as a fraction of real time.
+     */
+    private rate: number | null = null;
 }

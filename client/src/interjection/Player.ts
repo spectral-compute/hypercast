@@ -75,14 +75,20 @@ export class InterjectionPlayer {
                                                         interjectionSet: API.InterjectionSet,
                                                         interjection: API.Interjection) => void) | null,
                 private readonly onError: (description: string) => void) {
+        void this.onInterjectionEvent;
 
         this.mseWrapper = new MseWrapper(this.interjectionVideoElement, this.aborter.signal,
                                          (description) => this.onError(description),
                                          (fn) => this.spawn(fn),
                                          (url, type, what) => this.download(url, type, what));
 
-        void this.onInterjectionEvent;
-        void this.switchToInterjections;
+        /* Set up throttling. */
+        // Throttling to keep the live stream smooth at the start, but remember that the first frame is an I frame, and
+        // thus significantly larger than the rest. The interjections might also have B frames, so extra buffer is
+        // needed to even play properly. Since we might only get a second to start the download, compromise and download
+        // a bit faster than real-time. The numerator sets how much to download in bytes at the average bitrate of the
+        // video (so less in practice, because of the I frame) before playback begins.
+        this.mseWrapper.setThrottling(2 / this.request.minSelectTime);
 
         /* Start the interjections asynchronously. */
         this.spawn(async (): Promise<void> => {
@@ -332,6 +338,7 @@ export class InterjectionPlayer {
         this.mainVideoElement.style.display = "none";
         this.mainVideoElement.muted = true;
         this.stopMainStream();
+        this.mseWrapper.setThrottling(null); // Throttling is no longer needed.
 
         this.interjectionVideoElement.style.display = "";
         this.interjectionVideoElement.muted = muted;
