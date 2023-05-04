@@ -94,14 +94,14 @@ export class Player {
      * @param listeners Functions which will be called during key streaming events. See {@link PlayerEventListeners}
      */
     constructor(
-        container: HTMLDivElement,
+        private readonly container: HTMLDivElement,
         source?: PlayerSourceOptions,
         listeners?: PlayerEventListeners,
     ) {
         const {server = window.location.origin, channel, indexPollMs} = source ?? {};
         const {onError, onUpdate, onBroadcastObject, onBroadcastBinary, onBroadcastString} = listeners ?? {};
 
-        this.video = container.appendChild(document.createElement("video"));
+        this.video = this.makeVideoTag(true);
         this.video.controls = false;
 
         this.server = server;
@@ -551,6 +551,22 @@ export class Player {
      * ============= */
 
     // The video element we are playing to (owned by this class).
+
+    /**
+     * Make a video tag for use with this player.
+     *
+     * This method factors out the creation, styling, and so on of the video tags.
+     *
+     * @param visible Whether to create the video element as visible (true), or hidden (false, the default).
+     */
+    private makeVideoTag(visible: boolean = false): HTMLVideoElement {
+        const video: HTMLVideoElement = this.container.appendChild(document.createElement("video"));
+        video.controls = false; // Native controls would mess up buffer control.
+        video.style.display = visible ? "" : "none";
+        return video;
+    }
+
+    // Stuff from the constructor.
     private readonly video: HTMLVideoElement;
 
     // The server that all the data is coming from.
