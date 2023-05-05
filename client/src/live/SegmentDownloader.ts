@@ -178,9 +178,7 @@ export class SegmentDownloader extends EventDispatcher<keyof MseEventMap, MseEve
 
             while (true) {
                 /* Try to get more data. */
-                const readResult: ReadableStreamDefaultReadResult<Uint8Array> = await reader.read();
-                const value: Uint8Array | undefined = readResult.value;
-                const done: boolean = readResult.done;
+                const {value, done} = await reader.read();
 
                 /* If we're done, then the value means nothing. */
                 if (done) {
