@@ -1,5 +1,7 @@
 import * as Debug from "../Debug";
 import {API} from "live-video-streamer-common";
+import {MseControlChunkEvent, MseTimestampEvent} from "./MseWrapper";
+import {EventDispatcher} from "../EventDispatcher";
 
 /**
  * Deinterleave timestamp information.
@@ -25,13 +27,22 @@ export interface TimestampInfo {
     firstForInterleave: boolean
 }
 
-export class Deinterleaver {
-    constructor(onData: (data: ArrayBuffer, index: number) => void,
-                onControlChunk: (data: ArrayBuffer, controlChunkType: number) => void,
-                onTimestamp: (timestampInfo: TimestampInfo) => void, description: string) {
-        this.onData = onData;
-        this.onControlChunk = onControlChunk;
-        this.onTimestamp = onTimestamp;
+export class DeinterleaverDataEvent extends Event {
+    constructor(public data: ArrayBuffer,
+                public index: number) {
+        super("data");
+    }
+}
+
+export interface DeinterleaverEventMap {
+    "timestamp": MseTimestampEvent,
+    "control_chunk": MseControlChunkEvent,
+    "data": DeinterleaverDataEvent
+}
+
+export class Deinterleaver extends EventDispatcher<keyof DeinterleaverEventMap, DeinterleaverEventMap> {
+    constructor(description: string) {
+        super();
         this.description = description;
 
         if (process.env["NODE_ENV"] === "development") {
@@ -124,23 +135,23 @@ export class Deinterleaver {
             if (this.currentIndex === 31) {
                 const controlChunkType: number = buffer[offset]!; // the first byte of the chunk is its type.
                 if (controlChunkType !== API.ControlChunkType.discard) {
-                    this.onControlChunk(buffer.slice(offset + 1, offset + chunkLength), controlChunkType);
+                    this.dispatchEvent(new MseControlChunkEvent(buffer.slice(offset + 1, offset + chunkLength), controlChunkType));
                 }
             } else {
                 // Store whatever of the chunk we currently have.
                 data = buffer.slice(offset, offset + chunkLength);
-                this.onData(data, this.currentIndex);
+                this.dispatchEvent(new DeinterleaverDataEvent(data, this.currentIndex));
             }
             this.currentOffset += chunkLength;
             offset += chunkLength;
 
             // If we've just pushed the last of the data for this chunk.
             if (this.sentTimestamp !== null) {
-                this.onTimestamp({
+                this.dispatchEvent(new MseTimestampEvent({
                     sentTimestamp: this.sentTimestamp / 1000,
                     endReceivedTimestamp: Date.now(),
                     firstForInterleave: this.firstTimestamp
-                });
+                }));
                 this.sentTimestamp = null;
                 this.firstTimestamp = false;
             }
@@ -164,9 +175,6 @@ export class Deinterleaver {
         }
     }
 
-    private readonly onData: (data: ArrayBuffer, index: number) => void;
-    private readonly onControlChunk: (data: ArrayBuffer, controlChunkType: number) => void;
-    private readonly onTimestamp: (timestampInfo: TimestampInfo) => void;
     private readonly description: string;
 
     private currentIndex = 0; // Index of the current chunk's content.

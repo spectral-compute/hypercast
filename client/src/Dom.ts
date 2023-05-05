@@ -36,7 +36,11 @@ export async function createPlayer(
     }
 
     // Create the player
-    const player = new Player(containerElement, source, {onError});
+    const player = new Player(containerElement, source);
+    player.on("error", (e) => {
+        onError(e.e.message);
+    });
+
     const controlsDiv = insertNode(containerElement, "div", {className: "video-controls"});
 
     /* Performance/debug event handling. */
@@ -51,14 +55,13 @@ export async function createPlayer(
         console.error(e instanceof Error ? "Failed to initialise player: " + e.message : "Failed to initialise player");
     }
 
-    const onUpdate = () => {
+    player.on("update", () => {
         // Erase the original controls
         controlsDiv.innerHTML = "";
+
         // Recreate the controls
         createControlPanel(controlsDiv, player);
-    };
-
-    player.onUpdate = onUpdate;
+    });
 
     options?.onInitialisation?.(player);
     player.start();

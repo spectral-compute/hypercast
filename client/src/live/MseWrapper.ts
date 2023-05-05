@@ -2,18 +2,56 @@ import {TimestampInfo} from "./Deinterleave";
 import {API, waitForEvent} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {SegmentDownloader, ReceivedInfo} from "./SegmentDownloader";
-import {getFullMimeType, Stream} from "../Stream";
+import {getFullMimeType, Stream, StreamStartEvent} from "../Stream";
+import {PlayerErrorEvent} from "../Events";
+import {EventDispatcher} from "../EventDispatcher";
 
-export class MseWrapper {
+/**
+ * WTF is this
+ */
+export class MseTimestampEvent extends Event {
+    constructor(public timestampInfo: TimestampInfo) {
+        super("error");
+    }
+}
+
+/**
+ * WTF is this
+ */
+export class MseReceivedEvent extends Event {
+    constructor(public receivedInfo: ReceivedInfo) {
+        super("received");
+    }
+}
+
+/**
+ * WTF is this
+ */
+export class MseControlChunkEvent extends Event {
+    constructor(public data: ArrayBuffer,
+
+                // Should be enum?
+                public controlChunkType: number) {
+        super("control_chunk");
+    }
+}
+
+export interface MseEventMap {
+    "timestamp": MseTimestampEvent,
+    "received": MseReceivedEvent,
+    "control_chunk": MseControlChunkEvent,
+    "error": PlayerErrorEvent,
+    "start": StreamStartEvent
+}
+
+export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> {
     constructor(
         private readonly video: HTMLVideoElement,
         private readonly segmentDurationMS: number,
-        private readonly segmentPreavailability: number,
-        private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
-        private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
-        private readonly onControlChunk: (data: ArrayBuffer, controlChunkType: number) => void,
-        private readonly onError: (description: string) => void
-    ) {}
+        private readonly segmentPreavailability: number
+    ) {
+        super();
+    }
 
     setSource(baseUrl: string, videoStream: number, audioStream: number | null, interleaved: boolean): void {
         /* Stop downloading any existing stream. */
@@ -87,11 +125,6 @@ export class MseWrapper {
         return this.video.muted;
     }
 
-    /**
-     * Called when a new stream starts playing.
-     */
-    onNewStreamStart: (() => void) | null = null;
-
     private cleaup(): void {
         if (this.aborter) {
             this.aborter.abort();
@@ -135,7 +168,8 @@ export class MseWrapper {
             if (e.name === 'AbortError') {
                 return;
             }
-            this.onError(`Error initializing streams: ${e.message}`);
+
+            this.dispatchEvent(new PlayerErrorEvent(e));
         }
     }
 
@@ -160,22 +194,23 @@ export class MseWrapper {
         // New streams.
         this.videoStream = new Stream(
             this.videoMediaSource!,
-            this.onError,
-            (): void => {
-                void this.video.play();
-                if (this.onNewStreamStart) {
-                    this.onNewStreamStart();
-                }
-            },
+
         );
+        this.videoStream.on("error", (e) => this.dispatchEvent(e));
+        this.videoStream.on("start", (e) => {
+            // TODO: PROMISE LEAK BAD
+            void this.video.play();
+
+            // Should be deferred until after the above promise accepts, presumably...
+            this.dispatchEvent(e);
+        });
+
         this.videoStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.videoStreamIndex),
                                                init: videoInit, segmentDuration: this.segmentDurationMS}, 0);
 
         if (audioInfo && this.interleaved) {
-            this.audioStream = new Stream(
-                this.videoMediaSource!,
-                this.onError,
-            );
+            this.audioStream = new Stream(this.videoMediaSource!);
+            this.audioStream.on("error", (e: PlayerErrorEvent) => this.dispatchEvent(e));
             this.audioStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.audioStreamIndex!),
                                                    init: audioInit!, segmentDuration: this.segmentDurationMS}, 0);
         }
@@ -192,12 +227,14 @@ export class MseWrapper {
             this.videoStreamIndex,
             this.baseUrl!,
             this.segmentDurationMS,
-            this.segmentPreavailability,
-            this.onTimestamp,
-            this.onReceived,
-            this.onControlChunk,
-            this.onError,
+            this.segmentPreavailability
         );
+
+        this.segmentDownloader.on("timestamp", (e: MseTimestampEvent) => this.dispatchEvent(e));
+        this.segmentDownloader.on("received", (e: MseReceivedEvent) => this.dispatchEvent(e));
+        this.segmentDownloader.on("control_chunk", (e: MseControlChunkEvent) => this.dispatchEvent(e));
+        this.segmentDownloader.on("error", (e: PlayerErrorEvent) => this.dispatchEvent(e));
+
     }
 
     /**

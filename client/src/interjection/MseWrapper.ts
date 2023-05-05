@@ -1,14 +1,20 @@
 import {SegmentDownloader, SegmentDownloaderItem, StreamInfo} from "./SegmentDownloader";
 import {getFullMimeType, Stream} from "../Stream";
 import {waitForEvent} from "live-video-streamer-common";
+import {PlayerErrorEvent} from "../Events";
+import {EventDispatcher} from "../EventDispatcher";
 
-export class MseWrapper {
+export interface InterjectionMseEventMap {
+    "error": PlayerErrorEvent
+}
+
+export class MseWrapper extends EventDispatcher<keyof InterjectionMseEventMap, InterjectionMseEventMap>{
     constructor(private readonly mediaElement: HTMLMediaElement,
                 private readonly signal: AbortSignal,
-                private readonly onError: (description: string) => void,
                 private readonly spawn: (fn: () => void | Promise<void>) => void,
                 private readonly download: (url: string, type: "binary" | "json" | "string",
                                             what: string) => Promise<any>) {
+        super();
     }
 
     end(): void {
@@ -85,8 +91,11 @@ export class MseWrapper {
         }
 
         /* Wire up the streams and segment downloaders. */
-        this.videoStream = new Stream(this.mediaSource, this.onError, null, true, this.mediaElement);
-        this.audioStream = new Stream(this.mediaSource, this.onError, null, true, this.mediaElement);
+        this.videoStream = new Stream(this.mediaSource, true, this.mediaElement);
+        this.audioStream = new Stream(this.mediaSource, true, this.mediaElement);
+        this.videoStream.on("error", (e) => this.dispatchEvent(e));
+        this.audioStream.on("error", (e) => this.dispatchEvent(e));
+
         this.videoDownloader = new SegmentDownloader(this.videoStream, this.signal,
                                                      () => this.waitForSourceBuffers(), this.spawn, this.download,
                                                      (downloader, item) => this.onRecommendDowngrade(downloader, item));

@@ -1,4 +1,6 @@
 import * as Debug from "./Debug";
+import {EventDispatcher} from "./EventDispatcher";
+import {PlayerErrorEvent} from "./Events";
 
 /**
  * Describe how to switch to a new sequence of segments.
@@ -20,17 +22,28 @@ interface SegmentInitialization {
     segmentDuration: number;
 }
 
+export class StreamStartEvent extends Event {
+    constructor() {
+        super("start");
+    }
+}
+
+export interface StreamEventMap {
+    "start": StreamStartEvent,
+    "error": PlayerErrorEvent
+}
+
 /**
  * Manages a media source buffer, and a queue of data to go with it.
  */
-export class Stream {
+export class Stream extends EventDispatcher<keyof StreamEventMap, StreamEventMap> {
     constructor(
         private readonly mediaSource: MediaSource,
-        private readonly onError: (description: string) => void,
-        private readonly onStart: (() => void) | null = null,
         private readonly sequential: boolean = false,
         private readonly mediaElement: HTMLMediaElement | null = null ///< Don't prune after this video's current time.
     ) {
+        super();
+
         if (process.env["NODE_ENV"] === "development") {
             this.checksum = new Debug.Adler32();
         }
@@ -66,9 +79,10 @@ export class Stream {
             return new Promise((_, reject) => reject());
         }
 
-        if (segment === 0 && this.onStart) {
-            this.onStart();
+        if (segment === 0) {
+            this.dispatchEvent(new StreamStartEvent());
         }
+
         if (process.env["NODE_ENV"] === "development") {
             this.checksumDescriptions.set(segment, description);
         }
@@ -316,10 +330,10 @@ export class Stream {
             this.sourceBuffer.mode = "sequence";
         }
         this.sourceBuffer.addEventListener("onabort", (): void => {
-            this.onError("SourceBuffer aborted");
+            this.dispatchEvent(new PlayerErrorEvent(new Error("SourceBuffer aborted")));
         });
         this.sourceBuffer.addEventListener("onerror", (): void => {
-            this.onError("Error with SourceBuffer");
+            this.dispatchEvent(new PlayerErrorEvent(new Error("SourceBuffer aborted")));
         });
         this.sourceBuffer.addEventListener("update", (): void => {
             this.advanceQueue(); // We might have more data that we can add immediately.

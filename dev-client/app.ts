@@ -28,7 +28,11 @@ const urlParams = new URLSearchParams(window.location.search);
 const server = urlParams.get("server") ?? undefined;
 
 /* Create the player. */
-const player = new Player(video, {server}, {onError, onUpdate, onBroadcastObject});
+const player = new Player(video, {server});
+player.on("error", (e) => onError(e.e.message));
+player.on("broadcast_object", (e) => onBroadcastObject(e.o));
+player.on("update", (e) => onUpdate(e.elective));
+
 (document.getElementById("server_origin")! as HTMLSpanElement).innerText = player.getServer();
 
 /* Performance/debug event handling. */

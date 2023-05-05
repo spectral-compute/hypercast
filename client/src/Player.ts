@@ -1,11 +1,16 @@
 import {DebugHandler} from "./Debug";
 import {InterjectionPlayer} from "./interjection/Player";
 import {BufferControl} from "./live/BufferCtrl";
-import {TimestampInfo} from "./live/Deinterleave";
 import {MseWrapper} from "./live/MseWrapper";
-import {ReceivedInfo} from "./live/SegmentDownloader";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
+import {
+    PlayerBinaryBroadcastEvent,
+    PlayerErrorEvent, PlayerEventMap,
+    PlayerObjectBroadcastEvent, PlayerStringBroadcastEvent,
+    PlayerUpdateEvent
+} from "./Events";
+import {EventDispatcher} from "./EventDispatcher";
 
 
 /**
@@ -50,57 +55,18 @@ export interface PlayerSourceOptions {
     indexPollMs?: number;
 }
 
-
-/**
- * Options for the Player class that configure actions to be taken on events.
- */
-export interface PlayerEventListeners {
-    /**
-     * Called when an error occurs.
-     */
-    onError?: (description: string) => void;
-
-    /**
-     * Called when Player's properties change.
-     *
-     * This includes (but not limited to):
-     * - A video starts playing:
-     *   - Just when it starts;
-     *   - When different quality is selected for latency reasons;
-     * - List of available channels changes;
-     */
-    onUpdate?: (elective: boolean) => void;
-
-    /**
-     * Called with the object given to the send_user_json channel API when it is called.
-     */
-    onBroadcastObject?: (o: any) => void;
-
-    /**
-     * Called with the object given to the send_user_binary channel API when it is called.
-     */
-    onBroadcastBinary?: (data: ArrayBuffer) => void;
-
-    /**
-     * Called with the object given to the send_user_string channel API when it is called.
-     */
-    onBroadcastString?: (s: string) => void;
-}
-
-
-export class Player {
+export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap> {
     /**
      * @param container The div tag to put a video tag into to play video into.
      * @param source Options for configuring available sources. See {@link PlayerSourceOptions}
-     * @param listeners Functions which will be called during key streaming events. See {@link PlayerEventListeners}
      */
     constructor(
         private readonly container: HTMLDivElement,
-        source?: PlayerSourceOptions,
-        listeners?: PlayerEventListeners,
+        source?: PlayerSourceOptions
     ) {
+        super();
+
         const {server = window.location.origin, channel, indexPollMs} = source ?? {};
-        const {onError, onUpdate, onBroadcastObject, onBroadcastBinary, onBroadcastString} = listeners ?? {};
 
         this.video = this.makeVideoTag(true);
         this.video.controls = false;
@@ -109,12 +75,6 @@ export class Player {
         // We assign `string | undefined` here because the user must run `init()` first which will deal with it.
         this.channel = channel!;
         this.indexPollMs = indexPollMs ?? 5_000;
-
-        this.onError = onError;
-        this.onUpdate = onUpdate;
-        this.onBroadcastObject = onBroadcastObject;
-        this.onBroadcastBinary = onBroadcastBinary;
-        this.onBroadcastString = onBroadcastString;
     }
 
     /**
@@ -152,16 +112,14 @@ export class Player {
                     await this.loadChannelIndex();
                     if (JSON.stringify(oldChannelIndex) !== JSON.stringify(this.channelIndex)) {
                         // The channel index has changed.
-                        this.onUpdate?.(false);
+                        this.dispatchEvent(new PlayerUpdateEvent(false));
                     }
                 }, this.indexPollMs);
             }
 
         } catch (ex: any) {
             const e = ex as Error;
-            if (this.onError) {
-                this.onError(`Error initializing player: ${e.message}`);
-            } else {
+            if (this.dispatchEvent(new PlayerErrorEvent(e))) {
                 throw e;
             }
         }
@@ -259,7 +217,7 @@ export class Player {
      */
     setAngle(index: number): void {
         if (index === this.angle) {
-            this.onUpdate?.(true);
+            this.dispatchEvent(new PlayerUpdateEvent(true));
             return;
         }
 
@@ -299,7 +257,7 @@ export class Player {
      */
     setQuality(index: number): void {
         if (index === this.quality) {
-            this.onUpdate?.(true);
+            this.dispatchEvent(new PlayerUpdateEvent(true));
             return;
         }
 
@@ -374,38 +332,26 @@ export class Player {
                     this.onJsonObject(j);
                     break;
                 case API.ControlChunkType.userJsonObject:
-                    if (!this.onBroadcastObject) {
-                        throw Error("Received broadcast object, but its handler is not registered.");
-                    }
-                    this.onBroadcastObject?.(JSON.parse(new TextDecoder().decode(data)));
+                    this.dispatchEvent(new PlayerObjectBroadcastEvent(JSON.parse(new TextDecoder().decode(data))));
                     break;
                 case API.ControlChunkType.userBinaryData:
-                    if (!this.onBroadcastBinary) {
-                        throw Error("Received broadcast binary data, but its handler is not registered.");
-                    }
-                    this.onBroadcastBinary?.(data);
+                    this.dispatchEvent(new PlayerBinaryBroadcastEvent(data));
                     break;
                 case API.ControlChunkType.userString:
-                    if (!this.onBroadcastString) {
-                        throw Error("Received broadcast string, but its handler is not registered.");
-                    }
-                    this.onBroadcastString(new TextDecoder().decode(data));
+                    this.dispatchEvent(new PlayerStringBroadcastEvent(new TextDecoder().decode(data)));
                     break;
                 default:
                     throw Error(`Unknown control chunk type: ${controlChunkType}.`);
             }
         } catch(ex: any) {
             const e = ex as Error;
-            if (this.onError) {
-                this.onError(`Bad control chunk: ${e.message}`);
-            } else {
+            if (this.dispatchEvent(new PlayerErrorEvent(e))) {
                 throw e;
             }
         }
     }
 
     /**
-<<<<<<< HEAD
      * (Re)load the channel index.
      */
     private async loadChannelIndex(): Promise<void> {
@@ -467,18 +413,12 @@ export class Player {
         this.stream = new MseWrapper(
             this.video,
             this.channelInfo.segmentDuration,
-            this.channelInfo.segmentPreavailability,
-            (timestampInfo: TimestampInfo): void => {
-                this.bctrl!.onTimestamp(timestampInfo);
-            },
-            (recievedInfo: ReceivedInfo): void => {
-                this.bctrl!.onRecieved(recievedInfo);
-            },
-            (data: ArrayBuffer, controlChunkType: number): void => {
-                this.onControlChunk(data, controlChunkType)
-            },
-            this.onError ?? ((): void => {}),
+            this.channelInfo.segmentPreavailability
         );
+        this.stream.on("timestamp", (e) => this.bctrl!.onTimestamp(e.timestampInfo));
+        this.stream.on("received", (e) => this.bctrl!.onRecieved(e.receivedInfo));
+        this.stream.on("control_chunk", (e) => this.onControlChunk(e.data, e.controlChunkType));
+        this.stream.on("error", (e) => this.dispatchEvent(e));
 
         /* Set up buffer control for the player. */
         this.bctrl = new BufferControl(this.video, (): void => {
@@ -492,11 +432,11 @@ export class Player {
         }, this.debugHandler);
 
         /* Set up the "on new source playing" event handler. */
-        this.stream.onNewStreamStart = (): void => {
+        this.stream.on("start", () => {
             this.bctrl!.onNewStreamStart();
-            this.onUpdate?.(this.electiveChangeInProgress);
+            this.dispatchEvent(new PlayerUpdateEvent(this.electiveChangeInProgress));
             this.electiveChangeInProgress = false;
-        };
+        });
 
         /* Set the quality to an initial default. */
         this.quality = 0; // TODO: find the closest quality to the previous one
@@ -530,8 +470,13 @@ export class Player {
      */
     private onInterjectionRequest(request: API.InterjectionRequest): void {
         const interjectionVideo: HTMLVideoElement = this.makeVideoTag();
-        const interjectionPlayer = new InterjectionPlayer(request, this.video, interjectionVideo, this.start, this.stop,
-                                                          null, null, this.onError ?? ((): void => {}));
+        const interjectionPlayer = new InterjectionPlayer(
+            request, this.video, interjectionVideo, this.start, this.stop,
+            null, null
+        );
+        interjectionPlayer.on("error", (e) => this.dispatchEvent(e));
+
+        // TODO: WHAT THE FUCK
         void interjectionPlayer;
     }
 
@@ -591,36 +536,6 @@ export class Player {
     private channel!: string;
     // How often to poll the channel index for changes.
     private readonly indexPollMs: number;
-
-    /**
-     * Called whenever the media source changes (i.e: change of quality, change of channel, or of available channels).
-     *
-     * Note that a call to setChannelPath() or setQuality() will always call this event to fire,
-     * even if no actual change occurred.
-     *
-     * @param elective Whether or not the change was requested by the user.
-     */
-    onUpdate?: ((elective: boolean) => void);
-
-    /**
-     * Called when an error occurs.
-     */
-    onError?: ((description: string) => void);
-
-    /**
-     * Called with the object given to the send_user_json channel API when it is called.
-     */
-    onBroadcastObject?: ((o: any) => void);
-
-    /**
-     * Called with the object given to the send_user_binary channel API when it is called.
-     */
-    onBroadcastBinary?: ((data: ArrayBuffer) => void);
-
-    /**
-     * Called with the object given to the send_user_string channel API when it is called.
-    */
-    onBroadcastString?: ((s: string) => void);
 
     /* ============== *
      * Worker objects *

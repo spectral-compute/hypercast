@@ -3,6 +3,8 @@ import {Interjection, InterjectionSelection} from "./Selection";
 import {waitForPts} from "../Util"
 import {API, sleep} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
+import {PlayerErrorEvent} from "../Events";
+import {EventDispatcher} from "../EventDispatcher";
 
 /**
  * Information about the interjection(s) to request to give to the client library user when asking it to select
@@ -28,10 +30,14 @@ export interface InterjectionRequest {
     other?: any;
 }
 
+export interface InterjectionPlayerEventMap {
+    "error": PlayerErrorEvent;
+}
+
 /**
  * Controls the player's response to the Interjection API.
  */
-export class InterjectionPlayer {
+export class InterjectionPlayer extends EventDispatcher<keyof InterjectionPlayerEventMap, InterjectionPlayerEventMap> {
     /**
      * Start showing interjections.
      *
@@ -73,14 +79,16 @@ export class InterjectionPlayer {
                                                         request: InterjectionRequest,
                                                         interjectionId: string,
                                                         interjectionSet: API.InterjectionSet,
-                                                        interjection: API.Interjection) => void) | null,
-                private readonly onError: (description: string) => void) {
+                                                        interjection: API.Interjection) => void) | null) {
+        super();
+
+        // TODO: WHAT THE FUCK
         void this.onInterjectionEvent;
 
         this.mseWrapper = new MseWrapper(this.interjectionVideoElement, this.aborter.signal,
-                                         (description) => this.onError(description),
                                          (fn) => this.spawn(fn),
                                          (url, type, what) => this.download(url, type, what));
+        this.mseWrapper.on("error", (e) => this.dispatchEvent(e));
 
         /* Set up throttling. */
         // Throttling to keep the live stream smooth at the start, but remember that the first frame is an I frame, and
@@ -447,7 +455,8 @@ export class InterjectionPlayer {
                 if (e.name === 'AbortError') {
                     return;
                 }
-                this.onError(e.message);
+
+                this.dispatchEvent(new PlayerErrorEvent(e));
             }
         })(fn)();
     }

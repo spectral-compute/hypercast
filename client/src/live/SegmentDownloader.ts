@@ -1,7 +1,10 @@
 import {API, assertNonNull} from "live-video-streamer-common";
-import {Deinterleaver, TimestampInfo} from "./Deinterleave";
+import {Deinterleaver} from "./Deinterleave";
 import {Stream} from "../Stream";
 import {assertType} from "@ckitching/typescript-is";
+import {MseEventMap, MseReceivedEvent} from "./MseWrapper";
+import {PlayerErrorEvent} from "../Events";
+import {EventDispatcher} from "../EventDispatcher";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.
@@ -24,7 +27,7 @@ export interface ReceivedInfo {
 /**
  * Schedules download of segments.
  */
-export class SegmentDownloader {
+export class SegmentDownloader extends EventDispatcher<keyof MseEventMap, MseEventMap> {
     constructor(
         private readonly info: API.SegmentIndexDescriptor,
         private readonly interleaved: boolean,
@@ -32,12 +35,9 @@ export class SegmentDownloader {
         private readonly streamIndex: number,
         private readonly baseUrl: string,
         private readonly segmentDurationMS: number,
-        private readonly segmentPreavailability: number,
-        private readonly onTimestamp: (timestampInfo: TimestampInfo) => void,
-        private readonly onReceived: (receivedInfo: ReceivedInfo) => void,
-        private readonly onControlChunk: (data: ArrayBuffer, controlChunkType: number) => void,
-        private readonly onError: (description: string) => void
+        private readonly segmentPreavailability: number
     ) {
+        super();
         this.setSegmentDownloadSchedule(info);
     }
 
@@ -79,7 +79,8 @@ export class SegmentDownloader {
                 if (e.name === 'AbortError') {
                     return;
                 }
-                this.onError(`Error downloading stream index descriptor: ${e.message}`);
+
+                this.dispatchEvent(new PlayerErrorEvent(e));
             }
         };
         this.schedulerTimeout = window.setTimeout((): void => {
@@ -155,7 +156,8 @@ export class SegmentDownloader {
                 if (e.name === 'AbortError') {
                     return;
                 }
-                this.onError(`Error fetching chunk ${url}: ${e.message}`);
+
+                this.dispatchEvent(new PlayerErrorEvent(e));
             }
         })();
 
@@ -193,11 +195,11 @@ export class SegmentDownloader {
                 assertNonNull(value);
 
                 /* Notify the buffer control that we've received new data. */
-                this.onReceived({
+                this.dispatchEvent(new MseReceivedEvent({
                     streamIndex: this.streamIndex,
                     timestamp: Date.now(),
                     length: value.length
-                });
+                }));
 
                 /* Push the stream initialization before the segment. */
                 if (logicalSegmentIndex === null) {
@@ -214,19 +216,24 @@ export class SegmentDownloader {
                 if (this.interleaved) {
                     if (!deinterleaver) {
                         const logicalSegmentIndexCopy = logicalSegmentIndex;
-                        deinterleaver = new Deinterleaver(
-                            (data: ArrayBuffer, index: number): void => {
-                                if (this.streams.length <= index) {
-                                    return;
-                                }
-                                if (data.byteLength === 0) { // End of file.
-                                    this.streams[index]!.endSegment(logicalSegmentIndexCopy);
-                                    return;
-                                }
-                                this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
-                            }, this.onControlChunk, (logicalSegmentIndex === 0) ? (): void => {} : this.onTimestamp,
-                            description
-                        );
+                        deinterleaver = new Deinterleaver(description);
+
+                        deinterleaver.on("data", (e) => {
+                            const {index, data} = e;
+                            if (this.streams.length <= index) {
+                                return;
+                            }
+                            if (data.byteLength === 0) { // End of file.
+                                this.streams[index]!.endSegment(logicalSegmentIndexCopy);
+                                return;
+                            }
+                            this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
+                        });
+                        deinterleaver.on("control_chunk", (e) => this.dispatchEvent(e));
+                        if (logicalSegmentIndex != 0) {
+                            deinterleaver.on("timestamp", (e) => this.dispatchEvent(e));
+                        }
+
                         // Note that the first segment is likely to be started in the middle, and therefore not good for
                         // network timing data.
                     }
@@ -240,7 +247,8 @@ export class SegmentDownloader {
             if (e.name === 'AbortError') {
                 return;
             }
-            this.onError(`Error downloading or playing segment: ${e.message}`);
+
+            this.dispatchEvent(new PlayerErrorEvent(e));
         }
     }
 
