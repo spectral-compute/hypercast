@@ -259,7 +259,7 @@ export class InterjectionPlayer extends EventDispatcher<keyof InterjectionPlayer
      */
     private selectRandomInterjection(interjectionSet: API.InterjectionSet): string[] {
         /* Build a list of interjections that haven't been shown. */
-        const unselectedInterjections: string[] = new Array();
+        const unselectedInterjections: string[] = [];
         for (const name of Object.keys(interjectionSet.interjections)) {
             if (this.previousSelectedInterjections.indexOf(name) < 0) {
                 unselectedInterjections.push(name);
