@@ -45,9 +45,17 @@ export function abortablePromise<T>(resolve: (fulfill: (value: T) => void, rejec
  * @param ms The amount of time to wait for.
  * @param signal The abort signal to check.
  */
-export function sleep(ms: number, signal: AbortSignal | null = null): Promise<void> {
+export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        setTimeout(() => {
+        let timeout: any;
+        const onAbort = () => {
+            clearTimeout(timeout);
+            reject(mkAbortError());
+        };
+
+        signal?.addEventListener("abort", onAbort, {once: true});
+        timeout = setTimeout(() => {
+            signal?.removeEventListener("abort", onAbort);
             if (signal?.aborted) {
                 reject(mkAbortError());
                 return;
