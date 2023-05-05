@@ -304,7 +304,7 @@ export class InterjectionPlayer extends EventDispatcher<keyof InterjectionPlayer
         if (index === selection.selection.length - 1) {
             return;
         }
-        this.spawn(((selection, index) => () => this.showInterjection(selection, index + 1))(selection, index));
+        this.spawn(() => this.showInterjection(selection, index + 1));
     }
 
     /**
