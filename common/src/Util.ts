@@ -1,3 +1,10 @@
+/// Make an AbortError
+export function mkAbortError() {
+    const e = new Error();
+    e.name = "AbortError";
+    return e;
+}
+
 /**
  * Create a promise that rejects (with an AbortError) when a signal aborts, but otherwise is equivalent to new Promise.
  *
@@ -9,9 +16,7 @@ export function abortablePromise<T>(resolve: (fulfill: (value: T) => void, rejec
     return new Promise<T>((fulfill, reject) => {
         /* Make abort signal call reject if it aborts. */
         const onAbort = () => {
-            const e = new Error();
-            e.name = "AbortError";
-            reject(e);
+            reject(mkAbortError());
         };
         signal.addEventListener("abort", onAbort);
 
@@ -43,9 +48,7 @@ export function abortablePromise<T>(resolve: (fulfill: (value: T) => void, rejec
 export function sleep(ms: number, signal: AbortSignal | null = null): Promise<void> {
     return new Promise<void>((resolve, reject) => setTimeout(((resolve, reject, signal) => (): void => {
         if (signal?.aborted) {
-            const e = new Error();
-            e.name = "AbortError";
-            reject(e);
+            reject(mkAbortError());
         }
         resolve();
     })(resolve, reject, signal), ms));
@@ -62,9 +65,7 @@ export function waitForEvent(type: string, target: EventTarget, signal: AbortSig
     return new Promise<void>((resolve, reject) => {
         // Reject (i.e: throw an exception) if the abort is triggered.
         const onAbort = ((reject) => (): void => {
-            const e = new Error();
-            e.name = "AbortError";
-            reject(e);
+            reject(mkAbortError());
         })(reject);
         if (signal !== null) {
             signal.addEventListener("abort", onAbort, {once: true});
