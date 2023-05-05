@@ -6,28 +6,28 @@
  */
 export function abortablePromise<T>(resolve: (fulfill: (value: T) => void, reject: (e: Error) => void) => void,
                                     signal: AbortSignal): Promise<T> {
-    return new Promise<T>((fulfill: (value: T) => void, reject: (e: Error) => void) => {
+    return new Promise<T>((fulfill, reject) => {
         /* Make abort signal call reject if it aborts. */
-        const onAbort = ((reject) => (): void => {
+        const onAbort = () => {
             const e = new Error();
             e.name = "AbortError";
             reject(e);
-        })(reject);
+        };
         signal.addEventListener("abort", onAbort);
 
         /* Give the caller a fulfillment function that removes the event listener and calls the promise's fulfillment
            function. */
-        const onFulfill = ((fulfill, signal, onAbort) => (value: T): void => {
+        const onFulfill = (value: T) => {
             signal.removeEventListener("abort", onAbort);
             fulfill(value);
-        })(fulfill, signal, onAbort);
+        };
 
         /* Give the caller a rejection function that removes the event listener and calls the promise's rejection
            function. */
-        const onReject = ((reject, signal, onAbort) => (e: Error): void => {
+        const onReject = (e: Error) => {
             signal.removeEventListener("abort", onAbort);
             reject(e);
-        })(reject, signal, onAbort);
+        };
 
         /* Pass the above promise resolution functions to the caller. */
         resolve(onFulfill, onReject);
