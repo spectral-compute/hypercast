@@ -22,7 +22,9 @@ class ChannelsIndexResource final : public Server::SynchronousNullaryResource
 {
 public:
     ~ChannelsIndexResource() override;
-    explicit ChannelsIndexResource(const std::map<std::string, Config::Channel> &channels) : channels(channels) {}
+    explicit ChannelsIndexResource(const std::map<std::string, Config::Channel> &channels):
+        Server::SynchronousNullaryResource(true),
+        channels(channels) {}
 
     void getSync(Server::Response &response, const Server::Request &request) override;
 
