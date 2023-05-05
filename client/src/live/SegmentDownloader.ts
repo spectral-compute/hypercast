@@ -204,10 +204,10 @@ export class SegmentDownloader extends EventDispatcher<keyof MseEventMap, MseEve
                     logicalSegmentIndex = this.logicalSegmentIndex;
                     this.logicalSegmentIndex++;
 
-                    const logicalSegmentIndexCopy = logicalSegmentIndex;
-                    this.streams.forEach((stream: Stream, index: number): void => {
-                        stream.startSegment(logicalSegmentIndexCopy, `${description}, sub-stream ${index}`);
-                    });
+                    for (let i = 0; i < this.streams.length; i++) {
+                        // TODO: Promise leak.
+                        void this.streams[i]!.startSegment(logicalSegmentIndex, `${description}, sub-stream ${i}`);
+                    }
                 }
 
                 /* Handle the data we just downloaded. */
