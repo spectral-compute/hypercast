@@ -63,7 +63,7 @@ export class BufferControl {
         this.lastCatchUpEventClusterEnd = 0;
         this.waitingForInitialSeekSince = now;
 
-        this.interval = window.setInterval((): void => {
+        this.interval = window.setInterval(() => {
             this.bufferControlTick();
         }, this.syncClockPeriod);
     }

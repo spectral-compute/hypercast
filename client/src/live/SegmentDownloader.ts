@@ -3,8 +3,8 @@ import {Deinterleaver} from "./Deinterleave";
 import {Stream} from "../Stream";
 import {assertType} from "@ckitching/typescript-is";
 import {MseEventMap, MseReceivedEvent} from "./MseWrapper";
-import {PlayerErrorEvent} from "../Events";
 import {EventDispatcher} from "../EventDispatcher";
+import {PlayerErrorEvent} from "../Player";
 
 /**
  * Margin for error when calculating preavailability from segment info objects, in ms.

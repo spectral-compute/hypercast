@@ -4,13 +4,74 @@ import {BufferControl} from "./live/BufferCtrl";
 import {MseWrapper} from "./live/MseWrapper";
 import {API} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
-import {
-    PlayerBinaryBroadcastEvent,
-    PlayerErrorEvent, PlayerEventMap,
-    PlayerObjectBroadcastEvent, PlayerStringBroadcastEvent,
-    PlayerUpdateEvent
-} from "./Events";
 import {EventDispatcher} from "./EventDispatcher";
+
+/**
+ * Dispatched when an error occurs.
+ *
+ * Your handler should call `preventDefault()` if you have mitigated the error successfully in some way, otherwise the
+ * implementation will throw the error, probably crashing the player.
+ */
+export class PlayerErrorEvent extends Event {
+    constructor(public e: Error) {
+        super("error", {cancelable: true});
+    }
+}
+
+/**
+ * Dispatched when Player's properties change.
+ *
+ * This includes (but not limited to):
+ * - A video starts playing:
+ *   - Just when it starts;
+ *   - When different quality is selected for latency reasons;
+ * - List of available channels changes;
+ */
+export class PlayerUpdateEvent extends Event {
+    constructor(public elective: boolean) {
+        super("update");
+    }
+}
+
+
+/**
+ * Dispatched with the object given to the send_user_json channel API when it is called.
+ */
+export class PlayerObjectBroadcastEvent extends Event {
+    constructor(public o: any) {
+        super("broadcast_object");
+    }
+}
+
+/**
+ * Dispatched with the object given to the send_user_binary channel API when it is called.
+ */
+export class PlayerBinaryBroadcastEvent extends Event {
+    constructor(public data: ArrayBuffer) {
+        super("broadcast_binary");
+    }
+}
+
+/**
+ * Dispatched with the string given to the send_user_string channel API when it is called.
+ */
+export class PlayerStringBroadcastEvent extends Event {
+    constructor(public s: string) {
+        super("broadcast_string");
+    }
+}
+
+
+/**
+ * Event keys used by the Player class.
+ */
+export interface PlayerEventMap {
+    "error": PlayerErrorEvent;
+    "update": PlayerUpdateEvent;
+    "broadcast_object": PlayerObjectBroadcastEvent;
+    "broadcast_binary": PlayerBinaryBroadcastEvent;
+    "broadcast_string": PlayerStringBroadcastEvent;
+}
 
 
 /**
@@ -129,8 +190,8 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * Start playing video.
      */
     start = (): void => {
-        this.stream!.start();
-        this.bctrl!.start();
+        this.stream.start();
+        this.bctrl.start();
     };
 
     /**
@@ -139,8 +200,8 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * This resets the player back to the state it was in before start() was called.
      */
     stop = (): void => {
-        this.stream!.stop();
-        this.bctrl!.stop();
+        this.stream.stop();
+        this.bctrl.stop();
     };
 
     /**
@@ -281,7 +342,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * @return muted True if the audio is muted, and false otherwise.
      */
     getMuted(): boolean {
-        return this.stream!.getMuted();
+        return this.stream.getMuted();
     }
 
     /**
@@ -290,7 +351,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * @param muted True if the audio should be muted, and false otherwise.
      */
     setMuted(muted: boolean): void {
-        this.stream!.setMuted(muted);
+        this.stream.setMuted(muted);
     }
 
     /** Mute the audio. */
@@ -415,8 +476,8 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
             this.channelInfo.segmentDuration,
             this.channelInfo.segmentPreavailability
         );
-        this.stream.on("timestamp", (e) => this.bctrl!.onTimestamp(e.timestampInfo));
-        this.stream.on("received", (e) => this.bctrl!.onRecieved(e.receivedInfo));
+        this.stream.on("timestamp", (e) => this.bctrl.onTimestamp(e.timestampInfo));
+        this.stream.on("received", (e) => this.bctrl.onRecieved(e.receivedInfo));
         this.stream.on("control_chunk", (e) => this.onControlChunk(e.data, e.controlChunkType));
         this.stream.on("error", (e) => this.dispatchEvent(e));
 
@@ -433,7 +494,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
 
         /* Set up the "on new source playing" event handler. */
         this.stream.on("start", () => {
-            this.bctrl!.onNewStreamStart();
+            this.bctrl.onNewStreamStart();
             this.dispatchEvent(new PlayerUpdateEvent(this.electiveChangeInProgress));
             this.electiveChangeInProgress = false;
         });
@@ -499,11 +560,11 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         }
 
         /* Tell the streamer. */
-        this.stream!.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
+        this.stream.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
                                this.quality < this.channelInfo.avMap.length);
 
         /* Update the buffer control parameters. */
-        this.bctrl!.setBufferControlParameters(this.channelInfo.videoConfigs[this.videoStream]!.bufferCtrl);
+        this.bctrl.setBufferControlParameters(this.channelInfo.videoConfigs[this.videoStream]!.bufferCtrl);
     }
 
 

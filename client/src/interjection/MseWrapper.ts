@@ -1,8 +1,8 @@
 import {SegmentDownloader, SegmentDownloaderItem, StreamInfo} from "./SegmentDownloader";
 import {getFullMimeType, Stream} from "../Stream";
 import {waitForEvent} from "live-video-streamer-common";
-import {PlayerErrorEvent} from "../Events";
 import {EventDispatcher} from "../EventDispatcher";
+import {PlayerErrorEvent} from "../Player";
 
 export interface InterjectionMseEventMap {
     "error": PlayerErrorEvent

@@ -3,8 +3,8 @@ import {API, waitForEvent} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {SegmentDownloader, ReceivedInfo} from "./SegmentDownloader";
 import {getFullMimeType, Stream, StreamStartEvent} from "../Stream";
-import {PlayerErrorEvent} from "../Events";
 import {EventDispatcher} from "../EventDispatcher";
+import {PlayerErrorEvent} from "../Player";
 
 /**
  * WTF is this

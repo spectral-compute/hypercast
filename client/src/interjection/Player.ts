@@ -3,8 +3,8 @@ import {Interjection, InterjectionSelection} from "./Selection";
 import {waitForPts} from "../Util"
 import {API, sleep} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
-import {PlayerErrorEvent} from "../Events";
 import {EventDispatcher} from "../EventDispatcher";
+import {PlayerErrorEvent} from "../Player";
 
 /**
  * Information about the interjection(s) to request to give to the client library user when asking it to select

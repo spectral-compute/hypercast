@@ -1,6 +1,6 @@
 import * as Debug from "./Debug";
 import {EventDispatcher} from "./EventDispatcher";
-import {PlayerErrorEvent} from "./Events";
+import {PlayerErrorEvent} from "./Player";
 
 /**
  * Describe how to switch to a new sequence of segments.
