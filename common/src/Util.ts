@@ -46,12 +46,15 @@ export function abortablePromise<T>(resolve: (fulfill: (value: T) => void, rejec
  * @param signal The abort signal to check.
  */
 export function sleep(ms: number, signal: AbortSignal | null = null): Promise<void> {
-    return new Promise<void>((resolve, reject) => setTimeout(((resolve, reject, signal) => (): void => {
-        if (signal?.aborted) {
-            reject(mkAbortError());
-        }
-        resolve();
-    })(resolve, reject, signal), ms));
+    return new Promise<void>((resolve, reject) => {
+        setTimeout(() => {
+            if (signal?.aborted) {
+                reject(mkAbortError());
+            }
+
+            resolve();
+        }, ms);
+    });
 }
 
 /**
@@ -64,20 +67,21 @@ export function sleep(ms: number, signal: AbortSignal | null = null): Promise<vo
 export function waitForEvent(type: string, target: EventTarget, signal: AbortSignal | null = null): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         // Reject (i.e: throw an exception) if the abort is triggered.
-        const onAbort = ((reject) => (): void => {
+        const onAbort = () => {
             reject(mkAbortError());
-        })(reject);
-        if (signal !== null) {
+        };
+
+        if (signal != null) {
             signal.addEventListener("abort", onAbort, {once: true});
         }
 
         // Finish waiting once playback has resumed.
-        const onResolve = ((resolve, signal, onAbort) => (): void => {
+        const onResolve = () => {
             if (signal) {
                 signal.removeEventListener("abort", onAbort);
             }
             resolve();
-        })(resolve, signal, onAbort);
-        target.addEventListener(type, onResolve, {once: true, signal: signal ?? undefined});
+        };
+        target.addEventListener(type, onResolve, {once: true, ...(signal ? {signal} : {})});
     });
 }
