@@ -65,22 +65,18 @@ export function sleep(ms: number, signal: AbortSignal | null = null): Promise<vo
  * @param target The EventTarget to wait to emit the event.
  * @param signal The abort signal to reject on.
  */
-export function waitForEvent(type: string, target: EventTarget, signal: AbortSignal | null = null): Promise<void> {
+export function waitForEvent(type: string, target: EventTarget, signal?: AbortSignal): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         // Reject (i.e: throw an exception) if the abort is triggered.
         const onAbort = () => {
             reject(mkAbortError());
         };
 
-        if (signal != null) {
-            signal.addEventListener("abort", onAbort, {once: true});
-        }
+        signal?.addEventListener("abort", onAbort, {once: true});
 
         // Finish waiting once playback has resumed.
         const onResolve = () => {
-            if (signal) {
-                signal.removeEventListener("abort", onAbort);
-            }
+            signal?.removeEventListener("abort", onAbort);
             resolve();
         };
         target.addEventListener(type, onResolve, {once: true, ...(signal ? {signal} : {})});
