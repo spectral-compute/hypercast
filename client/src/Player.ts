@@ -103,17 +103,6 @@ export interface PlayerSourceOptions {
      * If channel index is not present on the server, this channel must be present on the server.
      */
     channel?: string;
-
-    /**
-     * Polling interval for channel index in milliseconds.
-     *
-     * The player periodically polls the channel index to check if the list of available channels has changed.
-     * In case of a change, onUpdate handler would be called (if set), which would allow UI to be updated.
-     *
-     * If not set, a default value is used.
-     * If channel index is not present, this setting is ignored.
-     */
-    indexPollMs?: number;
 }
 
 export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap> {
@@ -127,7 +116,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
     ) {
         super();
 
-        const {server = window.location.origin, channel, indexPollMs} = source ?? {};
+        const {server = window.location.origin, channel} = source ?? {};
 
         this.video = this.makeVideoTag(true);
         this.video.controls = false;
@@ -135,7 +124,6 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         this.server = server;
         // We assign `string | undefined` here because the user must run `init()` first which will deal with it.
         this.channel = channel!;
-        this.indexPollMs = indexPollMs ?? 5_000;
     }
 
     /**
@@ -164,20 +152,6 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
             } else {
                 throw Error(`No channels available from the channel index and no default channel is set.`);
             }
-
-            if (channelIndexAvailable) {
-                // Set up polling for the channel index.
-                // TODO: Make sure no cleanup is needed when the player is destroyed.
-                window.setInterval(async () => {
-                    const oldChannelIndex = this.channelIndex;
-                    await this.loadChannelIndex();
-                    if (JSON.stringify(oldChannelIndex) !== JSON.stringify(this.channelIndex)) {
-                        // The channel index has changed.
-                        this.dispatchEvent(new PlayerUpdateEvent(false));
-                    }
-                }, this.indexPollMs);
-            }
-
         } catch (ex: any) {
             const e = ex as Error;
             if (this.dispatchEvent(new PlayerErrorEvent(e))) {
@@ -415,7 +389,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
     /**
      * (Re)load the channel index.
      */
-    private async loadChannelIndex(): Promise<void> {
+    private async loadChannelIndex(first: boolean = true): Promise<void> {
         const channelIndexPath = "/channelIndex.json";
 
         // Fetch the channel index
@@ -423,10 +397,24 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         if (channelIndexResponse.status === 200) {
             const channelIndex: unknown = await channelIndexResponse.json();
             assertType<API.ChannelIndex>(channelIndex);
+
+            if (!first && JSON.stringify(this.channelIndex) !== JSON.stringify(this.channelIndex)) {
+                // The channel index has changed.
+                this.dispatchEvent(new PlayerUpdateEvent(false));
+            }
             this.channelIndex = channelIndex;
         }
 
         // If the channel index is not available, it's fine as far as this function is concerned.
+    }
+
+    /**
+     * Re-load the channel index.
+     *
+     * If it has changed, an update event is dispatched.
+     */
+    public async reloadChannelIndex() {
+        return this.loadChannelIndex(false);
     }
 
     /**
@@ -593,10 +581,9 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
 
     // The server that all the data is coming from.
     private readonly server: string;
+
     // Currently selected channel, path relative to the `server`.
     private channel!: string;
-    // How often to poll the channel index for changes.
-    private readonly indexPollMs: number;
 
     /* ============== *
      * Worker objects *
