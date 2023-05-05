@@ -195,11 +195,20 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
         this.videoStream = new Stream(this.videoMediaSource!);
         this.videoStream.on("error", (e) => this.dispatchEvent(e));
         this.videoStream.on("start", (e) => {
-            // TODO: PROMISE LEAK BAD
-            void this.video.play();
-
-            // Should be deferred until after the above promise accepts, presumably...
-            this.dispatchEvent(e);
+            this.video.play().then(() => {
+                // Success: propagate the start event to users.
+                this.dispatchEvent(e);
+            }).catch(e => {
+                // The following errors are documented, and may be propagated from here:
+                // NotAllowedError:
+                //   The user agent (browser) or operating system doesn't allow playback of media in the current context
+                //   or situation. This may happen, for example, if the browser requires the user to explicitly start
+                //   media playback by clicking a "play" button.
+                // NotSupportedError:
+                //   The media source (which may be specified as a MediaStream , MediaSource , Blob , or File , for
+                //   example) doesn't represent a supported media format.
+                this.dispatchEvent(new ErrorEvent(e));
+            });
         });
 
         this.videoStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.videoStreamIndex),
