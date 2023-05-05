@@ -50,6 +50,7 @@ export function sleep(ms: number, signal: AbortSignal | null = null): Promise<vo
         setTimeout(() => {
             if (signal?.aborted) {
                 reject(mkAbortError());
+                return;
             }
 
             resolve();
