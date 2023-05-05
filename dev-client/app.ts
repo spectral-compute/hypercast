@@ -99,7 +99,6 @@ function setupUi(elective: boolean): void {
     const quality = player.getQualityOptions()[player.getQuality()]!;
     document.getElementById("change")!.innerHTML =
         `${elective ? "Elective " : "Non-elective"} change to ` +
-        `angle ${player.getAngleOptions()[player.getAngle()]!}, ` +
         `quality ${quality[0]!}x${quality[1]!}`;
 
     /* Show the UI. */
@@ -107,12 +106,6 @@ function setupUi(elective: boolean): void {
 }
 
 /* Wire up the UI's outputs. */
-/*
-const angle = document.getElementById("angle")! as HTMLSelectElement;
-angle.onchange = (): void => {
-    player.setAngle(parseInt(angle.value));
-};
-*/
 const channel = document.getElementById("channel")! as HTMLSelectElement;
 channel.onchange = async () => {
     await player.setChannel(channel.value);

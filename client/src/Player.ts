@@ -223,49 +223,9 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
     }
 
     /**
-     * Get the list of possible angle settings.
-     *
-     * This can change whenever the onLoaded event fires.
-     *
-     * @return A list of angle names.
-     */
-    getAngleOptions(): string[] {
-        return this.angleOptions;
-    }
-
-    /**
-     * Get the index of the current angle.
-     *
-     * This can change whenever the onUpdate event fires.
-     * This is not valid between calls to setAngle() and the onUpdate firing.
-     *
-     * @return The index of the new angle to play. This indexes the options returned by getAngleOptions().
-     */
-    getAngle(): number {
-        return this.angle;
-    }
-
-    /**
-     * Change the angle.
-     *
-     * @param index The index of the new angle to play. This indexes the options returned by getAngleOptions().
-     */
-    setAngle(index: number): void {
-        if (index === this.angle) {
-            this.dispatchEvent(new PlayerUpdateEvent(true));
-            return;
-        }
-
-        this.electiveChangeInProgress = true;
-        this.angle = index;
-        this.updateQualityAndAngle();
-    }
-
-    /**
      * Get the list of possible quality settings.
      *
-     * This can change whenever the onStartPlaying event fires. This is not valid between calls to getAngle() and the
-     * onStartPlaying firing.
+     * This can change whenever the onStartPlaying event fires.
      *
      * @return A list of tuples of (width, height) describing each quality setting.
      */
@@ -298,7 +258,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
 
         this.electiveChangeInProgress = true;
         this.quality = index;
-        this.updateQualityAndAngle();
+        this.updateQuality();
     }
 
     /**
@@ -438,14 +398,6 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         assertType<API.ServerInfo>(channelInfo);
         this.channelInfo = channelInfo;
 
-        // Extract angle information.
-        this.angleOptions = [];
-        this.angleUrls = [];
-        for (const angle of this.channelInfo.angles) {
-            this.angleOptions.push(angle.name);
-            this.angleUrls.push(this.server + angle.path);
-        }
-
         // Extract quality information.
         this.qualityOptions = [];
         this.channelInfo.videoConfigs.forEach((value: API.VideoConfig) => {
@@ -477,7 +429,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
 
             // The stream has severely stalled, so stop playing it and try the new one (if there is a new one). This
             // does not wait for a new segment, or reuse the MSE wrapper/stream/etc.
-            this.updateQualityAndAngle();
+            this.updateQuality();
         }, this.debugHandler);
 
         /* Set up the "on new source playing" event handler. */
@@ -489,8 +441,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
 
         /* Set the quality to an initial default. */
         this.quality = 0; // TODO: find the closest quality to the previous one
-        this.angle = 0;
-        this.updateQualityAndAngle();
+        this.updateQuality();
 
         if (wasPlaying) {
             this.start();
@@ -530,9 +481,9 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
     }
 
     /**
-     * This must be called whenever the current quality or angle changes.
+     * This must be called whenever the current quality changes.
      */
-    private updateQualityAndAngle(): void {
+    private updateQuality(): void {
         /* Figure out which streams the quality corresponds to. */
         if (this.channelInfo.avMap.length > 0) {
             if (this.quality < this.channelInfo.avMap.length) {
@@ -548,7 +499,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         }
 
         /* Tell the streamer. */
-        this.stream.setSource(this.angleUrls[this.angle]!, this.videoStream, this.audioStream,
+        this.stream.setSource(this.server + "/" + this.channelInfo.path, this.videoStream, this.audioStream,
                                this.quality < this.channelInfo.avMap.length);
 
         /* Update the buffer control parameters. */
@@ -604,16 +555,12 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * ===================================== */
 
     private channelInfo!: API.ServerInfo;
-    private angleUrls: string[] = [];
-    private angleOptions: string[] = [];
     private qualityOptions: [number, number][] = []; // Map: quality -> (width,height).
 
     /* =============================== *
      * Current configuration, relative *
      * to the current channel          *
      * =============================== */
-
-    private angle: number = 0;
     private quality: number = 0;
 
     /* ===================== *

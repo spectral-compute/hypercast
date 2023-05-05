@@ -23,14 +23,6 @@ export namespace API {
     }
 
     /**
-     * Interface for the `angles` field of the ServerInfo.
-     */
-    export interface AngleConfig {
-        name: string;
-        path: string;
-    }
-
-    /**
      * ServerInfo video configuration.
      */
     export interface VideoConfig {
@@ -55,7 +47,7 @@ export namespace API {
      * This is exposed as `/live/live.json` by default.
      */
     export interface ServerInfo {
-        angles: AngleConfig[],
+        path: string,
         segmentDuration: number,
         segmentPreavailability: number,
         videoConfigs: VideoConfig[],

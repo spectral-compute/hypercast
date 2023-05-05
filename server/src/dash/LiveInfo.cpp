@@ -33,23 +33,6 @@ namespace
 {
 
 /**
- * Get the angle descriptor.
- *
- * This is only here temporarily, since I'm planning to get rid of multi-angle support. If a customer requires this, it
- * can most easily be implemented with multiple instances of the server. The use case of sharing audio and video streams
- * doesn't work well due to the audio streams getting stuck in the CDN buffer.
- *
- * @param basePath The base path for the live streaming directory.
- */
-nlohmann::json getAngle(const Server::Path &basePath)
-{
-    return {
-        { "name", "Main" },
-        { "path", "/" + (std::string)basePath }
-    };
-}
-
-/**
  * Get a video configuration.
  *
  * This is due to be merged into a single quality descriptor combining audio, video, and client buffer information.
@@ -121,7 +104,7 @@ namespace Dash
 std::string getLiveInfo(const Config::Channel &config, const Server::Path &uidPath)
 {
     return Json::dump({
-        { "angles", nlohmann::json::array({ getAngle(uidPath) }) },
+        { "path", uidPath },
         { "segmentDuration", config.dash.segmentDuration },
         { "segmentPreavailability", config.dash.preAvailabilityTime },
         { "videoConfigs", getVideoConfigs(config) },

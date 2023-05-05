@@ -27,7 +27,6 @@ export default function StylingHowTo() {
                   on what variant of the button is actually shown.
             -->
             <button class="start-stop ...">...</button>
-            <select class="angle">...</select>
             <select class="quality">...</select>
             <button class="fullscreen">...</button>
         </div>
