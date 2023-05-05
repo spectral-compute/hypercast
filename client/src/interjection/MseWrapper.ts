@@ -20,7 +20,7 @@ export class MseWrapper extends EventDispatcher<keyof InterjectionMseEventMap, I
     end(): void {
         //this.videoDownloader!.end();
         //this.audioDownloader!.end();
-        this.mediaSource!.endOfStream();
+        this.mediaSource?.endOfStream();
     }
 
     /**
