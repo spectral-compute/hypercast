@@ -11,6 +11,7 @@
     "composite": true,
     "declarationMap": true,
     "declaration": true,
+    "strict": true,
     "plugins": [
       { "transform": "@ckitching/typescript-is/lib/transform-inline/transformer" }
     ]
