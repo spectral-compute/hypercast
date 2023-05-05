@@ -350,7 +350,7 @@ export class InterjectionPlayer extends EventDispatcher<keyof InterjectionPlayer
 
         this.interjectionVideoElement.style.display = "";
         this.interjectionVideoElement.muted = muted;
-        this.interjectionVideoElement.play();
+        await this.interjectionVideoElement.play();
     }
 
     /**
