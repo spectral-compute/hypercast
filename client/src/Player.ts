@@ -479,7 +479,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         this.stream.on("timestamp", (e) => this.bctrl.onTimestamp(e.timestampInfo));
         this.stream.on("received", (e) => this.bctrl.onRecieved(e.receivedInfo));
         this.stream.on("control_chunk", (e) => this.onControlChunk(e.data, e.controlChunkType));
-        this.stream.on("error", (e) => this.dispatchEvent(e));
+        this.stream.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
 
         /* Set up buffer control for the player. */
         this.bctrl = new BufferControl(this.video, (): void => {
@@ -535,7 +535,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
             request, this.video, interjectionVideo, this.start, this.stop,
             null, null
         );
-        interjectionPlayer.on("error", (e) => this.dispatchEvent(e));
+        interjectionPlayer.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
 
         // TODO: WHAT THE FUCK
         void interjectionPlayer;

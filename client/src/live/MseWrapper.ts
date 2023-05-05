@@ -193,11 +193,11 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
 
         // New streams.
         this.videoStream = new Stream(this.videoMediaSource!);
-        this.videoStream.on("error", (e) => this.dispatchEvent(e));
-        this.videoStream.on("start", (e) => {
+        this.videoStream.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
+        this.videoStream.on("start", () => {
             this.video.play().then(() => {
                 // Success: propagate the start event to users.
-                this.dispatchEvent(e);
+                this.dispatchEvent(new StreamStartEvent());
             }).catch(e => {
                 // The following errors are documented, and may be propagated from here:
                 // NotAllowedError:
@@ -216,7 +216,7 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
 
         if (audioInfo && this.interleaved) {
             this.audioStream = new Stream(this.videoMediaSource!);
-            this.audioStream.on("error", (e: PlayerErrorEvent) => this.dispatchEvent(e));
+            this.audioStream.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
             this.audioStream.startSegmentSequence({mimeType: this.getMimeForStream(manifest, this.audioStreamIndex!),
                                                    init: audioInit!, segmentDuration: this.segmentDurationMS}, 0);
         }
@@ -236,10 +236,11 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
             this.segmentPreavailability
         );
 
-        this.segmentDownloader.on("timestamp", (e: MseTimestampEvent) => this.dispatchEvent(e));
-        this.segmentDownloader.on("received", (e: MseReceivedEvent) => this.dispatchEvent(e));
-        this.segmentDownloader.on("control_chunk", (e: MseControlChunkEvent) => this.dispatchEvent(e));
-        this.segmentDownloader.on("error", (e: PlayerErrorEvent) => this.dispatchEvent(e));
+        // This is really shit design. Conceivably, the segmentDownloader should just dispatch these directly.
+        this.segmentDownloader.on("timestamp", (e) => this.dispatchEvent(new MseTimestampEvent(e.timestampInfo)));
+        this.segmentDownloader.on("received", (e) => this.dispatchEvent(new MseReceivedEvent(e.receivedInfo)));
+        this.segmentDownloader.on("control_chunk", (e) => this.dispatchEvent(new MseControlChunkEvent(e.data, e.controlChunkType)));
+        this.segmentDownloader.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
 
     }
 

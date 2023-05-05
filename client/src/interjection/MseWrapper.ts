@@ -93,8 +93,8 @@ export class MseWrapper extends EventDispatcher<keyof InterjectionMseEventMap, I
         /* Wire up the streams and segment downloaders. */
         this.videoStream = new Stream(this.mediaSource, true, this.mediaElement);
         this.audioStream = new Stream(this.mediaSource, true, this.mediaElement);
-        this.videoStream.on("error", (e) => this.dispatchEvent(e));
-        this.audioStream.on("error", (e) => this.dispatchEvent(e));
+        this.videoStream.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
+        this.audioStream.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
 
         this.videoDownloader = new SegmentDownloader(this.videoStream, this.signal,
                                                      () => this.waitForSourceBuffers(), this.spawn, this.download,

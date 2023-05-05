@@ -88,7 +88,7 @@ export class InterjectionPlayer extends EventDispatcher<keyof InterjectionPlayer
         this.mseWrapper = new MseWrapper(this.interjectionVideoElement, this.aborter.signal,
                                          (fn) => this.spawn(fn),
                                          (url, type, what) => this.download(url, type, what));
-        this.mseWrapper.on("error", (e) => this.dispatchEvent(e));
+        this.mseWrapper.on("error", (e) => this.dispatchEvent(new PlayerErrorEvent(e.e)));
 
         /* Set up throttling. */
         // Throttling to keep the live stream smooth at the start, but remember that the first frame is an I frame, and

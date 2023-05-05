@@ -2,7 +2,7 @@ import {API, assertNonNull} from "live-video-streamer-common";
 import {Deinterleaver} from "./Deinterleave";
 import {Stream} from "../Stream";
 import {assertType} from "@ckitching/typescript-is";
-import {MseEventMap, MseReceivedEvent} from "./MseWrapper";
+import {MseControlChunkEvent, MseEventMap, MseReceivedEvent, MseTimestampEvent} from "./MseWrapper";
 import {EventDispatcher} from "../EventDispatcher";
 import {PlayerErrorEvent} from "../Player";
 
@@ -227,9 +227,9 @@ export class SegmentDownloader extends EventDispatcher<keyof MseEventMap, MseEve
                             }
                             this.streams[index]!.acceptSegmentData(data, logicalSegmentIndexCopy);
                         });
-                        deinterleaver.on("control_chunk", (e) => this.dispatchEvent(e));
+                        deinterleaver.on("control_chunk", (e) => this.dispatchEvent(new MseControlChunkEvent(e.data, e.controlChunkType)));
                         if (logicalSegmentIndex != 0) {
-                            deinterleaver.on("timestamp", (e) => this.dispatchEvent(e));
+                            deinterleaver.on("timestamp", (e) => this.dispatchEvent(new MseTimestampEvent(e.timestampInfo)));
                         }
 
                         // Note that the first segment is likely to be started in the middle, and therefore not good for
