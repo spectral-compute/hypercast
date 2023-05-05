@@ -108,7 +108,7 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
         this.video.pause();
 
         /* Clean up. */
-        this.cleaup();
+        this.cleanup();
     }
 
     /**
@@ -125,7 +125,7 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
         return this.video.muted;
     }
 
-    private cleaup(): void {
+    private cleanup(): void {
         if (this.aborter) {
             this.aborter.abort();
         }
@@ -176,7 +176,7 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
     private async setupStreams(manifest: string, videoInfo: any, videoInit: ArrayBuffer, audioInfo: any = null,
                                audioInit: ArrayBuffer | null = null): Promise<void> {
         /* Clean up whatever already existed. */
-        this.cleaup();
+        this.cleanup();
 
         /* Validate. */
         assertType<API.SegmentIndexDescriptor>(videoInfo);
@@ -192,10 +192,7 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
         }
 
         // New streams.
-        this.videoStream = new Stream(
-            this.videoMediaSource!,
-
-        );
+        this.videoStream = new Stream(this.videoMediaSource!);
         this.videoStream.on("error", (e) => this.dispatchEvent(e));
         this.videoStream.on("start", (e) => {
             // TODO: PROMISE LEAK BAD
