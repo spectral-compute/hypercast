@@ -105,6 +105,7 @@ export interface PlayerSourceOptions {
     channel?: string;
 }
 
+
 export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap> {
     /**
      * @param container The div tag to put a video tag into to play video into.
@@ -258,6 +259,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         this.electiveChangeInProgress = true;
         this.quality = index;
         this.updateQuality();
+        this.qualityWasSet = true;
     }
 
     /**
@@ -397,6 +399,9 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         assertType<API.ServerInfo>(channelInfo);
         this.channelInfo = channelInfo;
 
+        // Save the current quality (if there was one) for later use.
+        const previousQuality = this.qualityOptions[this.quality];
+
         // Extract quality information.
         this.qualityOptions = [];
         this.channelInfo.videoConfigs.forEach((value: API.VideoConfig) => {
@@ -438,8 +443,14 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
             this.electiveChangeInProgress = false;
         });
 
-        /* Set the quality to an initial default. */
-        this.quality = 0; // TODO: find the closest quality to the previous one
+        /* Set the quality to an initial default. See `this.qualityWasSet`. */
+        if (previousQuality && this.qualityWasSet) {
+            // Find the closest quality to the previous one.
+            this.quality = this.findClosestQuality(previousQuality);
+        } else {
+            // Find the highest quality.
+            this.quality = this.findHighestQuality();
+        }
         this.updateQuality();
 
         if (wasPlaying) {
@@ -519,6 +530,54 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         return video;
     }
 
+    /**
+     * Find the quality from the currently available qualities that is the most similar to the given quality.
+     * This is done by calculating a metric for each quality and then finding the quality with the highest
+     * metric lower or equal to the metric of the given quality.
+     *
+     * This method supports the case where the current available qualities are not ordered by their metric.
+     *
+     * @param similarTo The quality to find the most similar to or its metric.
+     *
+     * @returns The index of the most similar quality.
+     *
+     * @throws When no qualities are available.
+     */
+    private findClosestQuality(similarTo: StreamQuality | StreamQualityMetric): number {
+        const similarToMetric = Array.isArray(similarTo) ? getQualityMetric(similarTo) : similarTo;
+
+        let bestIndex = -1;
+        let bestMetric = -Infinity;
+        this.qualityOptions.forEach((quality, index) => {
+            const metric = getQualityMetric(quality);
+            if (metric <= similarToMetric && metric > bestMetric) {
+                bestIndex = index;
+                bestMetric = metric;
+            }
+        });
+
+        if (bestIndex === -1) {
+            throw Error("No qualities available for selection.");
+        }
+
+        return bestIndex;
+    }
+
+    /**
+     * Find the quality from the currently available qualities that is the highest quality.
+     * This is done by calculating a metric for each quality
+     * and then finding the quality with the highest metric.
+     *
+     * This method supports the case where the current available qualities are not ordered by their metric.
+     *
+     * @returns The index of the highest quality.
+     *
+     * @throws When no qualities are available.
+     */
+    private findHighestQuality(): number {
+        return this.findClosestQuality(Infinity);
+    }
+
     /* ============= *
      * Configuration *
      * ============= */
@@ -559,6 +618,11 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * =============================== */
 
     private quality: number = 0;
+    // Track if the quality was ever changed.
+    // This is used for determining what quality to play when the channel is changed.
+    // If the quality was never changed, we play the highest quality.
+    // If the quality was changed, we play the quality most similar to the current one.
+    private qualityWasSet: boolean = false;
 
     /* ===================== *
      * Derived configuration *
@@ -578,4 +642,20 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * =================== */
 
     private debugHandler?: DebugHandler;
+}
+
+
+type StreamQuality = [number, number];
+type StreamQualityMetric = number;
+
+
+/**
+ * Get the metric for a quality.
+ * Higher values mean that the quality is "higher".
+ */
+function getQualityMetric(quality: StreamQuality): StreamQualityMetric {
+    // The implementation is currently very simple.
+    // This can be modified to take other things into account,
+    // e.g. maybe compression strength of the quality?
+    return quality[0] * quality[1];
 }
