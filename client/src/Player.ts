@@ -506,13 +506,6 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         this.bctrl.setBufferControlParameters(this.channelInfo.videoConfigs[this.videoStream]!.bufferCtrl);
     }
 
-
-    /* ============= *
-     * Configuration *
-     * ============= */
-
-    // The video element we are playing to (owned by this class).
-
     /**
      * Make a video tag for use with this player.
      *
@@ -527,7 +520,11 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         return video;
     }
 
-    // Stuff from the constructor.
+    /* ============= *
+     * Configuration *
+     * ============= */
+
+    // The video element we are playing to (owned by this class).
     private readonly video: HTMLVideoElement;
 
     // The server that all the data is coming from.
@@ -561,6 +558,7 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
      * Current configuration, relative *
      * to the current channel          *
      * =============================== */
+
     private quality: number = 0;
 
     /* ===================== *
