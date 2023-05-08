@@ -141,12 +141,11 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
             // Select the channel to be played.
 
             const defaultChannelSet = !!this.channel;
-            const channelIndexAvailable = !!this.channelIndex;
-            const channelIndexNotEmpty = channelIndexAvailable && Object.keys(this.channelIndex!).length > 0;
+            const channelIndexNotEmpty = !!this.channelIndex && Object.keys(this.channelIndex!).length > 0;
 
             if (defaultChannelSet) {
                 await this.setChannel(this.channel);
-            } else if (channelIndexAvailable && channelIndexNotEmpty) {
+            } else if (channelIndexNotEmpty) {
                 // Choose the first channel in the channel index.
                 await this.setChannel(Object.keys(this.channelIndex!)[0]!);
             } else {
