@@ -1,8 +1,18 @@
+# We are not using Yarn PnP with zero-installs
 .pnp.cjs
 .pnp.loader.mjs
-.yarn
-*/build
-*/dist
-*/mode_modules
-node_modules
+
+# Dependency directories
+.yarn/
+node_modules/
+
+# Build directories
+build/
+dist/
+
 spectral-video-streamer-client-*.tar.gz
+
+# Development config files.
+# Useful for local development if you want to have config files for different scenarios.
+# They are not committed because they can contain paths that are only valid locally.
+config.*.dev.json
