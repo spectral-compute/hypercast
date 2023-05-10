@@ -20,7 +20,7 @@
     "docs": "rm -rf docs/dist && docs/build.sh docs/dist",
     "test": "(cd common && yarn test) && (cd client && yarn test)"
   },
-  "packageManager": "yarn@3.2.0",
+  "packageManager": "yarn@3.5.1",
   "devDependencies": {
     "ts-patch": "^2.0.1",
     "typedoc": "^0.23.28",
