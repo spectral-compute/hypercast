@@ -5,7 +5,7 @@ toc: true
 
 ## Configuration format
 
-The server configuration format is a JSON file. See the [server configuration reference](ServerConfigSpec/README.md),
+The server configuration format is a JSON file. See the [server configuration reference](../../ServerConfigSpec/README.md),
 and in particular the [`Config` interface](ServerConfigSpec/interfaces/Config.md).
 
 
