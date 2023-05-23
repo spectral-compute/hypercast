@@ -3,6 +3,7 @@
 #include "configuration/configuration.hpp"
 #include "util/debug.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <span>
 
@@ -256,6 +257,8 @@ std::string getLiveVideoFilter(const Config::Channel &config)
  * This assumes a single audio input stream.
  * The output streams are identical and are named a0, a1, a2, ...,
  * one for each quality.
+ *
+ * It is invalid to use this if the media source has no audio.
  */
 std::string getLiveAudioFilter(const Config::Channel &config)
 {
@@ -280,10 +283,17 @@ std::string getLiveAudioFilter(const Config::Channel &config)
  */
 std::vector<std::string> getLiveFilterArgs(const Config::Channel &config)
 {
-    return {
-        "-filter_complex",
-        getLiveVideoFilter(config) + getLiveAudioFilter(config)
-    };
+    std::string filter = getLiveVideoFilter(config);
+    /* Only add the audio filter if any of the configured qualities have audio,
+     * which we expect to only happen when the media source has audio as well. */
+    if (std::any_of(
+        config.qualities.begin(),
+        config.qualities.end(),
+        [](const Config::Quality &q) { return q.audio; }
+    )) {
+        filter += getLiveAudioFilter(config);
+    }
+    return { "-filter_complex", filter };
 }
 
 /**
@@ -299,7 +309,7 @@ std::vector<std::string> getLiveMapArgs(std::span<const Config::Quality> qualiti
     }
 
     for (size_t i = 0; i < qualities.size(); i++) {
-        // Don't map audio if the quality does not have it
+        // Don't try to map audio if the quality does not have it
         if (!qualities[i].audio) {
             continue;
         }
