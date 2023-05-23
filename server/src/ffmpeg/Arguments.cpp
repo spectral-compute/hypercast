@@ -200,7 +200,8 @@ std::string getTimestampFilter(unsigned int width)
 /**
  * Create the video filter string.
  *
- * This assumes a single video input stream. The output streams are v0, v1, v2, ...
+ * This assumes a single video input stream.
+ * The output streams are v0, v1, v2, ..., one for each quality.
  */
 std::string getLiveVideoFilter(const Config::Channel &config)
 {
@@ -252,14 +253,23 @@ std::string getLiveVideoFilter(const Config::Channel &config)
 /**
  * Create the audio filter string.
  *
- * This assumes a single audio input stream. The output stream is a0.
+ * This assumes a single audio input stream.
+ * The output streams are identical and are named a0, a1, a2, ...,
+ * one for each quality.
  */
-std::string getLiveAudioFilter()
+std::string getLiveAudioFilter(const Config::Channel &config)
 {
     std::string result;
 
     /* Blankable input. */
-    result += "[0:a]volume@ablank=volume=0.0:enable=0[a0]";
+    result += "[0:a]volume@ablank=volume=0.0:enable=0[asrc]; ";
+
+    /* Split the input. */
+    result += "[asrc]asplit=" + std::to_string(config.qualities.size());
+    for (size_t i = 0; i < config.qualities.size(); i++) {
+        result += "[a" + std::to_string(i) + "]";
+    }
+    result += "; "; // Next filter.
 
     /* Done :) */
     return result;
@@ -270,7 +280,10 @@ std::string getLiveAudioFilter()
  */
 std::vector<std::string> getLiveFilterArgs(const Config::Channel &config)
 {
-    return { "-filter_complex", getLiveVideoFilter(config) + getLiveAudioFilter() };
+    return {
+        "-filter_complex",
+        getLiveVideoFilter(config) + getLiveAudioFilter(config)
+    };
 }
 
 /**
@@ -285,12 +298,12 @@ std::vector<std::string> getLiveMapArgs(std::span<const Config::Quality> qualiti
         result.insert(result.end(), { "-map", "[v" + std::to_string(i) + "]" });
     }
 
-    /* Audio streams. */
-    for (const Config::Quality &q: qualities) {
-        if (!q.audio) {
+    for (size_t i = 0; i < qualities.size(); i++) {
+        // Don't map audio if the quality does not have it
+        if (!qualities[i].audio) {
             continue;
         }
-        result.insert(result.end(), { "-map", "[a0]" });
+        result.insert(result.end(), { "-map", "[a" + std::to_string(i) + "]" });
     }
 
     /* Done :) */
