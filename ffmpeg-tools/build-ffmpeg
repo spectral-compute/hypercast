@@ -13,7 +13,7 @@ function printAndRun
 BUILD="$(pwd)/build"
 CPU=native # Using the new instruction sets is actually a bit faster.
 INSTALL="$(pwd)/install"
-SRC="$(pwd)"
+SRC="$(pwd)/source"
 FEATURES=(decklink x265)
 
 # Parse arguments.
@@ -41,7 +41,7 @@ while [ "$#" != "0" ] ; do
             echo -e "Usage: build-ffmpeg.sh [-b build_dir] [-c cpu] [-f feature] [-F feature] [-i install_dir]\n" \
                     "                       [-s sources_dir]\n" \
                     " -b: The directory to use for the build tree. This directory must not exist before the build\n" \
-                    "     starts. The default is ./install.\n" \
+                    "     starts. The default is ./build.\n" \
                     " -c: The CPU to use. x86-64, x86-64-vX, native, or any other value accepted by clang's -march\n" \
                     "     and -mtune flags. The default is native.\n" \
                     " -f: Add the specified feature.\n" \
@@ -51,11 +51,15 @@ while [ "$#" != "0" ] ; do
                     " -i: The directory to install the build to. This directory can be moved after the build. The\n" \
                     "     default is ./install.\n" \
                     " -s: A directory containing the ffmpeg and x264 source code, with those names. If the source \n" \
-                    "     does not exist, it's downloaded. The default is ./install.\n" \
+                    "     does not exist, it's downloaded. The default is ./source.\n" \
                     "\n" \
                     "Builds an ffmpeg that's suitable for using the video streaming server with H.264. The\n" \
                     "resulting binaries might not be redistributable under their standard licenses."
             exit 0
+        ;;
+        -b)
+            BUILD="$(realpath "$2")"
+            shift
         ;;
         -c)
             CPU="$2"
@@ -166,6 +170,10 @@ if [ -e "${BUILD}" ] ; then
 fi
 
 # Clone sources.
+if [ ! -e "${SRC}" ] ; then
+    mkdir -p "${SRC}"
+fi
+
 if [ ! -e "${SRC}/ffmpeg" ] ; then
     git -C "${SRC}" clone https://git.ffmpeg.org/ffmpeg.git
     git -C "${SRC}/ffmpeg" checkout n6.0
