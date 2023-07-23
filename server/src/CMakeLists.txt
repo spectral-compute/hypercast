@@ -57,6 +57,9 @@ find_package(nlohmann_json REQUIRED)
 target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
 target_compile_definitions(${TARGET} PRIVATE JSON_USE_IMPLICIT_CONVERSIONS=0)
 
+# Patchelf is needed for the ffmpeg build, so we may as well neatly demand it here.
+find_program(PATCHELF patchelf REQUIRED)
+
 # Documentation.
 if (XCMAKE_PRIVATE_DOCS)
     add_doxygen(server_doxygen SUBJECT Server PRIVATE INSTALL_DESTINATION private_docs/server TARGETS ${TARGETS})
