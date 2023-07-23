@@ -8,6 +8,7 @@
 #include <span>
 #include <vector>
 #include <map>
+#include <cstdint>
 #include <boost/beast/http/field.hpp>
 
 template <typename> class Awaitable;
