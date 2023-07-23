@@ -151,6 +151,14 @@ if ! which clang > /dev/null ; then
     echo "Error: Clang is not found. On Arch Linux: install the clang package." 1>&2
     exit 1
 fi
+if ! which pkg-config > /dev/null ; then
+    echo "Error: The pkg-config program is not found. On Arch Linux: install the pkgconf package." 1>&2
+    exit 1
+fi
+if ! which patchelf > /dev/null ; then
+    echo "Error: The patchelf is not found. On Arch Linux: install the patchelf package." 1>&2
+    exit 1
+fi
 if [ "${HAS_DECKLINK}" == "1" ] && [ ! -e "/usr/include/DeckLinkAPI.h" ] ; then
     echo "Error: The Decklink SDK is not found. Pass -F decklink to disable it, or on Arch Linux: install the\n" \
          "       decklink-sdk package from the AUR." 1>&2
