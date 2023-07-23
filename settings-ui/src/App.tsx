@@ -34,13 +34,8 @@ export default observer(() => {
           setTimeout(() => loadCfg.run(), 1000);
       }
   }});
-  const initialProbe = useAsyncImmediateEx(appCtx.probeSDIPorts, {
-      onComplete: async() => {
-          appCtx.startPollingPorts();
-      }
-  });
   const saveCfg = useAsyncDeferred(appCtx.saveConfig);
-  const loading = loadCfg.isLoading || saveCfg.isLoading || initialProbe.isLoading;
+  const loading = loadCfg.isLoading || saveCfg.isLoading;
 
   if (loading) {
       return <Loading/>;
