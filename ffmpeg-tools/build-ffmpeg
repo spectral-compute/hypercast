@@ -195,6 +195,9 @@ if [ "${HAS_X265}" == "1" ] && [ ! -e "${SRC}/x265" ] ; then
     git -C "${SRC}/x265" checkout 3.5
 fi
 
+# Use the dependencies we build.
+export PKG_CONFIG_PATH="${INSTALL}/lib/pkgconfig"
+
 # Common arguments
 export CC=clang # Slightly faster binaries.
 export CXX=clang++
@@ -251,8 +254,6 @@ if [ "${HAS_X265}" == "1" ] ; then (
 
     mkdir -p "${BUILD}/ffmpeg"
     cd "${BUILD}/ffmpeg"
-
-    export PKG_CONFIG_PATH="$(pwd)/../install/lib/pkgconfig"
 
     FFMPEG_CONFIGURE=(
         --cc=clang --cxx=clang++
