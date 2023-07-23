@@ -31,30 +31,3 @@ If this is not done, then the demo clients expect an INFO JSON GET parameter: `s
 for example:
 `python -c 'import sys ; import urllib.parse ; print(urllib.parse.quote_plus(sys.argv[1]))' "https://stream-demo.spectralcompute.co.uk/live/info.json"`. The full URL would then be:
 `https://stream-demo.spectralcompute.co.uk/?streaminfo=https%3A%2F%2Fstream-demo.spectralcompute.co.uk%2Flive%2Finfo.json`.
-
-
-## Starting the Typescript server
-
-The server can be started with `yarn start SERVER_CONFIG.json` from the `server` directory or
-`node live-video-streamer-server.js SERVER_CONFIG.json` from the `server/dist` directory. See the user documentation
-for information about the server configuration.
-
-It is useful to put the `demo-client/build` or `dev-client/dist` directory in the server configuration as follows:
-```json
-{
-  ...
-  "filesystem": {
-    "directories": [
-      {
-        "path": "/path/to/live-video-streamer/demo-client/build",
-        "index": "index.html",
-        "ephemeral": true
-      }
-    ]
-  },
-  ...
-}
-```
-
-This makes the client available from the server. In this example, both `/index.html` and (because of the `index` field)
-`/` serve the demo client.
