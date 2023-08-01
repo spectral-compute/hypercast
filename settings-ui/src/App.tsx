@@ -11,7 +11,7 @@ import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
 import {useAsyncDeferred, useAsyncImmediateEx} from './hooks/useAsync';
 import Kaput from './Kaput';
-import {DECKLINK_PORTS_ORDERED, makeDefaultChannel} from './Constants';
+import {DECKLINK_PORTS_ORDERED, makeDefaultChannel, SELF_TEST_CHANNELS} from './Constants';
 import { observer } from 'mobx-react-lite';
 import Loading from "./Loading";
 
@@ -78,12 +78,29 @@ export default observer(() => {
 
   function saveChannel(name: string, newValue: Channel) {
       appCtx.loadedConfiguration.channels[name] = newValue;
+      console.log(JSON.stringify(appCtx.loadedConfiguration));
       saveCfg.run(appCtx.loadedConfiguration);
   }
 
   function deleteChannel(name: string) {
       delete appCtx.loadedConfiguration.channels[name];
       saveCfg.run(appCtx.loadedConfiguration);
+  }
+
+  function isStreamingSomething() {
+      return Array.from(Object.entries(channels)).length != 0;
+  }
+
+  function toggleSelfTest() {
+      if (isStreamingSomething()) {
+          // Kill everythinggggggg.
+          appCtx.loadedConfiguration.channels = {};
+          saveCfg.run(appCtx.loadedConfiguration);
+      } else {
+          // Apply the selftest configuration.
+          appCtx.loadedConfiguration.channels = SELF_TEST_CHANNELS;
+          saveCfg.run(appCtx.loadedConfiguration);
+      }
   }
 
   // TODO: initial state loading crap.
@@ -123,10 +140,16 @@ export default observer(() => {
                       name={k}
                       config={c}
                   ></StreamBox>)}
-              {appCtx.getAvailableInputPort() != null ?
+              {!appCtx.isSelfTest() && appCtx.getAvailableInputPort() != null ?
                 <NewChannelButton
                     clicked={() => {openNewChannelModal(nameNewChannel());}}
                 /> : null
+              }
+              {appCtx.isSelfTest() ?
+                  <NewChannelButton
+                    label={!isStreamingSomething() ? "BEGIN SELF TEST" : "STOP TEST"}
+                    clicked={() => {toggleSelfTest();}}
+                  /> : null
               }
           </div>
       </div>

@@ -12,6 +12,8 @@ if (process.env.NODE_ENV === "development") {
     }
 }
 
+export const IS_SELF_TEST = urlParams.has("selftest") && urlParams.get("selftest") == "1";
+
 // An object so the API can be stateful. It's not 100% clear if it's actually going to be so, but I CBA to refactor
 // it if it ever becomes so :D
 export class Api {

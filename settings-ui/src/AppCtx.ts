@@ -1,4 +1,4 @@
-import {Api} from "./api/Api";
+import {Api, IS_SELF_TEST} from "./api/Api";
 import {MachineInfo, PortConnector} from "./api/Hardware";
 import {StreamingConfig} from "./api/Config";
 import {DecklinkPort, DECKLINK_PORTS_ORDERED, DECKLINK_PORT_SETTINGS } from "./Constants";
@@ -128,6 +128,10 @@ export class AppCtx {
     saveConfig = async(cfg: StreamingConfig) => {
         this.loadedConfiguration = await this.api.applyConfig(cfg);
     };
+
+    isSelfTest() {
+        return IS_SELF_TEST;
+    }
 
     constructor() {
         makeObservable(this);

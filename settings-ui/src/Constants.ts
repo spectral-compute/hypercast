@@ -162,3 +162,66 @@ export function fuzzyAudioQualityMatch(subject: AudioVariant) {
 export function fuzzyInputMatch(subject: Channel) {
     return fuzzyConfigMatch(DECKLINK_PORT, subject, DECKLINK_PORT_SETTINGS);
 }
+
+export const SELF_TEST_CHANNELS: {[name: string]: Channel} = {
+    "live/Channel-0": {
+        source: {
+            url: DECKLINK_PORT_SETTINGS["1"].source!.url!,
+            arguments: DECKLINK_PORT_SETTINGS["1"].source!.arguments!,
+            loop: false,
+            timestamp: false
+        },
+        qualities: [{
+            audio: {codec: AudioCodec.aac, bitrate: 96},
+            video: {width: 640, height: 360, crf: 26},
+            targetLatency: 2000
+        }],
+        dash: {},
+        history: {}
+    },
+    "live/Channel-1": {
+        source: {
+            url: DECKLINK_PORT_SETTINGS["2"].source!.url!,
+            arguments: DECKLINK_PORT_SETTINGS["2"].source!.arguments!,
+            loop: false,
+            timestamp: false
+        },
+        qualities: [{
+            audio: {codec: AudioCodec.aac, bitrate: 96},
+            video: {width: 640, height: 360, crf: 26},
+            targetLatency: 2000
+        }],
+        dash: {},
+        history: {}
+    },
+    "live/Channel-2": {
+        source: {
+            url: DECKLINK_PORT_SETTINGS["3"].source!.url!,
+            arguments: DECKLINK_PORT_SETTINGS["3"].source!.arguments!,
+            loop: false,
+            timestamp: false
+        },
+        qualities: [{
+            audio: {codec: AudioCodec.aac, bitrate: 96},
+            video: {width: 640, height: 360, crf: 26},
+            targetLatency: 2000
+        }],
+        dash: {},
+        history: {}
+    },
+    "live/Channel-3": {
+        source: {
+            url: DECKLINK_PORT_SETTINGS["4"].source!.url!,
+            arguments: DECKLINK_PORT_SETTINGS["4"].source!.arguments!,
+            loop: false,
+            timestamp: false
+        },
+        qualities: [{
+            audio: {codec: AudioCodec.aac, bitrate: 96},
+            video: {width: 640, height: 360, crf: 26},
+            targetLatency: 2000
+        }],
+        dash: {},
+        history: {}
+    },
+};
