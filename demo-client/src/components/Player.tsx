@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from "react";
+import {useEffect, useRef} from "react";
 import {createPlayer, Player as PlayerMain, CreatePlayerOptions} from "live-video-streamer-client";
 
 import "./Player.scss";
@@ -28,7 +28,7 @@ export default function Player(props: PlayerProps): React.ReactElement<HTMLDivEl
     }, [server, options]);
 
     // Stop the player when the component unmounts
-    React.useEffect(() => {
+    useEffect(() => {
         const player = playerRef.current;
         const container = containerRef.current;
         return () => {
