@@ -1,7 +1,6 @@
 import {useContext, useState} from 'react';
 import './App.sass';
 import {AppContext} from "./index";
-import PortStatus from "./PortStatus";
 import StreamBox from "./StreamBox";
 import LogoCard from "./LogoCard";
 import {ReactComponent as CPU} from "./assets/icons/cpu.svg";
@@ -11,7 +10,7 @@ import NewChannelButton from "./NewChannelButton";
 import ChannelConfigModal from "./modal/ChannelConfigModal";
 import {useAsyncDeferred, useAsyncImmediateEx} from './hooks/useAsync';
 import Kaput from './Kaput';
-import {DECKLINK_PORTS_ORDERED, makeDefaultChannel, SELF_TEST_CHANNELS} from './Constants';
+import {makeDefaultChannel, SELF_TEST_CHANNELS} from './Constants';
 import { observer } from 'mobx-react-lite';
 import Loading from "./Loading";
 
@@ -37,13 +36,15 @@ export default observer(() => {
   const saveCfg = useAsyncDeferred(appCtx.saveConfig);
   const loading = loadCfg.isLoading || saveCfg.isLoading;
 
+  const prober = useAsyncDeferred(appCtx.probeSDIPorts);
+
   if (loading) {
-      return <Loading/>;
+      return <div className="fullscreenLoader"><Loading/></div>;
   }
 
   if (loadCfg.error && loadCfg.error!.message == "Failed to fetch") {
       // Special case: server isn't up yet.
-      return <Loading/>;
+      return <div className="fullscreenLoader"><Loading/></div>;
   }
 
   if (loadCfg.error || saveCfg.error) {
@@ -53,6 +54,7 @@ export default observer(() => {
   const channels = appCtx.loadedConfiguration.channels;
 
   function openChannelModal(name: string) {
+    prober.run();
     const c = appCtx.loadedConfiguration.channels[name]!;
     setChannelBeingEdited([name, JSON.parse(JSON.stringify(c))]);
     setModalOpen(true);
@@ -60,9 +62,10 @@ export default observer(() => {
   }
 
   function openNewChannelModal(name: string) {
-      setChannelBeingEdited([name, makeDefaultChannel(appCtx.getAvailableInputPort()!)]);
-      setModalOpen(true);
-      setIsNewChannel(true);
+    prober.run();
+    setChannelBeingEdited([name, makeDefaultChannel(appCtx.getAvailableInputPort()!)]);
+    setModalOpen(true);
+    setIsNewChannel(true);
   }
 
   function nameNewChannel() {
@@ -108,16 +111,16 @@ export default observer(() => {
       <div className="layout">
           <div className="topRow">
               <LogoCard/>
-              <div className="portList">
-                  {
-                      DECKLINK_PORTS_ORDERED.map(p =>
-                          <PortStatus
-                              key={p}
-                              port={p}
-                              desc={appCtx.machineInfo.inputPorts[p]}
-                          ></PortStatus>
-                  )}
-              </div>
+              {/*<div className="portList">*/}
+              {/*    {*/}
+              {/*        DECKLINK_PORTS_ORDERED.map(p =>*/}
+              {/*            <PortStatus*/}
+              {/*                key={p}*/}
+              {/*                port={p}*/}
+              {/*                desc={appCtx.machineInfo.inputPorts[p]}*/}
+              {/*            ></PortStatus>*/}
+              {/*    )}*/}
+              {/*</div>*/}
 
               <div className="statList">
                   <div className="statEntry">
@@ -140,16 +143,14 @@ export default observer(() => {
                       name={k}
                       config={c}
                   ></StreamBox>)}
-              {!appCtx.isSelfTest() && appCtx.getAvailableInputPort() != null ?
-                <NewChannelButton
-                    clicked={() => {openNewChannelModal(nameNewChannel());}}
-                /> : null
-              }
               {appCtx.isSelfTest() ?
                   <NewChannelButton
                     label={!isStreamingSomething() ? "BEGIN SELF TEST" : "STOP TEST"}
                     clicked={() => {toggleSelfTest();}}
-                  /> : null
+                  /> :
+                  <NewChannelButton
+                      clicked={() => {openNewChannelModal(nameNewChannel());}}
+                  />
               }
           </div>
       </div>
@@ -161,6 +162,7 @@ export default observer(() => {
           onClose={() => setModalOpen(false)}
           onSave={saveChannel}
           onDelete={deleteChannel}
+          probeifier={prober}
       /> : null}
 
       {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}

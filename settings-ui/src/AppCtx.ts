@@ -22,62 +22,18 @@ export class AppCtx {
             ["1"]: {
                 name: "SDI 1",
                 connector: PortConnector.SDI,
-                connectedMediaInfo: {
-                    inUse: false,
-                    video: {
-                        frameRate: [1, 1],
-                        width: 3840,
-                        height: 2160
-                    },
-                    audio: {
-                        sampleRate: 1
-                    }
-                }
             },
             ["2"]: {
                 name: "SDI 2",
                 connector: PortConnector.SDI,
-                connectedMediaInfo: {
-                    inUse: false,
-                    video: {
-                        frameRate: [1, 1],
-                        width: 3840,
-                        height: 2160
-                    },
-                    audio: {
-                        sampleRate: 1
-                    }
-                }
             },
             ["3"]: {
                 name: "SDI 3",
                 connector: PortConnector.SDI,
-                connectedMediaInfo: {
-                    inUse: false,
-                    video: {
-                        frameRate: [1, 1],
-                        width: 3840,
-                        height: 2160
-                    },
-                    audio: {
-                        sampleRate: 1
-                    }
-                }
             },
             ["4"]: {
                 name: "SDI 4",
                 connector: PortConnector.SDI,
-                connectedMediaInfo: {
-                    inUse: false,
-                    video: {
-                        frameRate: [1, 1],
-                        width: 3840,
-                        height: 2160
-                    },
-                    audio: {
-                        sampleRate: 1
-                    }
-                }
             },
         }
     };
@@ -132,6 +88,27 @@ export class AppCtx {
     isSelfTest() {
         return IS_SELF_TEST;
     }
+
+    readonly probeSDIPorts = async() => {
+        // Probe time.
+        const infos = await this.api.probe(
+            DECKLINK_PORTS_ORDERED.map(x => DECKLINK_PORT_SETTINGS[x]!.source as MediaSource)
+        );
+
+        console.log(infos);
+
+        // Process the results of the probe.
+        for (let i = 1; i <= DECKLINK_PORTS_ORDERED.length; i++) {
+            const o = this.machineInfo.inputPorts[String(i) as DecklinkPort];
+            o.connectedMediaInfo = infos[i - 1]!;
+
+            // Strictly speaking, `infos[i-1]` being null means "port doesn't exist", and the other case means
+            // there's nothing plugged into it.
+            if (!infos[i - 1] || (!o.connectedMediaInfo.video && !o.connectedMediaInfo.audio)) {
+                delete o.connectedMediaInfo;
+            }
+        }
+    };
 
     constructor() {
         makeObservable(this);

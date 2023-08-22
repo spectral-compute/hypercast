@@ -62,6 +62,7 @@ module.exports = {
         "@typescript-eslint/no-misused-promises": "off",
 
         "@typescript-eslint/consistent-type-assertions": "off",
+        "no-constant-condition": "off",
 
         // Allow namespaces
         "@typescript-eslint/no-namespace": "off",

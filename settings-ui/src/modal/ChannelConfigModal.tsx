@@ -23,11 +23,14 @@ import {ReactComponent as Trash} from "../assets/icons/trash-2.svg";
 import {InputPortStatus} from "../App";
 import { prettyPrintResolution } from '../StreamBox';
 import {useTranslation} from "react-i18next";
+import Loading from "../Loading";
 
 export interface ChannelConfigModalProps {
     onClose: () => void;
     onSave: (name: string, c: Channel) => void;
     onDelete: (name: string) => void;
+
+    probeifier: any;
 
     showDeleteBtn: boolean;
     channelName: string;
@@ -112,6 +115,8 @@ export default observer((props: ChannelConfigModalProps) => {
         props.onClose();
     };
 
+    console.log(props.probeifier.isLoading);
+
     if (variantBeingEdited != null) {
         return <VariantConfigModal
             title={"Variant"}
@@ -124,7 +129,7 @@ export default observer((props: ChannelConfigModalProps) => {
 
     return <Modal
         endBtn={
-            props.showDeleteBtn ?
+            props.showDeleteBtn && !props.probeifier.isLoading ?
             <BoxBtn
                 label="Delete"
                 onClick={() => {
@@ -135,10 +140,14 @@ export default observer((props: ChannelConfigModalProps) => {
                 <Trash/>
             </BoxBtn> : null
         }
-        title={t("Configuring") + " " + props.channelName.slice(5)}
-        onClose={props.onClose}
-        onSave={saveFn}
+        title={props.probeifier.isLoading ? "" : (t("Configuring") + " " + props.channelName.slice(5))}
+        onClose={props.probeifier.isLoading ? undefined : props.onClose}
+        onSave={props.probeifier.isLoading ? undefined : saveFn}
     >
+        {props.probeifier.isLoading ?
+            <div className="btnRow modalLoad">
+                <Loading text={"Probing"}/>
+            </div> : <>
         <div className="btnRow">
             <div className="btnDesc">
                 <span>{t("MediaSource")}</span>
@@ -235,5 +244,6 @@ export default observer((props: ChannelConfigModalProps) => {
                 <Cog/>
             </BoxBtn>
         </div>
+        </>}
      </Modal>;
 });

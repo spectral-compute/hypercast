@@ -9,8 +9,8 @@ export interface ModalProps {
 
     endBtn?: any;
 
-    onClose: () => void;
-    onSave: () => void;
+    onClose?: () => void;
+    onSave?: () => void;
 }
 
 function Modal(props: ModalProps) {
@@ -25,12 +25,14 @@ function Modal(props: ModalProps) {
             {props.children}
 
             <div className="modalBtnRow">
+                {props.onClose ?
                 <div className="modalBtn left" onClick={props.onClose}>
                     <Cross/>{t("Cancel")}
-                </div>
+                </div> : null}
+                {props.onSave ?
                 <div className="modalBtn right" onClick={props.onSave}>
                     <Save/>{t("Save")}
-                </div>
+                </div> : null}
             </div>
         </div>
      </div>;

@@ -14,11 +14,17 @@ function spinner() {
     }</div>;
 }
 
-export default () => {
+export interface LoadingProps {
+    text?: string;
+}
+
+export default (props: LoadingProps) => {
     const {t} = useTranslation();
 
-    return <div className="kaput">
+    const txt = props.text ?? "Loading";
+
+    return <div className="loadContainer">
         {spinner()}
-        {t("Loading") + "..."}
+        {t(txt) + "..."}
     </div>;
 };
