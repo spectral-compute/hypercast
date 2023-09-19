@@ -23,9 +23,10 @@ This process can be undone with `yarn clean`. The cleaning process can be verifi
 ## Building the clients
 
 The `dev-client` and `demo-client` can both be built with `yarn bundle` and `yarn bundle-dev` from their respective
-directories. In this case, the info JSON URL that determines the stream parameters and is served by the streamer server
-can be fixed with `--env INFO_URL`, for example:
-`yarn bundle --env INFO_URL=https://stream-demo.spectralcompute.co.uk/live/info.json`.
+directories. In this case, the info JSON URL that determines the stream parameters for the development client and is
+served by the streamer server can be fixed with `--env INFO_URL`. The server for the channel list for the demo client
+can be fixed with `--env STREAMING_SERVER`. For example:
+`yarn bundle --env INFO_URL=https://stream-demo.spectralcompute.co.uk/live/info.json --env STREAMING_SERVER=https://stream-demo.spectralcompute.co.uk`.
 
 If this is not done, then the demo clients expect an INFO JSON GET parameter: `streaminfo`. It can be generated with,
 for example:

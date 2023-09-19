@@ -20,6 +20,7 @@ option(ENABLE_SERVER "Enable building the C++ server." On)
 option(ENABLE_JS "Enable Javascript stuff (e.g: the client library and demo client)." On)
 cmake_dependent_option(JS_DEV "Build the Javascript stuff in development mode rather than production mode."
         ${DEBUG_ON_OFF} ENABLE_JS Off)
+set(CLIENT_STREAM_SERVER Off CACHE STRING "Set the client application (not library) server URL to this.")
 set(CLIENT_INFO_URL Off CACHE STRING "Set the client application (not library) info.json URL to this.")
 
 # LTO.

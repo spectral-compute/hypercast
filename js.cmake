@@ -51,6 +51,9 @@ add_custom_target(js_yarn_install ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/js_ya
 
 # Figure out the arguments to give to yarn for building the projects.
 set(YARN_ARGS)
+if (CLIENT_STREAM_SERVER)
+    list(APPEND YARN_ARGS --env "STREAM_SERVER=${CLIENT_STREAM_SERVER}")
+endif()
 if (CLIENT_INFO_URL)
     list(APPEND YARN_ARGS --env "INFO_URL=${CLIENT_INFO_URL}")
 endif()
