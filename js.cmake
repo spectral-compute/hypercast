@@ -57,7 +57,7 @@ endif()
 
 # Build the projects.
 add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
-                   COMMAND yarn "$<IF:$<BOOL:JS_DEV>,bundle-dev,bundle>" ${YARN_ARGS}
+                   COMMAND yarn "$<IF:$<BOOL:${JS_DEV}>,bundle-dev,bundle>" ${YARN_ARGS}
                    COMMAND cmake -E touch "${CMAKE_CURRENT_BINARY_DIR}/js_yarn_bundle_file"
                    DEPENDS js_copy js_yarn_install "${JS_COPY_DEPS}"
                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
