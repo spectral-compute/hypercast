@@ -6,7 +6,6 @@ toc: true
 This page explains how to set up Cloudflare to work with the ultra low-latency video streamer using the Cloudflare UI.
 Note that Cloudflare's services change from time to time, so this information is correct at the time of writing.
 
-
 ## Quick setup
 
 1. Log in and go to the dashboard for your domain.
@@ -56,42 +55,46 @@ Note that Cloudflare's services change from time to time, so this information is
 This section discusses the domain settings and [Page Rule](https://support.cloudflare.com/hc/en-us/articles/218411427)
 settings that that should be used for the ultra low-latency video streamer in more detail.
 
+The settings desired by the streaming software need only be applied to routes that map to the RISE streaming server.
+This means that - where possible - page rules may be used to apply the settings selectively, and you can use alternative
+settings for the remainder of your site. An alternative solution is to serve all low-latency streaming content through
+a dedicated domain that has the necessary CDN settings (a configuration that may be less accident-prone than maintaining
+cloudflare page rules).
 
 ### Always Online
 
-None of the ultra low-latency video streamer's resources can usefully be cached for long periods of time. In any case,
-the client relies on up-to-date information from the server. Thus any data that makes it into the
-[Always Online](https://developers.cloudflare.com/cache/about/always-online) cache is not useful. Additionally, this
-feature could result in stale data being served if the origin server is offline, which could cause confusion but would
-never be helpful. 
-
+["Always Online"](https://developers.cloudflare.com/cache/about/always-online) is a feature that serves the last-known "successful" version of your website to the user when the origin
+server returns an error code. For low-latency streaming, all this actually does is serves the tail end of the last
+stream to users long after the stream has stopped broadcasting. Obviously, this should be disabled.
 
 ### Browser Cache TTL
 
-Cloudflare changes the cache control headers sent by an origin server when sending them to the client if they specify 
-aching for less time than the
+Cache TTL headers tell browsers how long to cache something for. The correct operation of the streaming serevr requires
+setting these in a very particular way. Unless told otherwise, Cloudflare will modify the cache control headers if they
+specify caching for less time than the
 [Browser Cache TTL](https://developers.cloudflare.com/cache/about/edge-browser-cache-ttl#browser-cache-ttl) setting
-specifies. The "Respect Existing Headers" causes Cloudflare not to do this.
+specifies.
 
-The "Respect Existing Headers" option is not available as a Page Rule.
-
+"Respect Existing Headers" causes Cloudflare not to do this, which allows our server software to set the
+headers as needed.
 
 ### Tiered Cache
 
-Use of [Tiered Cache](https://developers.cloudflare.com/cache/how-to/enable-tiered-cache/) is recommended to minimize
-traffic at the origin server. We have also found that in practice, Cloudflare's internal international infrastructure
-can give better performance than accessing the origin server by a distant edge server.
+It's important that the CDN only request each video segment once from the origin server. Otherwise, it is easy to
+saturate the available uplink of the origin server, or to take it offline if a surge of new viewers becomes a surge of
+requests to the origin server.
 
-Note that this does *not* require enabling "Argo Smart Routing", for which there is an extra charge.
+Cloudflare is generally good about this, but occasionally multiple Cloudflare nodes will make separate requests to
+the origin server. The [Tiered Cache](https://developers.cloudflare.com/cache/how-to/enable-tiered-cache/)
+feature can be used to guarantee that only one CDN node ever makes requests to the origin, and all other CDN nodes
+get their information from that first one. To achieve this, you generally want to pick "Smart Tiered Cache Topology",
+which is the default behaviour (and the only available one for non-Enterprise plans).
 
-Cloudflare offer [different tier topologies](https://support.cloudflare.com/hc/en-us/articles/115000224552) for
-Enterprise plans. The default (and also only one available on plans without the option) is "Smart Tiered Cache
-Topology". This makes Cloudflare connect to the streamer origin server using a nearby edge server, and transmits from
-there to the edge server that is serving the client's request. In most cases, this the preferred option and should give
-the improved performance discussed above.
+### Argo Smart Routing
 
-This setting is not available as a Page Rule.
-
+"Argo" is a feature that uses Cloudflare's internal network to send data long geographical distances, dynamically
+routing around congestion on the internet. We find that this has positive effects on latency and reliability (especially
+when there is a large geographical distance between video source and viewer), but it incurs extra fees from Cloudflare.
 
 ### Cache Level
 
@@ -102,14 +105,11 @@ cached, and so transmits appropriate cache control headers. Setting to
 "[Cache Everything](https://developers.cloudflare.com/cache/how-to/create-page-rules/#cache-everything)" causes
 Cloudflare to rely on those headers.
 
-The "Cache Everything" option is not available globally.
-
+This setting almost certainly should be a page rule (or sandboxed via a separate domain), since "cache everything" may
+break other web services by causing stale results to be sent to the user.
 
 ### Response buffering
 
-Cloudflare offers [Response Buffering](https://support.cloudflare.com/hc/en-us/articles/206049798) for Enterprise plans.
-When this is turned on, Cloudflare waits for a full file to be received by Cloudflare before sending it to clients. This
-is not compatible with low latency streaming, and so must be disabled.
-
-It is disabled by default, but there is a global setting to enable it. Adding the Page Rule (even if the global setting
-is disabled) ensures that if the global setting is changed, streaming will not be broken.
+[Response Buffering](https://support.cloudflare.com/hc/en-us/articles/206049798) causes Cloudflare to wait for a full
+file to be received by Cloudflare before sending it to clients. This is not compatible with low latency streaming, an
+so must be disabled.
