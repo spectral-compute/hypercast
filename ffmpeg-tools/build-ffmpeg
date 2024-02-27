@@ -156,7 +156,11 @@ if ! which pkg-config > /dev/null ; then
     exit 1
 fi
 if ! which patchelf > /dev/null ; then
-    echo "Error: The patchelf is not found. On Arch Linux: install the patchelf package." 1>&2
+    echo "Error: patchelf is not found. On Arch Linux: install the patchelf package." 1>&2
+    exit 1
+fi
+if ! which nasm > /dev/null ; then
+    echo "Error: No assembler is not found. On Arch Linux: install the nasm package." 1>&2
     exit 1
 fi
 if [ "${HAS_DECKLINK}" == "1" ] && [ ! -e "/usr/include/DeckLinkAPI.h" ] ; then
