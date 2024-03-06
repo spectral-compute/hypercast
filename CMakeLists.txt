@@ -14,6 +14,8 @@ else()
     set(DEBUG_ON_OFF Off)
 endif()
 
+set(CMAKE_CXX_STANDARD 20)
+
 # Options.
 include(CMakeDependentOption)
 option(ENABLE_SERVER "Enable building the C++ server." ON)
