@@ -58,14 +58,14 @@ Server::Address::Address(std::string_view representation, bool allowPrefixLength
     assert(addressBytes.size() == sizeof(bytes));
 
     /* Handle the case of a network with prefix length. */
-    if (representation.contains('/')) {
+    if (representation.find('/') != std::string_view::npos) {
         // Check that this is allowed.
         if (!allowPrefixLength) {
             throw std::runtime_error("IP address has network prefix length but shouldn't.");
         }
 
         // Parse the input string as an IPv6 network.
-        if (representation.contains(':')) {
+        if (representation.find(':') != std::string_view::npos) {
             // Parse.
             boost::asio::ip::network_v6 network = boost::asio::ip::make_network_v6(representation);
 

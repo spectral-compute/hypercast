@@ -41,7 +41,7 @@ std::vector<std::byte> getChunkLength2(const std::vector<std::byte> &data, unsig
 
 std::vector<std::byte> getChunkLength4(const std::vector<std::byte> &data, unsigned int stream = 0)
 {
-    EXPECT_GT(1zu << 32, data.size());
+    EXPECT_GT(size_t{1} << 32, data.size());
     EXPECT_GT(31, stream);
     std::vector<std::byte> result(data.size() + 5);
     result[0] = (std::byte)stream | (std::byte)(2 << 6);

@@ -3,8 +3,7 @@
 #include "Path.hpp"
 
 #include <vector>
-
-template <typename> class Awaitable;
+#include "util/awaitable.hpp"
 
 namespace Server
 {

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
+#include "util/asio.hpp"
 
-template <typename> class Awaitable;
 class IOContext;
 
 namespace Server

@@ -7,8 +7,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "util/awaitable.hpp"
 
-template <typename> class Awaitable;
 class IOContext;
 
 /// @addtogroup util

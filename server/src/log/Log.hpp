@@ -7,7 +7,8 @@
 #include <map>
 #include <sstream>
 
-template <typename> class Awaitable;
+#include "util/awaitable.hpp"
+
 class IOContext;
 
 /**

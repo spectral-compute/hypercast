@@ -10,8 +10,7 @@
 #include <map>
 #include <cstdint>
 #include <boost/beast/http/field.hpp>
-
-template <typename> class Awaitable;
+#include "util/awaitable.hpp"
 
 namespace Server
 {

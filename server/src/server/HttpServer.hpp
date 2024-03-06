@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Server.hpp"
+#include "util/awaitable.hpp"
 
-template <typename> class Awaitable;
 class IOContext;
 
 namespace Config

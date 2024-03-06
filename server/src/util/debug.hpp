@@ -11,10 +11,9 @@
 /// @{
 
 #ifdef NDEBUG
-#include <utility>
 [[noreturn]] inline void unreachable()
 {
-    std::unreachable();
+    __builtin_unreachable();
 }
 #else // NDEBUG
 /**

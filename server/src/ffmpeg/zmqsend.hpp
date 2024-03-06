@@ -2,8 +2,8 @@
 
 #include <span>
 #include <string_view>
+#include "util/awaitable.hpp"
 
-template <typename> class Awaitable;
 class IOContext;
 
 namespace Ffmpeg
