@@ -5,7 +5,7 @@ stages:
   - Deploy
 
 .env:
-  image: $DOCKER_REGISTRY/spectral/build/nodejs
+  image: $DOCKER_REGISTRY/spectral/build/live-video-streamer
 
 Build:
   extends: .env
