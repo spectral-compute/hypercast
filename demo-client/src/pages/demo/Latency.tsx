@@ -2,6 +2,8 @@ import Player from "../../components/Player";
 import {Player as PlayerMain} from "live-video-streamer-client";
 import {PerformanceChart} from "../../performanceChart";
 import {useCallback, useEffect, useRef} from "react";
+import { useSearchParams } from 'react-router-dom';
+
 
 export default function LatencyDemo() {
     const latencyRef = useRef<HTMLCanvasElement | null>(null);
@@ -20,6 +22,10 @@ export default function LatencyDemo() {
         };
     }, []);
 
+    const [searchParams, _] = useSearchParams();
+    let serverUrl = searchParams.get("s")  ?? process.env["REACT_APP_STREAM_SERVER"]!;
+    console.log("Connecting to server: " + serverUrl);
+
     const plugInGraphMaker = useCallback((player: PlayerMain) => {
         player.setDebugHandler(performanceChart.current);
     }, []);
@@ -30,7 +36,7 @@ export default function LatencyDemo() {
     return <>
         <h2>Ultra Low Latency</h2>
         <Player
-            server={process.env["REACT_APP_STREAM_SERVER"]!}
+            server={serverUrl}
             onInitialisation={plugInGraphMaker}
             onDismount={unplugGraphMaker}
         />
