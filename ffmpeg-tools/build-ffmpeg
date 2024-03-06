@@ -151,6 +151,10 @@ if ! which clang > /dev/null ; then
     echo "Error: Clang is not found. On Arch Linux: install the clang package." 1>&2
     exit 1
 fi
+if ! which cmake > /dev/null ; then
+    echo "Error: cmake is not found. On Arch Linux: install the cmake package." 1>&2
+    exit 1
+fi
 if ! which pkg-config > /dev/null ; then
     echo "Error: The pkg-config program is not found. On Arch Linux: install the pkgconf package." 1>&2
     exit 1
