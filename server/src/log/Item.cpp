@@ -90,7 +90,7 @@ std::string convertTime(std::chrono::system_clock::time_point tp)
     }
 
     std::stringstream result;
-    result << std::put_time(tm, "%c");
+    result << std::put_time(tm, "%F %T");
     return result.str();
 }
 
