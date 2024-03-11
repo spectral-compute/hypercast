@@ -27,9 +27,6 @@ std::string stripSpaces(std::string_view string)
 void setToUnknown(Ffmpeg::ParsedFfmpegLogLine &log, std::string_view line)
 {
     log.level = Log::Level::error;
-    log.levelString.clear();
-    log.source.clear();
-    log.sourceAddress.clear();
     log.message = line;
 }
 
@@ -85,6 +82,7 @@ std::optional<Log::Level> getLogLevelFromFfmpegLogLevel(std::string_view ffmpegL
 Ffmpeg::ParsedFfmpegLogLine::ParsedFfmpegLogLine(std::string_view line)
 {
     std::string_view remainingLine = line;
+    std::string_view levelString;
 
     /* Parse the level string or source. */
     std::string_view sourceOrLevelView = parseSquareBrackets(remainingLine);
@@ -102,16 +100,6 @@ Ffmpeg::ParsedFfmpegLogLine::ParsedFfmpegLogLine(std::string_view line)
             return;
         }
         levelString = levelView;
-
-        /* See if sourceOrLevelView can be split into a component/address pair. */
-        size_t sourceSplit = sourceOrLevelView.find(" @ ");
-        if (sourceSplit == std::string::npos) {
-            source = sourceOrLevelView;
-        }
-        else {
-            source = sourceOrLevelView.substr(0, sourceSplit);
-            sourceAddress = sourceOrLevelView.substr(sourceSplit + 3);
-        }
     }
     else {
         // Otherwise, pos represents the start of the message text.
@@ -125,22 +113,5 @@ Ffmpeg::ParsedFfmpegLogLine::ParsedFfmpegLogLine(std::string_view line)
         return;
     }
     level = *maybeLogLevel;
-
-    /* The remaining string should be the message text. */
-    message = stripSpaces(remainingLine);
-}
-
-Ffmpeg::ParsedFfmpegLogLine::operator nlohmann::json() const
-{
-    nlohmann::json j = { { "message", std::move(message) } };
-    if (!levelString.empty()) {
-        j["level"] = std::move(levelString);
-    }
-    if (!source.empty()) {
-        j["source"] = std::move(source);
-    }
-    if (!sourceAddress.empty()) {
-        j["source_address"] = std::move(sourceAddress);
-    }
-    return j;
+    message = stripSpaces(line);
 }

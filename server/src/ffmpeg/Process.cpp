@@ -54,12 +54,11 @@ void handleFfmpegStderrLine(Log::Context &log, std::string_view line)
         return;
     }
 
-    /* Parse the line. */
+    // Interpret ffmpeg's log-level system.
     Ffmpeg::ParsedFfmpegLogLine parsedLine = line;
-    nlohmann::json j = parsedLine;
 
     /* Write to the log. */
-    log << "stderr" << parsedLine.level << Json::dump(j);
+    log << "stderr" << parsedLine.level << parsedLine.message;
 }
 
 /**
