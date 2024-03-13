@@ -105,6 +105,7 @@ static void from_json(const nlohmann::json &j, FrameRate &out)
     try {
         out.numerator = j[0].get<int>();
         out.denominator = j[1].get<int>();
+        out.type = FrameRate::fps;
     }
     catch (const nlohmann::json::type_error &e) {
         throw parseException(key, "Array element has incorrect type: "s + e.what() + ".");
