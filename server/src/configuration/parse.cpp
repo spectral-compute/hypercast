@@ -154,6 +154,7 @@ static void from_json(const nlohmann::json &j, VideoQuality &out)
 static void from_json(const nlohmann::json &j, AudioQuality &out)
 {
     Json::ObjectDeserializer d(j, "qualities.audio");
+    d(out.sampleRate, "sampleRate");
     d(out.bitrate, "bitrate");
     d(out.codec, "codec", {
         { Codec::AudioCodec::none, "none" },
