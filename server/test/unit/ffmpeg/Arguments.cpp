@@ -368,10 +368,10 @@ TEST(FfmpegArguments, TwoVideoStreams)
                            "[vsrc]split=2[vin0][vin1]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]; "
                            "[vin1]fps=25/1,scale=1280x720[v1]; "
-                           "[0:a]volume@ablank=volume=0.0:enable=0[asrc]; [asrc]asplit=1[a0]; ",
+                           "[0:a]volume@ablank=volume=0.0:enable=0[asrc]; [asrc]asplit=2[a0][a1]; ",
 
         /* Map. */
-        "-map", "[v0]", "-map", "[v1]", "-map", "[a0]", "-map", "[a0]",
+        "-map", "[v0]", "-map", "[v1]", "-map", "[a0]", "-map", "[a1]",
 
         /* Per stream-type arguments. */
         "-pix_fmt:v", "yuv420p",
