@@ -95,12 +95,3 @@ Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
     /* Fill in the compute trade-off. */
     fillInCompute(config);
 }
-
-Awaitable<void> Config::fillInDefaults(IOContext &ioc, Root &config)
-{
-    // This has ot be a co_await because otherwise the lambda would go out of scope.
-    co_await fillInDefaults([&ioc](const std::string &url, const std::vector<std::string> &arguments) ->
-                            Awaitable<MediaInfo::SourceInfo> {
-        co_return co_await Ffmpeg::ffprobe(ioc, url, arguments);
-    }, config);
-}

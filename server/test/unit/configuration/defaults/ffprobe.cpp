@@ -1,3 +1,5 @@
+#include "TestImpl.hpp"
+
 #include "configuration/defaults.hpp"
 #include "configuration/configuration.hpp"
 

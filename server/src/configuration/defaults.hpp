@@ -39,13 +39,4 @@ using ProbeFunction = std::function<Awaitable<MediaInfo::SourceInfo>(const std::
  */
 Awaitable<void> fillInDefaults(const ProbeFunction &probe, Root &config);
 
-/**
- * Fill in defaults for a configuration using ffprobe.
- *
- * @param config The configuration to fill in.
- * @return A map from channel in the configuration to the corresponding source information. This only contains entries
- *         for channels that had to be probed.
- */
-Awaitable<void> fillInDefaults(IOContext &ioc, Root &config);
-
 } // namespace Config
