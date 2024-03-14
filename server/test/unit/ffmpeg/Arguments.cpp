@@ -82,7 +82,7 @@ TEST(FfmpegArguments, Simple)
                            "[0:v]drawbox@vblank=thickness=fill:c=#000000:enable=0[vsrc]; "
                            "[vsrc]split=1[vin0]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]; "
-                           "[0:a]volume@ablank=volume=0.0:enable=0[a0]",
+                           "[0:a]volume@ablank=volume=0.0:enable=0[asrc]; [asrc]asplit=1[a0]; ",
 
         /* Map. */
         "-map", "[v0]", "-map", "[a0]",
@@ -198,7 +198,7 @@ TEST(FfmpegArguments, Fractional)
                            "[0:v]drawbox@vblank=thickness=fill:c=#000000:enable=0[vsrc]; "
                            "[vsrc]split=1[vin0]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]; "
-                           "[0:a]volume@ablank=volume=0.0:enable=0[a0]",
+                           "[0:a]volume@ablank=volume=0.0:enable=0[asrc]; [asrc]asplit=1[a0]; ",
 
         /* Map. */
         "-map", "[v0]", "-map", "[a0]",
@@ -368,7 +368,7 @@ TEST(FfmpegArguments, TwoVideoStreams)
                            "[vsrc]split=2[vin0][vin1]; "
                            "[vin0]fps=25/1,scale=1920x1080[v0]; "
                            "[vin1]fps=25/1,scale=1280x720[v1]; "
-                           "[0:a]volume@ablank=volume=0.0:enable=0[a0]",
+                           "[0:a]volume@ablank=volume=0.0:enable=0[asrc]; [asrc]asplit=1[a0]; ",
 
         /* Map. */
         "-map", "[v0]", "-map", "[v1]", "-map", "[a0]", "-map", "[a0]",
