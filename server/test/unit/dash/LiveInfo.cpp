@@ -34,7 +34,7 @@ TEST(DashLiveInfo, Simple)
             }
         }
     }, "/live/test");
-    EXPECT_EQ("{\"audioConfigs\":[{\"bitrate\":64,\"codec\":\"aac\"}],\"avMap\":[[0,1]],\"segmentDuration\":15000,"
+    EXPECT_EQ("{\"audioConfigs\":[{\"bitrate\":64,\"codec\":\"aac\"}],\"avMap\":[[0,1]],\"path\":\"live/test\",\"segmentDuration\":15000,"
               "\"segmentPreavailability\":4000,\"videoConfigs\":[{\"bitrate\":2048,"
               "\"bufferCtrl\":{\"extraBuffer\":180,\"initialBuffer\":1000,\"minBuffer\":500,"
                               "\"minimumInitTime\":2000,"
@@ -96,7 +96,7 @@ TEST(DashLiveInfo, Complex)
         }
     }, "/live/test");
     EXPECT_EQ("{\"audioConfigs\":[{\"bitrate\":64,\"codec\":\"aac\"},{\"bitrate\":64,\"codec\":\"aac\"}],"
-              "\"avMap\":[[0,3],[1,null],[2,4]],\"segmentDuration\":15000,\"segmentPreavailability\":4000,"
+              "\"avMap\":[[0,3],[1,null],[2,4]],\"path\":\"live/test\",\"segmentDuration\":15000,\"segmentPreavailability\":4000,"
               "\"videoConfigs\":[{\"bitrate\":2048,"
                                  "\"bufferCtrl\":{\"extraBuffer\":180,\"initialBuffer\":1000,\"minBuffer\":500,"
                                                  "\"minimumInitTime\":2000,\"seekBuffer\":250},"
