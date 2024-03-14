@@ -53,6 +53,14 @@ public:
     std::strong_ordering operator<=>(const Path &) const noexcept;
 
     /**
+     * Allow equality comparison.
+     */
+    bool operator==(const Path &rhs) const noexcept
+    {
+        return (*this <=> rhs) == std::strong_ordering::equal;
+    }
+
+    /**
      * Convert the path to a string.
      */
     operator std::string() const;
