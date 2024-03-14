@@ -49,7 +49,7 @@ private:
 TEST(Log, Simple)
 {
     IOContext ioc;
-    TestLog log(ioc);
+    TestLog log(ioc, Log::Level::debug);
     Log::Context context = log("context");
 
     testCoSpawn([&context]() -> Awaitable<void> {
@@ -64,6 +64,7 @@ TEST(Log, Simple)
             .message = "created"
         },
         {
+            .level = Log::Level::debug,
             .kind = "log context",
             .message = "created",
             .contextName = "context"

@@ -113,7 +113,7 @@ TEST(LogItem, Default)
 
     /* Check the string formatting. */
     LocaleRaii locale;
-    EXPECT_EQ("[Info] @ 0.000000 s = [0] + 0.000000 s = Thu Jan  1 01:00:00 1970: [] ", item.format());
+    EXPECT_EQ("[Info] @ 0.000000 s = [0] + 0.000000 s = 1970-01-01 01:00:00: [] ", item.format());
 }
 
 TEST(LogItem, Simple)
@@ -138,13 +138,13 @@ TEST(LogItem, Simple)
 
     /* Check the string formatting. */
     LocaleRaii locale;
-    EXPECT_EQ("[Warning] @ 314159.000000 s = Simple log item[42] + 271828.000000 s = Sat Jan 10 13:37:04 2004: "
+    EXPECT_EQ("[Warning] @ 314159.000000 s = Simple log item[42] + 271828.000000 s = 2004-01-10 14:37:04: "
               "[Simple] Enjoy!", item.format());
 
     std::string colour = item.format(true);
     EXPECT_EQ("[\x1b[33;1mWarning\x1b[m] @ \x1b[34m314159.000000 s\x1b[m = "
               "\x1b[36;1mSimple log item\x1b[m[\x1b[36;1m42\x1b[m] + \x1b[34m271828.000000 s\x1b[m = "
-              "\x1b[34mSat Jan 10 13:37:04 2004\x1b[m: [\x1b[35;1mSimple\x1b[m] Enjoy!", colour);
+              "\x1b[34m2004-01-10 14:37:04\x1b[m: [\x1b[35;1mSimple\x1b[m] Enjoy!", colour);
 }
 
 TEST(LogItem, Now)

@@ -36,7 +36,7 @@ std::unique_ptr<Log::Log> createLog(IOContext &ioc, Log::Level minLevel = Log::L
         TEST(LogType, TestName) \
         { \
             IOContext ioc; \
-            std::unique_ptr<Log::Log> log = createLog(ioc __VA_OPT__(,) __VA_ARGS__); \
+            std::unique_ptr<Log::Log> log = createLog(ioc, Log::Level::debug __VA_OPT__(,) __VA_ARGS__); \
             LOG_TEST__##TestName(*log, ioc); \
         } \
     }

@@ -7,7 +7,7 @@ TEST(FfmpegLog, AllFields)
     Ffmpeg::ParsedFfmpegLogLine parsedLine("[component @ address] [info] message");
 
     EXPECT_EQ(Log::Level::info, parsedLine.level);
-    EXPECT_EQ("message", parsedLine.message);
+    EXPECT_EQ("[component @ address] message", parsedLine.message);
 }
 
 TEST(FfmpegLog, NoSource)

@@ -59,6 +59,7 @@ LOG_TEST(Simple, log, ioc)
                 .message = "created"
             },
             {
+                .level = Log::Level::debug,
                 .kind = "log context",
                 .message = "created",
                 .contextName = "context"
@@ -68,6 +69,7 @@ LOG_TEST(Simple, log, ioc)
                 .contextName = "context"
             },
             {
+                .level = Log::Level::debug,
                 .kind = "log context",
                 .message = "destroyed",
                 .contextName = "context"
@@ -95,6 +97,7 @@ LOG_TEST(Separate, log, ioc)
                 .message = "created"
             },
             {
+                .level = Log::Level::debug,
                 .kind = "log context",
                 .message = "created",
                 .contextName = "context"
@@ -104,6 +107,7 @@ LOG_TEST(Separate, log, ioc)
                 .contextName = "context"
             },
             {
+                .level = Log::Level::debug,
                 .kind = "log context",
                 .message = "destroyed",
                 .contextName = "context"
@@ -125,6 +129,7 @@ LOG_TEST(Wait, log, ioc)
                 .message = "created"
             },
             {
+                .level = Log::Level::debug,
                 .kind = "log context",
                 .message = "created",
                 .contextName = "context"
@@ -156,6 +161,7 @@ LOG_TEST(NoWait, log, ioc)
                 .message = "created"
             },
             {
+                .level = Log::Level::debug,
                 .kind = "log context",
                 .message = "created",
                 .contextName = "context"
@@ -183,6 +189,7 @@ LOG_TEST(Long, log, ioc)
             .message = "created"
         },
         {
+            .level = Log::Level::debug,
             .kind = "log context",
             .message = "created",
             .contextName = "context"
@@ -199,6 +206,7 @@ LOG_TEST(Long, log, ioc)
 
     // Context destruction.
     ref.emplace_back(Log::Item{
+        .level = Log::Level::debug,
         .kind = "log context",
         .message = "destroyed",
         .contextName = "context"

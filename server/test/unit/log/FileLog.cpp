@@ -36,7 +36,7 @@ void checkLogContents(std::string_view ref)
 TEST(FileLog, Format)
 {
     IOContext ioc;
-    std::unique_ptr<Log::Log> logPtr = createLog(ioc);
+    std::unique_ptr<Log::Log> logPtr = createLog(ioc, Log::Level::debug);
     Log::Log &log = *logPtr;
     Log::Context context = log("context");
 
@@ -49,7 +49,7 @@ TEST(FileLog, Format)
     checkLogContents("{\"contextIndex\":DURATION,\"contextName\":\"\",\"contextTime\":DURATION,\"kind\":\"log\","
                      "\"level\":\"info\",\"logTime\":DURATION,\"message\":\"created\",\"systemTime\":TIMESTAMP}\n"
                      "{\"contextIndex\":DURATION,\"contextName\":\"context\",\"contextTime\":DURATION,"
-                     "\"kind\":\"log context\",\"level\":\"info\",\"logTime\":DURATION,\"message\":\"created\","
+                     "\"kind\":\"log context\",\"level\":\"debug\",\"logTime\":DURATION,\"message\":\"created\","
                      "\"systemTime\":TIMESTAMP}\n"
                      "{\"contextIndex\":DURATION,\"contextName\":\"context\",\"contextTime\":DURATION,"
                      "\"level\":\"info\",\"logTime\":DURATION,\"message\":\"Message\",\"systemTime\":TIMESTAMP}\n");
