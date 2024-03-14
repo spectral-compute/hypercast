@@ -34,8 +34,6 @@ using ProbeFunction = std::function<Awaitable<MediaInfo::SourceInfo>(const std::
  *              to cache the result of probes that are for devices that are already in use. This also makes it possible
  *              to capture probe results.
  * @param config The configuration to fill in.
- * @return A map from channel in the configuration to the corresponding source information. This only contains entries
- *         for channels that had to be probed.
  */
 Awaitable<void> fillInDefaults(const ProbeFunction &probe, Root &config);
 
