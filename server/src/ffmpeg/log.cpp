@@ -83,6 +83,7 @@ Ffmpeg::ParsedFfmpegLogLine::ParsedFfmpegLogLine(std::string_view line)
 {
     std::string_view remainingLine = line;
     std::string_view levelString;
+    std::string_view levelView;
 
     /* Parse the level string or source. */
     std::string_view sourceOrLevelView = parseSquareBrackets(remainingLine);
@@ -94,7 +95,7 @@ Ffmpeg::ParsedFfmpegLogLine::ParsedFfmpegLogLine(std::string_view line)
     /* See if there's another [. If so, then what we just got was the subject, and not the level. */
     if (remainingLine[0] == '[') {
         // Read the second entry. This will be the log level.
-        std::string_view levelView = parseSquareBrackets(remainingLine);
+        levelView = parseSquareBrackets(remainingLine);
         if (levelView.empty()) {
             setToUnknown(*this, line);
             return;
@@ -112,6 +113,15 @@ Ffmpeg::ParsedFfmpegLogLine::ParsedFfmpegLogLine(std::string_view line)
         setToUnknown(*this, line);
         return;
     }
+
     level = *maybeLogLevel;
-    message = stripSpaces(line);
+
+    // The log line is the input line with the `[loglevel]` fragment removed.
+    if (levelView.empty()) {
+        message = stripSpaces(remainingLine);
+    } else {
+        std::stringstream ss;
+        ss << line.substr(0, sourceOrLevelView.size() + 3) << remainingLine;
+        message = ss.str();
+    }
 }
