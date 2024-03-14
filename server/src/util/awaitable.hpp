@@ -8,7 +8,7 @@ namespace boost::asio {
     class any_io_executor;
     template <typename T, typename Executor>
     class awaitable;
-}
+} // namespace boost::asio
 
 /**
  * A wrapper around the boost::asio::awaitable coroutine return type.

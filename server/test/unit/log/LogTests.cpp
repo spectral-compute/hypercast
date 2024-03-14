@@ -198,7 +198,7 @@ LOG_TEST(Long, log, ioc)
 
     // The items we're adding.
     for (int i = 0; i < count; i++) {
-        ref.emplace_back(Log::Item{
+        ref.emplace_back(Log::Item{ // NOLINT
             .message = "Message: " + std::to_string(i),
             .contextName = "context"
         });

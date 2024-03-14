@@ -54,6 +54,7 @@ public:
 /**
  * Spawn a detached coroutine.
  *
+ * @param ioc The IO context to use.
  * @param fn The function to run in the coroutine.
  */
 template<typename F>
