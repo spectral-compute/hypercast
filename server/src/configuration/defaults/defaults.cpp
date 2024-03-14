@@ -66,7 +66,7 @@ Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
     for (auto &[path, channel]: config.channels) {
         // If there are no qualities, add one for fillInQualitiesFromFfprobe to fill in.
         if (channel.qualities.empty()) {
-            channel.qualities.emplace_back(Quality{});
+            channel.qualities.emplace_back();
         }
 
         // Fill in the information we get from ffprobe. This is done first because a lot of other stuff is based on
