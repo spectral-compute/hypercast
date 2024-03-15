@@ -578,6 +578,8 @@ Awaitable<void> Server::HttpServer::listen(int16_t port, bool allowPrivate)
     /* Listen for connections. */
     boost::asio::ip::tcp::acceptor acceptor(ioc, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port));
 
+    acceptor.set_option(boost::asio::socket_base::reuse_address(true));
+
     /* Handle each connection. */
     while (true) {
         try {
