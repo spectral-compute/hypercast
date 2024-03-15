@@ -71,6 +71,7 @@ Instance::State::~State() = default;
 /// Perform initial setup/configuration.
 Instance::State::State(const Config::Root &initialCfg, IOContext &ioc) :
     ioc(ioc),
+    config(initialCfg),
     requestedConfig(initialCfg),
     mutex(ioc),
     log(createLog(initialCfg.log, ioc)),
