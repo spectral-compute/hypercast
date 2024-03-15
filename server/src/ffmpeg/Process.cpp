@@ -107,6 +107,7 @@ Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
             co_await ffprobe(ioc, arguments.getSourceUrl(), std::span(arguments.getSourceArguments()));
         capturedProbe = true;
         event.notifyAll();
+        this->log << "state" << Log::Level::info << "Probed";
 
         // Read the logging that ffmpeg emits.
         try {
@@ -125,6 +126,7 @@ Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
         co_await this->subprocess.wait(false);
         finishedReadingStderrAndTerminated = true;
         event.notifyAll();
+        this->log << "state" << Log::Level::info << "Terminated";
     });
 
     /* Create another coroutine to handle the stdout output of ffmpeg. */
