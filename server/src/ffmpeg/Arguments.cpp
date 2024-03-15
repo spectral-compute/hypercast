@@ -68,8 +68,8 @@ std::vector<std::string> getGlobalArgs()
 std::vector<std::string> getRealtimeInputArgs()
 {
     return {
-        "-avioflags", "direct",
-        "-fflags", "nobuffer",
+        //"-avioflags", "direct", // TODO: Test the latency cost of this for the Decklink.
+        //"-fflags", "nobuffer",
         "-rtbufsize", std::to_string(pipeSize),
         "-thread_queue_size", "0"
     };

@@ -45,8 +45,6 @@ TEST(FfmpegArguments, Simple)
 
         /* Input arguments. */
         // Realtime arguments.
-        "-avioflags", "direct",
-        "-fflags", "nobuffer",
         "-rtbufsize", "1024",
         "-thread_queue_size", "0",
 
@@ -161,8 +159,6 @@ TEST(FfmpegArguments, Fractional)
 
         /* Input arguments. */
         // Realtime arguments.
-        "-avioflags", "direct",
-        "-fflags", "nobuffer",
         "-rtbufsize", "1024",
         "-thread_queue_size", "0",
 
@@ -330,8 +326,6 @@ TEST(FfmpegArguments, TwoVideoStreams)
 
         /* Input arguments. */
         // Realtime arguments.
-        "-avioflags", "direct",
-        "-fflags", "nobuffer",
         "-rtbufsize", "1024",
         "-thread_queue_size", "0",
 
