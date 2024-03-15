@@ -15,6 +15,7 @@ static void to_json(nlohmann::json &j, const Source &in)
 {
     j["url"] = in.url;
     j["arguments"] = in.arguments;
+    j["listen"] = in.listen;
     j["loop"] = in.loop;
     j["timestamp"] = in.timestamp;
     j["latency"] = *in.latency;
@@ -218,6 +219,16 @@ static void to_json(nlohmann::json &j, const Features &in)
     j["channelIndex"] = in.channelIndex;
 }
 
+/// @ingroup configuration_implementation
+static void to_json(nlohmann::json &j, const SeparatedIngestSource &in)
+{
+    j["url"] = in.url;
+    j["arguments"] = in.arguments;
+    j["path"] = in.path;
+    j["bufferSize"] = in.bufferSize;
+    j["probeSize"] = in.probeSize;
+}
+
 } // namespace Config
 
 std::string Config::Root::toJson() const
@@ -229,6 +240,7 @@ std::string Config::Root::toJson() const
     j["http"] = http;
     j["log"] = log;
     j["features"] = features;
+    j["separatedIngestSources"] = separatedIngestSources;
     return Json::dump(j);
 }
 

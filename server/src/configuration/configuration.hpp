@@ -35,6 +35,7 @@ struct Source final
 {
     std::string url;
     std::vector<std::string> arguments;
+    bool listen = false;
     bool loop = false;
     bool timestamp = false;
     std::optional<unsigned int> latency;
@@ -282,6 +283,20 @@ struct Features final
 };
 
 /**
+ * The separatedIngestSources key.
+ */
+struct SeparatedIngestSource final
+{
+    std::string url;
+    std::vector<std::string> arguments;
+    std::string path;
+    size_t bufferSize = 1 << 24;
+    size_t probeSize = 5000000; // Matches ffmpeg's default.
+
+    bool operator==(const SeparatedIngestSource &) const;
+};
+
+/**
  * The exception that's thrown if there's an error parsing the configuration.
  */
 class ParseException final : public std::runtime_error
@@ -339,6 +354,7 @@ public:
     Http http;
     Log log;
     Features features;
+    std::map<std::string, SeparatedIngestSource> separatedIngestSources;
 
     bool operator==(const Root &) const;
 

@@ -30,6 +30,7 @@ bool Config::Network::operator==(const Network &) const = default;
 bool Config::Http::operator==(const Http &) const = default;
 bool Config::Log::operator==(const Log &) const = default;
 bool Config::Features::operator==(const Features &) const = default;
+bool Config::SeparatedIngestSource::operator==(const SeparatedIngestSource &) const = default;
 bool Config::Root::operator==(const Root &) const = default;
 
 bool Config::Channel::differsByUidOnly(const Channel &other) const

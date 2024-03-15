@@ -9,6 +9,7 @@ namespace Config
 
 struct Channel;
 struct Network;
+struct SeparatedIngestSource;
 
 } // namespace Config
 
@@ -24,6 +25,17 @@ class Arguments final
 {
 public:
     /**
+     * Decode a URL into one that can be given directly with -i.
+     *
+     * This does things like converts ingest_http:// to http:// with the appropriate part.
+     *
+     * @param url The URL to desugar.
+     * @param part The part to use for protocols (like ingest_http://) that require it,
+     * @return The desugared URL.
+     */
+    static std::string decodeUrl(std::string_view url, std::string_view part);
+
+    /**
      * Generate the arguments for starting a live stream with ffmpeg.
      *
      * @param channelConfig The configuration object for the specific channel.
@@ -32,6 +44,16 @@ public:
      */
     static Arguments liveStream(const Config::Channel &channelConfig, const Config::Network &networkConfig,
                                 std::string_view uidPath);
+
+    /**
+     * Generate arguments for separated ingest using ffmpeg.
+     *
+     * @param source The ingest source.
+     * @param networkConfig The channel configuration object for the network.
+     * @param name The name of the ingest (without ingest://).
+     */
+    static Arguments ingest(const Config::SeparatedIngestSource &ingestConfig, const Config::Network &networkConfig,
+                            std::string_view name);
 
     ~Arguments();
 
@@ -65,12 +87,21 @@ public:
         return sourceArguments;
     }
 
+    /**
+     * Get whether the FFMPEG process should cache an ffprobe of the source.
+     */
+    bool getCacheProbe() const
+    {
+        return cacheProbe;
+    }
+
 private:
     Arguments() = default;
 
     std::vector<std::string> ffmpegArguments;
     std::string sourceUrl;
     std::vector<std::string> sourceArguments;
+    bool cacheProbe = false;
 };
 
 } // namespace Ffmpeg

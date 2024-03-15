@@ -63,6 +63,7 @@ static void from_json(const nlohmann::json &j, Source &out)
     Json::ObjectDeserializer d(j, "source");
     d(out.url, "url");
     d(out.arguments, "arguments");
+    d(out.listen, "listen");
     d(out.loop, "loop");
     d(out.timestamp, "timestamp");
     d(out.latency, "latency");
@@ -303,6 +304,18 @@ static void from_json(const nlohmann::json &j, Features &out)
     d();
 }
 
+/// @ingroup configuration_implementation
+static void from_json(const nlohmann::json &j, SeparatedIngestSource &out)
+{
+    Json::ObjectDeserializer d(j, "separatedIngestSources");
+    d(out.url, "url");
+    d(out.arguments, "arguments");
+    d(out.path, "path");
+    d(out.bufferSize, "bufferSize");
+    d(out.probeSize, "probeSize");
+    d();
+}
+
 } // namespace Config
 
 Config::ParseException::~ParseException() = default;
@@ -330,6 +343,7 @@ Config::Root Config::Root::fromJson(std::string_view jsonString)
         d(root.http, "http");
         d(root.log, "log");
         d(root.features, "features");
+        d(root.separatedIngestSources, "separatedIngestSources");
         d();
     }
     catch (const Json::ObjectDeserializer::Exception &e) {

@@ -53,6 +53,49 @@ void fillInCompute(Root &config);
 
 } // namespace Config
 
+void Config::fillInInitialDefaults(Root &config)
+{
+    /* Set up separated ingests for channels that listen for their source rather than connecting to or otherwise reading
+       from their source directly. */
+    //  - The ingest:// protocol refers to one of the elements of Config::Root::separatedIngestSources. It implicitly
+    //    points at the server, and is the form intended to be used when separeted ingest is configured manually.
+    //  - The ingest_http:// protocol is like like http://, except that the endpoint is either stream or probe,
+    //    depending on whether it's being streamed from or probed. It has to include the server's address, and the
+    //    /ingest directory.
+    //  - Sources that listen for connections can't be directly probed (because then the connection would have to be
+    //    re-established for ffmpeg), so they're accessed by separated ingest.
+    //  - The keys for Config::Root::separatedIngestSources correspond to ingest:// URLs.
+    //  - This step converts from the listen flag to the separated ingest form using ingest://.
+    //  - All ingest:// URLs (including manually specified ones) are replaced with their corresponding ingest_http://
+    //    URLs in fillInDefaults.
+    //  - Those URLs are converted to http:// URLs by Ffmpeg::ffprobe and Ffmpeg::Arguments.
+    {
+        int id = 0;
+        for (auto &[path, channel]: config.channels) {
+            // Only change channels that listen.
+            if (!channel.source.listen) {
+                continue;
+            }
+
+            // Assign a name to the ingest.
+            std::string name = "__listen__/" + std::to_string(id++);
+
+            // Create the ingest from the source. This assumes that the FFMPEG protocol supports the -listen flag.
+            SeparatedIngestSource &ingest = config.separatedIngestSources[name];
+            ingest = {
+                .url = std::move(channel.source.url),
+                .arguments = std::move(channel.source.arguments)
+            };
+            ingest.arguments.push_back("-listen");
+            ingest.arguments.push_back("1");
+
+            // Update the channel. The move above clears the arguments.
+            channel.source.url = "ingest://" + name; // This is further filled in by fillInDefaults.
+            channel.source.listen = false;
+        }
+    }
+}
+
 Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
 {
     // TODO: This is likely no longer correct, since the ffprobeage will need to be changed to cope with
@@ -64,6 +107,12 @@ Awaitable<void> Config::fillInDefaults(const ProbeFunction &probe, Root &config)
 
     /* Fill in the channels. */
     for (auto &[path, channel]: config.channels) {
+        // Replace ingest:// URLs with ingest_http:// URLs.
+        if (channel.source.url.starts_with("ingest://")) {
+            channel.source.url = "ingest_http://localhost:" + std::to_string(config.network.port) + "/ingest/" +
+                                 channel.source.url.substr(9);
+        }
+
         // If there are no qualities, add one for fillInQualitiesFromFfprobe to fill in.
         if (channel.qualities.empty()) {
             channel.qualities.emplace_back();

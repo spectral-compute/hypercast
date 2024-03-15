@@ -161,7 +161,7 @@ std::vector<std::string> getInputArgs(const std::string &url, const std::vector<
     append(result, arguments);
 
     /* The actual input flag. */
-    result.insert(result.end(), { "-i", url });
+    result.insert(result.end(), { "-i", Ffmpeg::Arguments::decodeUrl(url, "stream") });
 
     /* Done :) */
     return result;
@@ -643,6 +643,12 @@ std::vector<std::string> getDashOutputArgs(const Config::Channel &channelConfig,
 
 Ffmpeg::Arguments::~Arguments() = default;
 
+std::string Ffmpeg::Arguments::decodeUrl(std::string_view url, std::string_view part)
+{
+    return url.starts_with("ingest_http://") ?
+           "http://" + std::string(url.substr(14)) + "/" + std::string(part) : std::string(url);
+}
+
 Ffmpeg::Arguments Ffmpeg::Arguments::liveStream(const Config::Channel &channelConfig,
                                                 const Config::Network &networkConfig, std::string_view uidPath)
 {
@@ -650,6 +656,7 @@ Ffmpeg::Arguments Ffmpeg::Arguments::liveStream(const Config::Channel &channelCo
 
     result.sourceUrl = channelConfig.source.url;
     result.sourceArguments = channelConfig.source.arguments;
+    result.cacheProbe = true;
 
     append(result.ffmpegArguments, getGlobalArgs());
     append(result.ffmpegArguments, getInputArgs(channelConfig.source.url, channelConfig.source.arguments,
@@ -659,6 +666,33 @@ Ffmpeg::Arguments Ffmpeg::Arguments::liveStream(const Config::Channel &channelCo
     append(result.ffmpegArguments, getLiveEncoderArgs(channelConfig));
     append(result.ffmpegArguments, getLiveStreamMuxInfoStdoutArgs());
     append(result.ffmpegArguments, getDashOutputArgs(channelConfig, networkConfig, uidPath));
+
+    return result;
+}
+
+Ffmpeg::Arguments Ffmpeg::Arguments::ingest(const Config::SeparatedIngestSource &ingestConfig,
+                                            const Config::Network &networkConfig, std::string_view name)
+{
+    Arguments result;
+
+    result.sourceUrl = ingestConfig.url;
+    result.sourceArguments = ingestConfig.arguments;
+
+    append(result.ffmpegArguments, getGlobalArgs());
+    append(result.ffmpegArguments, getInputArgs(ingestConfig.url, ingestConfig.arguments, false));
+    result.ffmpegArguments.insert(result.ffmpegArguments.end(), {
+        // Copy the input.
+        "-c:v", "copy",
+        "-c:a", "copy",
+
+        // Output format.
+        "-f", "matroska",
+
+        // Upload via HTTP PUT.
+        "-tcp_nodelay", "1", // I'm not sure if this does anything for HTTP.
+        "-method", "PUT",
+        "http://localhost:" + std::to_string(networkConfig.port) + "/ingest/" + std::string(name) + "/stream"
+    });
 
     return result;
 }

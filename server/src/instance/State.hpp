@@ -7,6 +7,13 @@
 #include <map>
 #include <stdexcept>
 
+namespace Ffmpeg
+{
+
+class Process;
+
+} // namespace Ffmpeg
+
 namespace MediaInfo
 {
 
@@ -88,6 +95,11 @@ private:
     std::unique_ptr<Log::Log> log;
 
     Server::HttpServer server;
+
+    /**
+     * The ffmpeg processes responsible for separated ingest.
+     */
+    std::vector<std::unique_ptr<Ffmpeg::Process>> separatedIngestFfmpegs;
 
     /**
      * The state for the channel that's streaming.

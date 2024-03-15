@@ -1,4 +1,5 @@
 #include "ffprobe.hpp"
+#include "Arguments.hpp"
 
 #include "Exceptions.hpp"
 
@@ -151,9 +152,11 @@ Awaitable<Ffmpeg::ProbeResult> Ffmpeg::ffprobe(IOContext &ioc, std::string_view 
     /* Per-URL mutexes so we don't ffprobe the same thing in parallel. */
     static std::map<std::string, std::weak_ptr<ProbeResult::CacheEntry>> urlResults;
 
+    /* Handle ingest_http:// URLs. */
+    std::string urlString = Arguments::decodeUrl(url, "probe");
+
     /* Result caching. */
     // Create a mutex to the URL, so we don't probe it in parallel.
-    std::string urlString(url);
     std::weak_ptr<ProbeResult::CacheEntry> &weakResult = urlResults[urlString]; // The coordinating reference.
     std::shared_ptr<ProbeResult::CacheEntry> result = weakResult.lock(); // Get the mutex if it exists.
 
@@ -175,8 +178,7 @@ Awaitable<Ffmpeg::ProbeResult> Ffmpeg::ffprobe(IOContext &ioc, std::string_view 
 
     // Create a cache entry in the map that deletes itself once it runs out of references.
     result = std::shared_ptr<ProbeResult::CacheEntry>
-             (new ProbeResult::CacheEntry(ioc, std::move(arguments)),
-              [urlString = std::move(urlString)](ProbeResult::CacheEntry *cacheEntry) {
+             (new ProbeResult::CacheEntry(ioc, std::move(arguments)), [urlString](ProbeResult::CacheEntry *cacheEntry) {
         assert(urlResults.contains(urlString));
         assert(urlResults.at(urlString).expired());
         urlResults.erase(urlString);
@@ -194,7 +196,7 @@ Awaitable<Ffmpeg::ProbeResult> Ffmpeg::ffprobe(IOContext &ioc, std::string_view 
     }
 
     // The input itself.
-    args.emplace_back(url);
+    args.emplace_back(urlString);
 
     // The output arguments.
     for (const char *arg: {"-of", "json", "-show_streams"}) {

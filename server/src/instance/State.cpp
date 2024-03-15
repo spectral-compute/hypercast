@@ -6,6 +6,7 @@
 #include "log/FileLog.hpp"
 #include "media/MediaInfo.hpp"
 #include "resources/FilesystemResource.hpp"
+#include "resources/StreamAndHeadResource.hpp"
 #include "dash/DashResources.hpp"
 #include "configuration/defaults.hpp"
 
@@ -77,6 +78,21 @@ Instance::State::State(const Config::Root &initialCfg, IOContext &ioc) :
     log(createLog(initialCfg.log, ioc)),
     server(ioc, *log, initialCfg.network, initialCfg.http)
 {
+    /* Fill in the defaults needed for the rest of this constructor. */
+    Config::fillInInitialDefaults(config);
+
+    /* Set up separated ingest. */
+    for (const auto &[name, source]: config.separatedIngestSources) {
+        // Create the resource for the separated ingest.
+        server.addResource<Server::StreamAndHeadResource>(Server::Path("ingest") / name, ioc, "stream",
+                                                          source.bufferSize, "probe", source.probeSize,
+                                                          source.path);
+
+        // Start the separated ingest process. This should always be running, and if it terminates, the server
+        // terminates.
+        Ffmpeg::Arguments args = Ffmpeg::Arguments::ingest(source, config.network, name);
+        separatedIngestFfmpegs.emplace_back(std::make_unique<Ffmpeg::Process>(ioc, *log, std::move(args), true));
+    }
 }
 
 /// Used to throw exceptions if you try to change a setting that isn't allowed to change except on startup.
@@ -95,6 +111,7 @@ Awaitable<void> Instance::State::applyConfiguration(Config::Root newCfg)
     Mutex::LockGuard lock = co_await mutex.lockGuard();
 
     // Fill in the blanks...
+    Config::fillInInitialDefaults(newCfg);
     std::set<std::string> newInUseUrls;
     std::vector<Ffmpeg::ProbeResult> probes; // Optimization to keep the probe from running twice.
     co_await Config::fillInDefaults([this, &newInUseUrls, &probes](const std::string &url,

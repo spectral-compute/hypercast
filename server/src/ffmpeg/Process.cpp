@@ -104,11 +104,13 @@ Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments, boo
     /* Create a coroutine to handle the stderr output of ffmpeg and wait for the process termination. */
     spawnDetached(ioc, [this, &ioc, arguments = std::move(arguments)]() -> Awaitable<void> {
         // Make sure that while ffmpeg is running, ffprobe returns a cached result.
-        ProbeResult probeResult =
-            co_await ffprobe(ioc, arguments.getSourceUrl(), std::span(arguments.getSourceArguments()));
+        std::optional<ProbeResult> probeResult;
+        if (arguments.getCacheProbe()) {
+            probeResult = co_await ffprobe(ioc, arguments.getSourceUrl(), std::span(arguments.getSourceArguments()));
+            this->log << "state" << Log::Level::info << "Probed";
+        }
         capturedProbe = true;
         event.notifyAll();
-        this->log << "state" << Log::Level::info << "Probed";
 
         // Read the logging that ffmpeg emits.
         try {

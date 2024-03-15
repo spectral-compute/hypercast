@@ -9,14 +9,15 @@ This page describes the fields available in the configuration format.
 Except for those fields whose default is described as "*Required*", all parameters are optional. Where a fixed default
 exists, it is described. Otherwise, the default is computed based on other settings and the input video.
 
-| Field         | Default | Type   | Description                                         |
-|---------------|---------|--------|-----------------------------------------------------|
-| `channels`    |         | Object | The video (and audio) source.                       |
-| `directories` |         | Object | A set of directories to expose via the HTTP server. |
-| `network`     |         | Object | Lower level network configuration.                  |
-| `http`        |         | Object | HTTP server configuration.                          |
-| `log`         |         | Object | How to do logging.                                  |
-| `features`    |         | Object | Enable and disable server features.                 |
+| Field                    | Default | Type   | Description                                         |
+|--------------------------|---------|--------|-----------------------------------------------------|
+| `channels`               |         | Object | The video (and audio) source.                       |
+| `directories`            |         | Object | A set of directories to expose via the HTTP server. |
+| `network`                |         | Object | Lower level network configuration.                  |
+| `http`                   |         | Object | HTTP server configuration.                          |
+| `log`                    |         | Object | How to do logging.                                  |
+| `features`               |         | Object | Enable and disable server features.                 |
+| `separatedIngestSources` |         | Object | Sources to read using separated ingest.             |
 
 
 ## `channels`
@@ -44,9 +45,21 @@ If a string, then this is interpreted the as the `url` field.
 |-------------|------------|------------------|-----------------------------------------------------------|
 | `url`       | *Required* | String           | The URL to give to FFMPEG's `-i` input.                   |
 | `arguments` |            | Array of strings | Additional arguments to pass to FFMPEG for this input.    |
+| `listen`    | False      | Boolean          | For network protocols, listen rather than connect.        |
 | `loop`      | False      | Boolean          | Whether to loop this source indefinitely.                 |
 | `timestamp` | False      | Integer          | Whether to superimpose a timestamp onto the video stream. |
 | `latency`   |            | Integer          | The latency from realtime of the source.                  |
+
+
+#### `channels.source.listen`
+
+Listen for connections to the given URL rather than connecting to the given URL. Channels where this is true have some
+limitations:
+
+ - They cannot be created, deleted, or modified by the API.
+ - The URL must be unique for each such channel.
+ - Only one client can connect to the server that's listening.
+ - They cannot be looped.
 
 
 #### `channels.source.latency`
@@ -424,3 +437,27 @@ field can be used to set the caching for specified resources to a small value.
 | Field          | Default | Type    | Description                                      |
 |----------------|---------|---------|--------------------------------------------------|
 | `channelIndex` | True    | Boolean | Enable the channel index (`/channelIndex.json`). |
+
+
+## `separatedIngestSources`
+
+Can be used to force ingest to be done via a separate `ffmpeg` process. This is not normally useful because this happens
+by default where needed. Separated ingests cannot be manipulated by the API, and channels that use them cannot be
+recreated by the API. Any given separated ingest can only be used by one channel.
+
+The keys are names to be given to channel inputs. The channel input is this key prefixed with `ingest://`. Each element 
+is an object with the following fields:
+
+| Field        | Default    | Type             | Description                                                       |
+|--------------|------------|------------------|-------------------------------------------------------------------|
+| `url`        | *Required* | String           | The URL to give to FFMPEG's `-i` input.                           |
+| `arguments`  |            | Array of strings | Additional arguments to pass to FFMPEG for this input.            |
+| `path`       |            | String           | Save a copy of the ingested stream, in intermediate format, here. |
+| `bufferSize` | 16777216   | Integer          | The maximum amount of the stream to buffer in application memory. |
+| `probeSize`  | 5000000    | Integer          | The size of the data to offer to `ffprobe`.                       |
+
+
+### `separatedIngestSources.probeSize`
+
+This does not change the probing behaviour of `ffmpeg` or `ffprobe` beyond offering them truncated data. That can be
+achieved with arguments such as `-probesize`, `max_probe_packets`, `analyzeduration`, and `-fpsprobesize`.
