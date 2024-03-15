@@ -26,6 +26,7 @@ public:
     };
 
     ~Path();
+    Path() = default;
     Path(const Path &);
     Path(Path &&) = default;
     Path &operator=(const Path &);
@@ -134,8 +135,6 @@ public:
     }
 
 private:
-    Path() = default;
-
     std::vector<std::string> parts;
 };
 
