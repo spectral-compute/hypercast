@@ -33,8 +33,9 @@ public:
      * Create an ffmpeg subprocess, and log its output.
      *
      * @param arguments The arguments to give to ffmpeg.
+     * @param earlyTerminateFatal If termination other than by calling kill should cause the server to terminate.
      */
-    explicit Process(IOContext &ioc, Log::Log &log, Arguments arguments);
+    explicit Process(IOContext &ioc, Log::Log &log, Arguments arguments, bool earlyTerminateFatal = false);
 
     /**
      * Wait for this object to cache the result of ffprobe.
@@ -66,6 +67,7 @@ private:
     Log::Context log;
     Subprocess::Subprocess subprocess;
     Event event;
+    bool terminateIsFatal = false;
     bool capturedProbe = false;
     bool finishedReadingStdout = false;
     bool finishedReadingStderrAndTerminated = false;

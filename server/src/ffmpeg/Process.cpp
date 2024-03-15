@@ -94,8 +94,9 @@ void handleFfmpegStdoutLine(Ffmpeg::Timestamp &pts, std::string_view line)
 
 } // namespace
 
-Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
-    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments.getFfmpegArguments(), false), event(ioc)
+Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments, bool earlyTerminateFatal) :
+    log(log("ffmpeg")), subprocess(ioc, "ffmpeg", arguments.getFfmpegArguments(), false), event(ioc),
+    terminateIsFatal(earlyTerminateFatal)
 {
     /* Log the arguments given to ffmpeg. */
     this->log << "arguments" << Log::Level::info << getArgumentsForLog(arguments.getFfmpegArguments());
@@ -127,6 +128,11 @@ Ffmpeg::Process::Process(IOContext &ioc, Log::Log &log, Arguments arguments) :
         finishedReadingStderrAndTerminated = true;
         event.notifyAll();
         this->log << "state" << Log::Level::info << "Terminated";
+
+        // If we shouldn't have terminated, exit.
+        if (terminateIsFatal) {
+            exit(1);
+        }
     });
 
     /* Create another coroutine to handle the stdout output of ffmpeg. */
@@ -163,6 +169,7 @@ Awaitable<void> Ffmpeg::Process::waitForProbe()
 
 Awaitable<void> Ffmpeg::Process::kill()
 {
+    terminateIsFatal = false;
     subprocess.kill();
     while (!finishedReadingStderrAndTerminated || !finishedReadingStdout) {
         co_await event.wait();
