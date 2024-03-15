@@ -86,8 +86,8 @@ void Config::fillInInitialDefaults(Root &config)
                 .url = std::move(channel.source.url),
                 .arguments = std::move(channel.source.arguments)
             };
-            ingest.arguments.push_back("-listen");
-            ingest.arguments.push_back("1");
+            ingest.arguments.emplace_back("-listen");
+            ingest.arguments.emplace_back("1");
 
             // Update the channel. The move above clears the arguments.
             channel.source.url = "ingest://" + name; // This is further filled in by fillInDefaults.
