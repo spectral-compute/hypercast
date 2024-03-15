@@ -6,7 +6,6 @@
 #include "instance/ChannelsIndexResource.hpp"
 #include "instance/State.hpp"
 #include "log/FileLog.hpp"
-#include "log/MemoryLog.hpp"
 #include "server/HttpServer.hpp"
 #include "server/Path.hpp"
 #include "util/Event.hpp"
