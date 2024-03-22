@@ -83,7 +83,7 @@ std::string convertTime(std::chrono::steady_clock::duration d)
 std::string convertTime(std::chrono::system_clock::time_point tp)
 {
     std::time_t t = std::chrono::system_clock::to_time_t(tp);
-    const std::tm *tm = std::localtime(&t);
+    const std::tm *tm = std::gmtime(&t);
 
     if (!tm) {
         return "unknown";
