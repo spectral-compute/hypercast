@@ -55,8 +55,8 @@ CORO_TEST(StreamAndHeadResource, Words, ioc)
     const std::span<const std::byte> data((const std::byte *)string.data(), string.size());
     const std::span<const std::byte> parts[] = {
         data.subspan(0, 10),
-        data.subspan(10, 14),
-        data.subspan(14, 26),
+        data.subspan(10, 4),
+        data.subspan(14, 12),
         data.subspan(26),
     };
 
