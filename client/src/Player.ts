@@ -527,6 +527,12 @@ export class Player extends EventDispatcher<keyof PlayerEventMap, PlayerEventMap
         const video: HTMLVideoElement = this.container.appendChild(document.createElement("video"));
         video.controls = false; // Native controls would mess up buffer control.
         video.style.display = visible ? "" : "none";
+        try {
+            video.disableRemotePlayback = true;
+        }
+        catch (e) {
+            // This probably isn't an error. We just want to disable remote playback if it exists.
+        }
         return video;
     }
 

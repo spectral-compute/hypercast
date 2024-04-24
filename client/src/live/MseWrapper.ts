@@ -2,6 +2,7 @@ import {TimestampInfo} from "./Deinterleave";
 import {API, waitForEvent} from "live-video-streamer-common";
 import {assertType} from "@ckitching/typescript-is";
 import {SegmentDownloader, ReceivedInfo} from "./SegmentDownloader";
+import {getMediaSource} from "../MediaSource";
 import {getFullMimeType, Stream, StreamStartEvent} from "../Stream";
 import {EventDispatcher} from "../EventDispatcher";
 import {PlayerErrorEvent} from "../Player";
@@ -185,7 +186,7 @@ export class MseWrapper extends EventDispatcher<keyof MseEventMap, MseEventMap> 
         }
 
         /* Create afresh. */
-        this.videoMediaSource = new MediaSource();
+        this.videoMediaSource = getMediaSource();
         this.video.src = URL.createObjectURL(this.videoMediaSource);
         if (this.videoMediaSource.readyState !== "open") {
             await waitForEvent("sourceopen", this.videoMediaSource);

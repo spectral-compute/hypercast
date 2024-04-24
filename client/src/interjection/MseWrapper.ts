@@ -1,4 +1,5 @@
 import {SegmentDownloader, SegmentDownloaderItem, StreamInfo} from "./SegmentDownloader";
+import {getMediaSource} from "../MediaSource";
 import {getFullMimeType, Stream} from "../Stream";
 import {waitForEvent} from "live-video-streamer-common";
 import {EventDispatcher} from "../EventDispatcher";
@@ -84,7 +85,7 @@ export class MseWrapper extends EventDispatcher<keyof InterjectionMseEventMap, I
         }
 
         /* Create a media source and wait for it to be connected to the video tag. */
-        this.mediaSource = new MediaSource();
+        this.mediaSource = getMediaSource();
         this.mediaElement.src = URL.createObjectURL(this.mediaSource);
         if (this.mediaSource.readyState !== "open") {
             await waitForEvent("sourceopen", this.mediaSource);
