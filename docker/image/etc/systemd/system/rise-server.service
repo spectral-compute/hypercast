@@ -1,0 +1,11 @@
+[Unit]
+Description=RISE ultra-low-latency video streamer server
+
+[Service]
+Type=simple
+ExecStart=bash -c "PATH=/opt/ffmpeg/bin:$PATH /opt/rise/server/bin/live-video-streamer-server /home/server/"
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

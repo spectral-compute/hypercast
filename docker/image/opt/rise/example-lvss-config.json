@@ -1,0 +1,41 @@
+{
+  "channels": {
+    "live/0": {
+      "name": "Live",
+      "qualities": [
+        {
+          "audio": {
+            "codec": "aac",
+            "bitrate": 96
+          },
+          "video": {
+            "width": 1920,
+            "height": 1080,
+            "crf": 26
+          },
+          "targetLatency": 1000
+        },
+        {
+          "audio": {
+            "codec": "aac",
+            "bitrate": 96
+          },
+          "video": {
+            "width": 1280,
+            "height": 720,
+            "crf": 26
+          },
+          "targetLatency": 1000
+        }
+      ],
+      "source": {
+        "url": "rtmp://0.0.0.0/live/0",
+        "listen": true
+      }
+    }
+  },
+  "network": {
+    "port": 1024,
+    "publicPort": 8080
+  }
+}
