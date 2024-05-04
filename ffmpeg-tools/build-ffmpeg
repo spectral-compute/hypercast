@@ -290,9 +290,10 @@ printAndRun "${CC}" -O3 -march=${MARCH} -mtune=${MTUNE} \
                     -o "${INSTALL}/bin/zmqsend" "${SRC}/ffmpeg/tools/zmqsend.c"
 
 # Remove things that aren't needed by the server.
-rm -rf install/include install/lib/libx265.a install/lib/pkgconfig install/share/ffmpeg/examples
+rm -rf "${INSTALL}/include" "${INSTALL}/lib/libx265.a" "${INSTALL}/lib/pkgconfig" "${INSTALL}/share/ffmpeg/examples"
 
 # Make the binaries find the right libraries.
-for F in $(find install/bin install/lib -maxdepth 1 -type f) ; do
+IFS=$'\n'
+for F in $(find "${INSTALL}/bin" "${INSTALL}/lib" -maxdepth 1 -type f) ; do
     printAndRun patchelf --add-rpath '$ORIGIN/../lib' "${F}"
 done
