@@ -17,7 +17,8 @@
     "importsNotUsedAsValues": "remove",
     "preserveValueImports": false,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "removeComments": true
   },
   "files": [],
   "references": [
