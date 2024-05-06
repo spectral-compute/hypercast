@@ -27,6 +27,9 @@ void fillInCompute(Root &config)
 
             /* Choose a preset based on the above. */
             std::optional<H26xPreset> &preset = q.video.h26xPreset;
+            if (preset) {
+                continue;
+            }
             if (fps >= 60) {
                 preset = H26xPreset::ultrafast;
             }
