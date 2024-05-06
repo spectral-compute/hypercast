@@ -46,4 +46,4 @@ the video source. Which option is best depends on the constraints at the site of
 Your CDN needs to be configured appropriately for the ultra low-latency video streamer to work properly. 
 
  - [CDN Requirements](./CDNRequirements.md) discusses the necessary configuration for any HTTP CDN.
- - [Cloudflare](./Cloudflare.md): Step-by-step guide for setting up with cloudflare. 
+ - [Cloudflare](./Cloudflare.md): Step-by-step guide for setting up with Cloudflare.

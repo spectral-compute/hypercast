@@ -40,11 +40,11 @@ Note that Cloudflare's services change from time to time, so this information is
       to contain any other settings you require).
    7. Under "Order", choose "First".
    8. Click "Save and Deploy Page Rule".
-2. Set [Browser Cache TTL](https://developers.cloudflare.com/cache/about/edge-browser-cache-ttl#browser-cache-ttl) to
+4. Set [Browser Cache TTL](https://developers.cloudflare.com/cache/about/edge-browser-cache-ttl#browser-cache-ttl) to
    "Respect Existing Headers".
     1. Go to "Caching" → "Configuration" in the left sidebar.
     2. Under "Browser Cache TTL", choose "Respect Existing Headers".
-3. Enable [Tiered Cache](https://developers.cloudflare.com/cache/how-to/enable-tiered-cache/).
+5. Enable [Tiered Cache](https://developers.cloudflare.com/cache/how-to/enable-tiered-cache/).
     1. Go to "Caching" → "Tiered Cache" in the left sidebar.
     2. Under "Argo Tiered Cache", turn the slider to the right (on).
     3. If offered "Tiered Cache Topology", choose "Smart Tiered Cache Topology".
