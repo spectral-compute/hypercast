@@ -12,7 +12,7 @@ import {PlayerErrorEvent} from "../Player";
  */
 export class MseTimestampEvent extends Event {
     constructor(public timestampInfo: TimestampInfo) {
-        super("error");
+        super("timestamp");
     }
 }
 
