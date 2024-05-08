@@ -28,6 +28,23 @@
 
 namespace
 {
+/**
+ * Format a server error as a human-readable string.
+ *
+ * This shouldn't actually be used unless a Server::Error exception leaks that shouldn't.
+ */
+const char *formatErrorKind(Server::ErrorKind kind)
+{
+    switch (kind) {
+        case Server::ErrorKind::BadRequest: return "Bad request";
+        case Server::ErrorKind::Forbidden: return "Forbidden";
+        case Server::ErrorKind::NotFound: return "Not found";
+        case Server::ErrorKind::UnsupportedType: return "Unsupported type";
+        case Server::ErrorKind::Conflict: return "Conflict";
+        case Server::ErrorKind::Internal: return "Internal";
+    }
+    return "Unknown";
+}
 
 /**
  * Format an endpoint to a human-readable string.
@@ -551,6 +568,10 @@ Awaitable<void> Server::HttpServer::onConnection(Connection &connection)
         if (connection.buffer.size() > 0) {
             throw std::runtime_error("Excess data in buffer after handling request.");
         }
+    }
+    catch (const Error &e) {
+        connectionContext << Log::Level::error << "Unhandled server error: " << formatErrorKind(e.kind) << ": "
+                          << e.message << ".";
     }
     catch (const std::exception &e) {
         connectionContext << Log::Level::error << "Exception while handling request: " << e.what() << ".";
