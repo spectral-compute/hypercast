@@ -39,8 +39,8 @@ while [ "$#" != "0" ] ; do
             BUILD_FFMPEG_ARGS+=(-F "$2")
             shift
         ;;
-        -i)
-            INSTALL="$(realpath "$2")"
+        -n)
+            BUILD_ID="$2"
             shift
         ;;
         *)
