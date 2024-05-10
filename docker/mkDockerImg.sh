@@ -6,6 +6,7 @@ set -ETeuo pipefail
 CPU=x86-64-v3
 BUILD_ID="$(date -u +'%Y%m%d%H%M%S')"
 BUILD_FFMPEG_ARGS=(-F decklink)
+DOCKER_ONLY=0
 
 # Decode the arguments.
 while [ "$#" != "0" ] ; do
@@ -14,6 +15,7 @@ while [ "$#" != "0" ] ; do
             echo -e "Usage: build-ffmpeg.sh [-c cpu] [-f feature] [-F feature] [-n build_id]\n" \
                     " -c: The CPU to use. x86-64, x86-64-vX, native, or any other value accepted by clang's -march\n" \
                     "     and -mtune flags. The default is native.\n" \
+                    " -d: Build only the docker image (requires this to have run without -d first).\n" \
                     " -f: Passed to build-ffmpeg.\n" \
                     " -F: Passed to build-ffmpeg.\n" \
                     " -n: The build ID to use (included in the Docker image tag).\n" \
@@ -25,6 +27,9 @@ while [ "$#" != "0" ] ; do
         -c)
             CPU="$2"
             shift
+        ;;
+        -d)
+            DOCKER_ONLY=1
         ;;
         -f)
             BUILD_FFMPEG_ARGS+=(-f "$2")
@@ -51,38 +56,51 @@ SRC="$(realpath "$(dirname "$0")"/..)"
 VERSION="$(git -C "${SRC}" describe --always --dirty)"
 
 echo "Building RISE docker container ${VERSION}-${BUILD_ID} for ${CPU} from ${SRC}"
-echo "Arguments for build-ffmpeg: ${BUILD_FFMPEG_ARGS[@]}"
 
-# Check the build tree doesn't exist.
-for DIR in build install ; do
-    if [ -e "${DIR}" ] ; then
-        echo "${DIR} exists" !>&2
-        exit 1
-    fi
-done
+if [ "${DOCKER_ONLY}" == "1" ] ; then
+    echo "Building only the Docker container"
 
-# Build the server.
-mkdir -p build/server
-cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=build/server/install \
-    -DENABLE_JS=Off \
-    -DXCMAKE_TARGET_TRIBBLE=native-native-"${CPU}" \
-    -DXCMAKE_CLANG_TIDY=On \
-    -DXCMAKE_PACKAGING=Off \
-    -DXCMAKE_ENABLE_DOCS=Off \
-    -DXCMAKE_ENABLE_TESTS=Off \
-    -Bbuild/server/build \
-    "${SRC}"
-make -C build/server/build install -j$(nproc)
-rm build/server/install/bin/build-ffmpeg # Not needed by the Docker image.
+    # Make sure we have the server and ffmpeg.
+    for F in build/ffmpeg/install/bin/{ffmpeg,ffprobe,zmqsend} build/server/install/bin/live-video-streamer-server ; do
+        if [ ! -e "${F}" ] ; then
+            echo "${F} does not exist! Run without -d." !>&2
+            exit 1
+        fi
+    done
+else
+    echo "Arguments for build-ffmpeg: ${BUILD_FFMPEG_ARGS[@]}"
 
-# Build ffmpeg.
-mkdir -p build/ffmpeg
-"${SRC}/ffmpeg-tools/build-ffmpeg" \
-    -b build/ffmpeg/build -i build/ffmpeg/install -s build/ffmpeg/source \
-    -c "${CPU}" "${BUILD_FFMPEG_ARGS[@]}"
-rm build/ffmpeg/install/bin/{x264,x265} # We don't need the CLI for the codecs.
+    # Check the build tree doesn't exist.
+    for DIR in build install ; do
+        if [ -e "${DIR}" ] ; then
+            echo "${DIR} exists" !>&2
+            exit 1
+        fi
+    done
+
+    # Build the server.
+    mkdir -p build/server
+    cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=build/server/install \
+        -DENABLE_JS=Off \
+        -DXCMAKE_TARGET_TRIBBLE=native-native-"${CPU}" \
+        -DXCMAKE_CLANG_TIDY=On \
+        -DXCMAKE_PACKAGING=Off \
+        -DXCMAKE_ENABLE_DOCS=Off \
+        -DXCMAKE_ENABLE_TESTS=Off \
+        -Bbuild/server/build \
+        "${SRC}"
+    make -C build/server/build install -j$(nproc)
+    rm build/server/install/bin/build-ffmpeg # Not needed by the Docker image.
+
+    # Build ffmpeg.
+    mkdir -p build/ffmpeg
+    "${SRC}/ffmpeg-tools/build-ffmpeg" \
+        -b build/ffmpeg/build -i build/ffmpeg/install -s build/ffmpeg/source \
+        -c "${CPU}" "${BUILD_FFMPEG_ARGS[@]}"
+    rm build/ffmpeg/install/bin/{x264,x265} # We don't need the CLI for the codecs.
+fi
 
 # Build the docker image.
 TAG="rise:${VERSION}-${BUILD_ID}-${CPU}"
