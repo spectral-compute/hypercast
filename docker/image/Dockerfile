@@ -51,4 +51,4 @@ COPY --from=0 / /
 USER server
 
 # Run the script to check the user-run Docker container on startup.
-ENTRYPOINT /opt/rise/entrypoint.sh
+ENTRYPOINT ["bash", "/opt/rise/entrypoint.sh"]
