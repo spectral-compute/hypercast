@@ -14,7 +14,7 @@ RUN locale-gen
 RUN pacman --noconfirm -Syyu archlinux-keyring
 
 # Update and install packages we either need or that are nice for sanity.
-RUN pacman --noconfirm -Su boost-libs fontconfig freetype2 numactl opus zeromq nano
+RUN pacman --noconfirm -Su boost-libs fontconfig freetype2 numactl opus ttf-dejavu zeromq nano
 
 # Add the server user.
 RUN useradd -m server
@@ -40,6 +40,8 @@ RUN find /usr/share/locale -mindepth 1 -maxdepth 1 \
          ! -name en ! -name en_GB ! -name en_US ! -name locale.alias -exec rm -rf {} +
 RUN find /usr/share/i18n/locales -mindepth 1 -maxdepth 1 ! -name en ! -name en_GB ! -name en_US -exec rm -rf {} +
 RUN find / -name __pycache__
+
+RUN rm $(pacman -Ql ttf-dejavu | cut -d ' ' -f 2 | grep -vE 'licenses|/DejaVuSansMono|(/$)')
 
 # Squash the above commands.
 FROM scratch
