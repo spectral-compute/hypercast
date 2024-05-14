@@ -11,7 +11,7 @@ ENV LC_ALL en_GB.UTF-8
 RUN locale-gen
 
 # Sometimes, the keyring needs to be updated before anything else.
-RUN pacman --noconfirm -Syyu archlinux-keyring
+RUN pacman --noconfirm -Syy archlinux-keyring
 
 # Update and install packages we either need or that are nice for sanity.
 RUN pacman --noconfirm -Su boost-libs fontconfig freetype2 numactl opus ttf-dejavu zeromq nano
