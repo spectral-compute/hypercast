@@ -63,7 +63,7 @@ if [ "${DOCKER_ONLY}" == "1" ] ; then
     # Make sure we have the server and ffmpeg.
     for F in build/ffmpeg/install/bin/{ffmpeg,ffprobe,zmqsend} build/server/install/bin/live-video-streamer-server ; do
         if [ ! -e "${F}" ] ; then
-            echo "${F} does not exist! Run without -d." !>&2
+            echo "Directory ${F} does not exist! Run without -d." !>&2
             exit 1
         fi
     done
@@ -73,7 +73,7 @@ else
     # Check the build tree doesn't exist.
     for DIR in build install ; do
         if [ -e "${DIR}" ] ; then
-            echo "${DIR} exists" !>&2
+            echo "Directory ${DIR} exists!" >&2
             exit 1
         fi
     done
