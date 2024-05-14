@@ -17,12 +17,31 @@ if [ ! -e "/config/lvss-config.json" ] ; then
     exit 1
 fi
 
-# Run the server.
-echo "Starting the RISE server..."
-PATH="/opt/rise/server/bin:/opt/rise/ffmpeg/bin:$PATH"
-
+# Log directory.
 if [ -e "/log" ] ; then
-    live-video-streamer-server /config/lvss-config.json 2>&1 | tee "/log/$(date +'%Y%m%d%H%M%S.log')"
-else
-    live-video-streamer-server /config/lvss-config.json
+    DATE="$(date +'%Y-%m-%d_%H-%M-%S')"
+    LOG="/log/${DATE}"
+    mkdir -p "${LOG}"
+    rm -f /log/latest
+    ln -s "${DATE}" /log/latest
 fi
+
+# Function to either log, or not, a command
+function run
+{
+    NAME="$1"
+    DESCRIPTION="$2"
+    shift 2
+
+    if [ -e "/log" ] ; then
+        echo "${DESCRIPTION} with logging to ${LOG}/${NAME}.log"
+        "$@" 2>&1 | tee "${LOG}/${NAME}.log"
+    else
+        echo "${DESCRIPTION}"
+        "$@"
+    fi
+}
+
+# Run the server.
+PATH="/opt/rise/server/bin:/opt/rise/ffmpeg/bin:$PATH"
+run "lvss" "Running RISE server" live-video-streamer-server /config/lvss-config.json
