@@ -24,9 +24,6 @@ COPY server /opt/rise/server
 COPY ffmpeg /opt/rise/ffmpeg
 
 # Delete useless things.
-RUN pacman --noconfirm -Rdd python # I think not actually used. Supposedly needed by libpsl but seems not to really be.
-RUN pacman --noconfirm -R mpdecimal
-
 RUN yes | pacman -Scc
 RUN rm -f /var/lib/pacman/sync/*.db
 
