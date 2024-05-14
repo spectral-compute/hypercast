@@ -14,7 +14,7 @@ RUN locale-gen
 RUN pacman --noconfirm -Syy archlinux-keyring
 
 # Update and install packages we either need or that are nice for sanity.
-RUN pacman --noconfirm -Su boost-libs fontconfig freetype2 numactl opus ttf-dejavu zeromq nano
+RUN pacman --noconfirm -Su boost-libs cloudflared fontconfig freetype2 numactl opus sudo ttf-dejavu zeromq nano
 
 # Add the server user.
 RUN useradd -m server
@@ -43,9 +43,6 @@ RUN rm $(pacman -Ql ttf-dejavu | cut -d ' ' -f 2 | grep -vE 'licenses|/DejaVuSan
 # Squash the above commands.
 FROM scratch
 COPY --from=0 / /
-
-# Run as server user.
-USER server
 
 # Run the script to check the user-run Docker container on startup.
 ENTRYPOINT ["bash", "/opt/rise/entrypoint.sh"]

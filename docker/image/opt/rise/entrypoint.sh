@@ -13,7 +13,7 @@ fi
 # Check that there's a configuration file in it.
 if [ ! -e "/config/lvss-config.json" ] ; then
     echo "Error: /config/lvss-config.json does not exist. Creating from an example. Please adjust it as needed." 1>&2
-    cp /opt/rise/example-lvss-config.json /config/lvss-config.json
+    sudo -u server cp /opt/rise/example-lvss-config.json /config/lvss-config.json
     exit 1
 fi
 
@@ -42,6 +42,12 @@ function run
     fi
 }
 
+# If there's a Cloudflared token, run Cloudflared.
+if [ -e "/config/cloudflared.token" ] ; then
+    run "cloudflared" "Connecting to Cloudflare Tunnel" \
+        cloudflared --no-autoupdate tunnel run --token "$(cat "/config/cloudflared.token")" &
+fi
+
 # Run the server.
 PATH="/opt/rise/server/bin:/opt/rise/ffmpeg/bin:$PATH"
-run "lvss" "Running RISE server" live-video-streamer-server /config/lvss-config.json
+run "lvss" "Running RISE server" sudo -u server live-video-streamer-server /config/lvss-config.json
