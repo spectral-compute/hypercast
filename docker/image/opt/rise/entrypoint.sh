@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ETeuo pipefail
+
 # Check that the configuration directory exists.
 if [ ! -e "/config" ] ; then
     ls /
