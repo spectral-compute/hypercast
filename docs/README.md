@@ -18,7 +18,7 @@ The nature of the video stream is quite similar to MPEG-DASH, but the actual for
 is rather different to achieve some of the performance benefits of our solution. There is also some unique buffer
 management logic present in the client that is responsible for some of the latency savings.
 
-Currently, we have implementations of the frontned library for three popular web frontend technologies:
+Currently, we have implementations of the frontend library for three popular web frontend technologies:
 
 - Vanilla JS
 - React
