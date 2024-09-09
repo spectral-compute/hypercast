@@ -11,7 +11,7 @@ Build:
   extends: .env
   stage: Build-Debug
   script:
-    - run "cmake -DCMAKE_BUILD_TYPE=Debug -DXCMAKE_CLANG_TIDY=On -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
+    - run "cmake -DCMAKE_BUILD_TYPE=Debug -DXCMAKE_CLANG_TIDY=On -DXCMAKE_SYSTEM_GTEST=Off -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
     - run "make -C build install -j$(nproc)"
   variables:
     CI_PROPAGATE_WORKSPACE: 1
@@ -30,7 +30,7 @@ Build-Release-With-Server:
   stage: Build-Release
   script:
     - run "rm -rf build inst"
-    - run "cmake -DCMAKE_BUILD_TYPE=Release -DXCMAKE_PACKAGING=On -DXCMAKE_CLANG_TIDY=On -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
+    - run "cmake -DCMAKE_BUILD_TYPE=Release -DXCMAKE_PACKAGING=On -DXCMAKE_CLANG_TIDY=On -DXCMAKE_SYSTEM_GTEST=Off -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
     - run "make -C build install package -j$(nproc)"
     - run "tar tf build/*.tar.gz" # Show the package contents.
 
@@ -49,7 +49,7 @@ Build-Release-Client-Only:
   stage: Build-Release
   script:
     - run "rm -rf build inst"
-    - run "cmake -DCMAKE_BUILD_TYPE=Release -DXCMAKE_PACKAGING=On -DENABLE_SERVER=Off -DXCMAKE_CLANG_TIDY=On -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
+    - run "cmake -DCMAKE_BUILD_TYPE=Release -DXCMAKE_PACKAGING=On -DENABLE_SERVER=Off -DXCMAKE_CLANG_TIDY=On -DXCMAKE_SYSTEM_GTEST=Off -DCMAKE_INSTALL_PREFIX=inst -Bbuild src"
     - run "make -C build install package -j$(nproc)"
     - run "tar tf build/*.tar.gz" # Show the package contents.
 
