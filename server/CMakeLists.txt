@@ -19,8 +19,8 @@ add_executable(live-video-streamer-server main.cpp)
 target_link_libraries(live-video-streamer-server PRIVATE lvss-lib)
 
 # Boost-filesystem is needed to have asyncio FS stuff.
-find_package(Boost 1.81.0 REQUIRED COMPONENTS filesystem)
-target_link_libraries(lvss-lib PRIVATE Boost::boost Boost::filesystem)
+find_package(Boost 1.81.0 REQUIRED COMPONENTS filesystem process)
+target_link_libraries(lvss-lib PRIVATE Boost::boost Boost::filesystem Boost::process)
 
 # Remove lots of Boost goo that we don't need or want. E.g: source location strings that probably aid reverse
 # engineering.
