@@ -7,6 +7,9 @@ project(SpectralLiveVideoStreamer
         LANGUAGES CXX)
 include(XCMake)
 
+# Compiler flags used by every target of this project.
+add_compile_options("-Wno-missing-field-initializers") # New warning we need to decide how to handle.
+
 # Something that's On for debug builds and Off otherwise.
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     set(DEBUG_ON_OFF On)
