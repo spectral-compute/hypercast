@@ -1,15 +1,19 @@
 import {expect, test} from "@jest/globals";
-import {Deinterleaver, TimestampInfo} from "../src/Deinterleave";
+import {Deinterleaver, DeinterleaverDataEvent, TimestampInfo} from "../src/live/Deinterleave";
+import {MseTimestampEvent} from "../src/live/MseWrapper";
 
 function getDeinterleaveAndBuffers(): [Deinterleaver, Uint8Array[][], TimestampInfo[]] {
     const buffers: Uint8Array[][] = [[], []];
     const timestampInfos: TimestampInfo[] = [];
-    const deinterleaver = new Deinterleaver((data: ArrayBuffer, index: number): void => {
-        expect(index === 0 || index === 1).toBeTruthy();
-        buffers[index]!.push(new Uint8Array(data));
-    }, (timestampInfo: TimestampInfo): void => {
-        timestampInfos.push(timestampInfo);
-    }, "");
+    const deinterleaver = new Deinterleaver("");
+    deinterleaver.on("data", (e: DeinterleaverDataEvent): void => {
+        expect(e.index === 0 || e.index === 1).toBeTruthy();
+        buffers[e.index]!.push(new Uint8Array(e.data));
+    });
+    deinterleaver.on("timestamp", (e: MseTimestampEvent): void => {
+        timestampInfos.push(e.timestampInfo);
+    });
+
     return [deinterleaver, buffers, timestampInfos];
 }
 
