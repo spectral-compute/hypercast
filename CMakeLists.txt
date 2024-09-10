@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.25)
-include(xcmake/scripts/Init.cmake)
+find_package(XCmake REQUIRED HINTS ./xcmake)
+
 project(SpectralLiveVideoStreamer
         VERSION 0.0.0
         DESCRIPTION "An ultra low-latency video streamer"
         HOMEPAGE_URL "https://spectralcompute.co.uk/hyperstream"
         LANGUAGES CXX)
-include(XCMake)
 
 # Compiler flags used by every target of this project.
 add_compile_options("-Wno-missing-field-initializers") # New warning we need to decide how to handle.
