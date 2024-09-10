@@ -9,7 +9,7 @@
     "bundle": "GENERATE_SOURCEMAP=false ../cra-build-helper.sh build \"$@\"",
     "bundle-dev": "../cra-build-helper.sh build \"$@\"",
     "clean": "rm -rf build node_modules",
-    "lint": "echo 'CRA already linted this'",
+    "lint": "",
     "start": "../cra-build-helper.sh start \"$@\""
   },
   "browserslist": {

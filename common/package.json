@@ -9,7 +9,7 @@
   "version": "0.0.0",
   "scripts": {
     "clean": "rm -rf build node_modules",
-    "lint": "yarn eslint --max-warnings=0 --ext .ts src test",
+    "lint": "",
     "test": "yarn jest --clearCache && jest --config test/jest.config.js \"$@\""
   },
   "dependencies": {

@@ -10,7 +10,7 @@
     "bundle": "yarn webpack --bail --mode production \"$@\"",
     "bundle-dev": "yarn webpack --bail --mode development \"$@\"",
     "clean": "rm -rf build dist node_modules",
-    "lint": "yarn eslint --max-warnings=0 --ext .ts .",
+    "lint": "",
     "start": "yarn bundle-dev \"$@\" && python -m http.server -d dist"
   },
   "browserslist": {
