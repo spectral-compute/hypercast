@@ -1,0 +1,29 @@
+name: Build and test
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    steps:
+    - name: install-dependencies
+      run: |
+        sudo pacman -Syu --noconfirm cmake git git-lfs boost boost-libs doxygen nodejs node-gyp gtest yarn ffmpeg nlohmann-json
+        sudo corepack enable
+    - uses: actions/checkout@v4
+      with:
+        path: ./src
+        submodules: recursive
+    - name: install-js-dependencies
+      run: |
+        cd src && yarn
+    - name: build-js
+      run: |
+        cd src && yarn run bundle
+    - name: test-js
+      run: |
+        cd src && yarn run test
+    - name: build-debug
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_JS=OFF -DXCMAKE_CLANG_TIDY=OFF -DXCMAKE_SYSTEM_GTEST=ON -DXCMAKE_DOXYGEN_WERROR=OFF -DCMAKE_INSTALL_PREFIX=inst -Bbuild src
+        make -C build install -j$(nproc)
