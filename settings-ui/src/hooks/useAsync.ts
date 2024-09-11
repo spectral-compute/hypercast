@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from "react";
+import {SetStateAction, useCallback, useEffect, useRef, useState} from "react";
 
 export interface AsyncHookStatus {
     // The current status of the async function.
@@ -61,10 +61,10 @@ export function useAsync<ArgsT extends any[], ResultT>(fn: (...args: ArgsT) => P
             }).catch((error) => {
                 console.log("HERE?");
                 console.error(error);
-                setError(error);
+                setError(error as SetStateAction<Error | undefined>);
                 setStatus("rejected");
                 if (options.onError) {
-                    options.onError(cArgs, error);
+                    options.onError(cArgs, error as Error);
                 }
             });
     }, [theFunc]);

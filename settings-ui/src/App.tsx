@@ -42,7 +42,7 @@ export default observer(() => {
       return <div className="fullscreenLoader"><Loading/></div>;
   }
 
-  if (loadCfg.error && loadCfg.error!.message == "Failed to fetch") {
+  if (loadCfg.error && loadCfg.error.message == "Failed to fetch") {
       // Special case: server isn't up yet.
       return <div className="fullscreenLoader"><Loading/></div>;
   }
@@ -111,25 +111,14 @@ export default observer(() => {
       <div className="layout">
           <div className="topRow">
               <LogoCard/>
-              {/*<div className="portList">*/}
-              {/*    {*/}
-              {/*        DECKLINK_PORTS_ORDERED.map(p =>*/}
-              {/*            <PortStatus*/}
-              {/*                key={p}*/}
-              {/*                port={p}*/}
-              {/*                desc={appCtx.machineInfo.inputPorts[p]}*/}
-              {/*            ></PortStatus>*/}
-              {/*    )}*/}
-              {/*</div>*/}
-
               <div className="statList">
                   <div className="statEntry">
-                      <span>1MB/s</span>
+                      <span>{"1MB/s"}</span>
                       <UplinkIcon/>
                   </div>
 
                   <div className="statEntry">
-                      <span>75%</span>
+                      <span>{"75%"}</span>
                       <CPU/>
                   </div>
               </div>
@@ -165,6 +154,6 @@ export default observer(() => {
           probeifier={prober}
       /> : null}
 
-      {/*<LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator>*/}
+      { /* <LoadEstimator compute={0.7} localBandwidth={10000}></LoadEstimator> */ }
   </>;
 });

@@ -51,7 +51,7 @@ export class AppCtx {
     getPortStatus(k: DecklinkPort): InputPortStatus | string {
         const p = this.machineInfo.inputPorts[k]!;
 
-        if (p!.connectedMediaInfo == null) {
+        if (p.connectedMediaInfo == null) {
             return InputPortStatus.DISCONNECTED;
         }
 

@@ -1,6 +1,6 @@
 import './StreamBox.sass';
 import SecondaryBox from "./SecondaryBox";
-import {AudioCodec, AudioVariant, Channel, FrameRate, FrameRateCfg, StreamVariantConfig} from "./api/Config";
+import {AudioCodec, AudioVariant, Channel, FrameRateCfg, StreamVariantConfig} from "./api/Config";
 import PortStatus from "./PortStatus";
 import {useContext} from "react";
 import {AppContext} from "./index";
@@ -63,7 +63,7 @@ function prettyPrintFramerate(t: any, f: FrameRateCfg | undefined) {
     }
 
     if (typeof f == "object") {
-        const fps = f as FrameRate;
+        const fps = f;
         return (fps.numerator / fps.denominator) + "fps";
     } else {
         return f as string;

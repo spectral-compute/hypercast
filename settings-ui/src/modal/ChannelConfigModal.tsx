@@ -67,8 +67,8 @@ function inputIsAtLeast(appCtx: AppCtx, channel: Channel, w: number, h: number) 
         return false;
     }
 
-    return port.connectedMediaInfo!.video.height >= h &&
-           port.connectedMediaInfo!.video.width >= w;
+    return port.connectedMediaInfo.video.height >= h &&
+           port.connectedMediaInfo.video.width >= w;
 }
 
 export default observer((props: ChannelConfigModalProps) => {

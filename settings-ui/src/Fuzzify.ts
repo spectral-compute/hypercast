@@ -37,7 +37,7 @@ export function fuzzyMatch<T extends {[k: string]: any}>(x: T, fuzz: RecursivePa
                 return FuzzyMatchResult.MISMATCH;
             }
 
-            const b = fuzzyMatch(x[k], v);
+            const b = fuzzyMatch(x[k], v as RecursivePartial<object>);
             if (b == FuzzyMatchResult.MISMATCH) {
                 return b;
             }

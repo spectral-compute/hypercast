@@ -20,7 +20,7 @@ export class Api {
     async makeRequest(method: string, route: string, params: any = {}) {
         if (method === "GET") {
             console.log(params);
-            const paramsObj = new URLSearchParams(params);
+            const paramsObj = new URLSearchParams(params as URLSearchParams);
             // Send params as GET params.
             const paramStr = paramsObj.toString();
             if (paramStr !== "") {
